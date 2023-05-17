@@ -20,7 +20,6 @@ if "output" not in st.session_state:
 
 FILE = st.sidebar.selectbox("Select a file", [file for file in glob.glob("./data/*.csv")])
 
-
 MODELS = {
     "cardiffnlp/twitter-roberta-base-sentiment": {
         "tokenizer": AutoTokenizer,
