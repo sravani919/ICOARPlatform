@@ -26,9 +26,11 @@ if st.session_state.filename != "":
     english_only = st.checkbox("Filter Out Non-English Tweets", value=False)
     tweet_clean = st.checkbox("Remove URLs, Hashtags, Mentions, Emojis", value=False)
     drop_empty = st.checkbox("Remove empty Nan values and lower Case", value=False)
-    
+
     if st.button("Process"):
-        st.session_state.preprocessing_status = preprocess(st.session_state.filename, english_only, tweet_clean,drop_empty)
+        st.session_state.preprocessing_status = preprocess(
+            st.session_state.filename, english_only, tweet_clean, drop_empty
+        )
 
 if st.session_state.preprocessing_status:
     df = pd.read_csv(st.session_state.filename)
