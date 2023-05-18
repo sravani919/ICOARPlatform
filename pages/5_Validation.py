@@ -27,6 +27,7 @@ MODEL = st.sidebar.radio(
     ],
 )
 
+
 def predict(text, model, tokenizer):
     inputs = tokenizer(text, return_tensors="pt")
     outputs = model(**inputs)
@@ -49,11 +50,11 @@ if st.sidebar.button("Predict"):
     for index, row in df.iterrows():
         df.loc[index, "sentiment"] = predict(row["text"], model, tokenizer)
         with placeholder.container():
-            st.dataframe(df[['text', 'sentiment']][max(0, index - 10):max(10, index)])
+            st.dataframe(df[["text", "sentiment"]][max(0, index - 10) : max(10, index)])
             progress = (index + 1) / total_rows
             progress_bar.progress(progress, text=f"Predicting text: {progress * 100:.2f}% complete")
 
     with placeholder.container():
         st.dataframe(df)
     progress_bar.empty()
-    st.success(f"Prediction completed", icon="✅")
+    st.success("Prediction completed", icon="✅")

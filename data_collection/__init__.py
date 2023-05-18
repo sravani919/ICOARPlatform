@@ -43,9 +43,11 @@ def save_tweets(keywords, limit=inf):
 
     progress_bar.progress(10, text="Fetching tweets. Please wait...")
     tweets = []
-    for i, tweet in enumerate(tweepy.Paginator(client.search_recent_tweets, keywords, max_results=100).flatten(limit=limit)):
+    for i, tweet in enumerate(
+        tweepy.Paginator(client.search_recent_tweets, keywords, max_results=100).flatten(limit=limit)
+    ):
         tweets.append({"id": tweet.id, "text": tweet.text})
-        progress = int((i+1) / limit * 100)
+        progress = int((i + 1) / limit * 100)
         progress_bar.progress(progress, text=f"Fetching tweets: {progress}% complete")
 
     progress_bar.empty()
