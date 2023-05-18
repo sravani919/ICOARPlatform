@@ -20,6 +20,7 @@ torch = "^2.0.0"
 torchvision = "^0.15.1"
 torchaudio = "^2.0.1"
 emoji = "^2.2.0"
+nlu = "^4.2.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"
