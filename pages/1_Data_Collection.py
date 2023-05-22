@@ -1,6 +1,6 @@
 import streamlit as st
 
-from data_collection import preview_tweets, save_tweets
+from data_collection.twitter import preview_tweets, save_tweets
 
 title = "Data Collection"
 
@@ -10,7 +10,7 @@ st.sidebar.header(title)
 
 option = st.sidebar.multiselect("Social Medias", ["Twitter", "Reddit (Coming Soon)"])
 keywords = st.sidebar.text_input("Enter keywords:")
-tweet_count = st.sidebar.number_input("Number of tweets:", min_value=1, max_value=1000, value=100)
+tweet_count = st.sidebar.number_input("Number of tweets:", min_value=10, max_value=100, value=100)
 
 if "start" not in st.session_state:
     st.session_state.start = ""
