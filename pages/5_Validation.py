@@ -1,40 +1,69 @@
+import glob
+
+import pandas as pd
 import streamlit as st
+from huggingface_hub import HfApi
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
-from data_collection import preview_tweets, save_tweets
-
-title = "Data Collection"
-
+title = "Validation"
 st.set_page_config(page_title=title)
+
+placeholder = st.empty()
+container = st.container()
 
 st.sidebar.header(title)
 
-option = st.sidebar.multiselect("Social Medias", ["Twitter", "Reddit (Coming Soon)"])
-keywords = st.sidebar.text_input("Enter keywords:")
+if "output" not in st.session_state:
+    st.session_state.output = None
+if "model_list" not in st.session_state:
+    st.session_state.model_list = []
 
-if "start" not in st.session_state:
-    st.session_state.start = ""
-if "end" not in st.session_state:
-    st.session_state.end = ""
-if "tweet_count" not in st.session_state:
-    st.session_state.tweet_count = 0
-if "tweets" not in st.session_state:
-    st.session_state.tweets = []
+FILE = st.sidebar.selectbox("Select a file", [file for file in glob.glob("./data/*.csv")])
 
-if st.sidebar.button("Preview"):
-    if option == []:
-        st.sidebar.error("Please select social media")
-    elif keywords == "":
-        st.sidebar.error("Please enter keywords")
-    else:
-        start, end, tweet_count, tweets = preview_tweets(keywords)
-        st.session_state.start = start
-        st.session_state.end = end
-        st.session_state.tweet_count = tweet_count
-        st.session_state.tweets = tweets
+search_text = st.sidebar.text_input("Enter model name")
+search_button = st.sidebar.button("Search")
 
-if st.session_state.tweet_count != 0:
-    st.text(f"There is {st.session_state.tweet_count} tweets from {st.session_state.start} to {st.session_state.end}")
-    st.dataframe(st.session_state.tweets)
-    if st.button("Save"):
-        save_tweets(keywords, 300)
-        st.success("Saved")
+
+def fetch_models_from_hf():
+    # Or configure a HfApi client
+    hf_api = HfApi(
+        endpoint="https://huggingface.co",  # Can be a Private Hub endpoint.
+        token="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",  # Token is not persisted on the machine.
+    )
+
+    print("Fetching model list from hugging face...")
+    models = hf_api.list_models(filter="text-classification", search=search_text)
+    model_list = []
+    for model in models:
+        model_list.append(model.modelId)
+
+    return model_list
+
+
+if search_button:
+    st.session_state.model_list = fetch_models_from_hf()
+    search_button = False
+
+MODEL = st.sidebar.radio(
+    "Select a model",
+    st.session_state.model_list,
+)
+
+
+def predict(text):
+    tokenizer = AutoTokenizer.from_pretrained(MODEL)
+    model = AutoModelForSequenceClassification.from_pretrained(MODEL)
+    inputs = tokenizer(text, return_tensors="pt")
+    outputs = model(**inputs)
+    output = outputs.logits.argmax().item()
+    # Labels: 0 -> Negative; 1 -> Neutral; 2 -> Positive
+    label = "Negative" if output == 0 else "Neutral" if output == 1 else "Positive"
+    return label
+
+
+if st.sidebar.button("Predict"):
+    df = pd.read_csv(FILE)
+    for index, row in df.iterrows():
+        df.loc[index, "sentiment"] = predict(row["text"])
+        with placeholder.container():
+            st.write(df)
