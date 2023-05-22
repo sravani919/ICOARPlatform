@@ -28,7 +28,7 @@ def fetch_models_from_hf():
     # Or configure a HfApi client
     hf_api = HfApi(
         endpoint="https://huggingface.co",  # Can be a Private Hub endpoint.
-        token="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",  # Token is not persisted on the machine.
+        token=st.secrets.api_token.hf,  # Token is not persisted on the machine.
     )
 
     print("Fetching model list from hugging face...")
