@@ -10,6 +10,7 @@ st.sidebar.header(title)
 
 option = st.sidebar.multiselect("Social Medias", ["Twitter", "Reddit (Coming Soon)"])
 keywords = st.sidebar.text_input("Enter keywords:")
+tweet_count = st.sidebar.number_input("Number of tweets:", min_value=1, max_value=1000, value=100)
 
 if "start" not in st.session_state:
     st.session_state.start = ""
@@ -26,7 +27,7 @@ if st.sidebar.button("Preview"):
     elif keywords == "":
         st.sidebar.error("Please enter keywords")
     else:
-        start, end, tweet_count, tweets = preview_tweets(keywords)
+        start, end, tweet_count, tweets = preview_tweets(keywords, tweet_count)
         st.session_state.start = start
         st.session_state.end = end
         st.session_state.tweet_count = tweet_count
@@ -35,6 +36,8 @@ if st.sidebar.button("Preview"):
 if st.session_state.tweet_count != 0:
     st.text(f"There is {st.session_state.tweet_count} tweets from {st.session_state.start} to {st.session_state.end}")
     st.dataframe(st.session_state.tweets)
+    # Having a text prompt for the name of the file to save
+    filename = st.text_input("File name:", value=keywords)
     if st.button("Save"):
-        save_tweets(keywords, 300)
-        st.success("Saved")
+        file_path = save_tweets(st.session_state.tweets, filename)
+        st.success("Saved to '" + file_path + "'")
