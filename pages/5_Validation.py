@@ -1,47 +1,40 @@
-import glob
-
-import pandas as pd
 import streamlit as st
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
-title = "Validation"
+from data_collection import preview_tweets, save_tweets
+
+title = "Data Collection"
 
 st.set_page_config(page_title=title)
 
-placeholder = st.empty()
-container = st.container()
-
 st.sidebar.header(title)
 
-if "output" not in st.session_state:
-    st.session_state.output = None
+option = st.sidebar.multiselect("Social Medias", ["Twitter", "Reddit (Coming Soon)"])
+keywords = st.sidebar.text_input("Enter keywords:")
 
-FILE = st.sidebar.selectbox("Select a file", [file for file in glob.glob("./data/*.csv")])
+if "start" not in st.session_state:
+    st.session_state.start = ""
+if "end" not in st.session_state:
+    st.session_state.end = ""
+if "tweet_count" not in st.session_state:
+    st.session_state.tweet_count = 0
+if "tweets" not in st.session_state:
+    st.session_state.tweets = []
 
-MODEL = st.sidebar.radio(
-    "Select a model",
-    [
-        "cardiffnlp/twitter-roberta-base-sentiment",
-        "finiteautomata/bertweet-base-sentiment-analysis",
-        "Seethal/sentiment_analysis_generic_dataset",
-    ],
-)
+if st.sidebar.button("Preview"):
+    if option == []:
+        st.sidebar.error("Please select social media")
+    elif keywords == "":
+        st.sidebar.error("Please enter keywords")
+    else:
+        start, end, tweet_count, tweets = preview_tweets(keywords)
+        st.session_state.start = start
+        st.session_state.end = end
+        st.session_state.tweet_count = tweet_count
+        st.session_state.tweets = tweets
 
-
-def predict(text):
-    tokenizer = AutoTokenizer.from_pretrained(MODEL)
-    model = AutoModelForSequenceClassification.from_pretrained(MODEL)
-    inputs = tokenizer(text, return_tensors="pt")
-    outputs = model(**inputs)
-    output = outputs.logits.argmax().item()
-    # Labels: 0 -> Negative; 1 -> Neutral; 2 -> Positive
-    label = "Negative" if output == 0 else "Neutral" if output == 1 else "Positive"
-    return label
-
-
-if st.sidebar.button("Predict"):
-    df = pd.read_csv(FILE)
-    for index, row in df.iterrows():
-        df.loc[index, "sentiment"] = predict(row["text"])
-        with placeholder.container():
-            st.write(df)
+if st.session_state.tweet_count != 0:
+    st.text(f"There is {st.session_state.tweet_count} tweets from {st.session_state.start} to {st.session_state.end}")
+    st.dataframe(st.session_state.tweets)
+    if st.button("Save"):
+        save_tweets(keywords, 300)
+        st.success("Saved")
