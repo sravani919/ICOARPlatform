@@ -28,6 +28,8 @@ if st.sidebar.button("Preview"):
         st.sidebar.error("Please enter keywords")
     else:
         start, end, tweet_count, tweets = preview_tweets(keywords, tweet_count)
+        if not tweets:  # The list is empty
+            st.sidebar.error("No tweets found with the given keywords")
         st.session_state.start = start
         st.session_state.end = end
         st.session_state.tweet_count = tweet_count

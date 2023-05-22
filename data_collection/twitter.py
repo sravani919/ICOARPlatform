@@ -125,7 +125,7 @@ def preview_tweets(keywords, count):
 
     # Getting the tweets
     res = full_results(client, keywords, count)
-    if res is None:  # No tweets found with the given keywords
+    if res.data is None:  # No tweets found with the given keywords
         return start, end, tweet_count, []
 
     tweets = format_tweet_results(res)
