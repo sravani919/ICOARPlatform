@@ -227,3 +227,6 @@ Temporary Items
 ### ICOAR Project ###
 data/
 models/
+
+### Intellij ###
+.idea
