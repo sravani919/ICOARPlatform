@@ -20,8 +20,10 @@ if "model_list" not in st.session_state:
 
 FILE = st.sidebar.selectbox("Select a file", [file for file in glob.glob("./data/*.csv")])
 
-search_text = st.sidebar.text_input("Enter model name")
-search_button = st.sidebar.button("Search")
+model_type = st.sidebar.radio(
+    "Select a model type",
+    ["Recomended", "Search on huggingface"],
+)
 
 
 def fetch_models_from_hf():
@@ -40,14 +42,27 @@ def fetch_models_from_hf():
     return model_list
 
 
-if search_button:
-    st.session_state.model_list = fetch_models_from_hf()
-    search_button = False
+if model_type == "Search on huggingface":
+    search_text = st.sidebar.text_input("Enter model name")
+    search_button = st.sidebar.button("Search")
 
-MODEL = st.sidebar.radio(
-    "Select a model",
-    st.session_state.model_list,
-)
+    if search_button:
+        st.session_state.model_list = fetch_models_from_hf()
+        search_button = False
+
+    MODEL = st.sidebar.radio(
+        "Select a model",
+        st.session_state.model_list,
+    )
+else:
+    MODEL = st.sidebar.radio(
+        "Select a model",
+        [
+            "cardiffnlp/twitter-roberta-base-sentiment",
+            "finiteautomata/bertweet-base-sentiment-analysis",
+            "Seethal/sentiment_analysis_generic_dataset",
+        ],
+    )
 
 
 def predict(text, model, tokenizer):
