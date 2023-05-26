@@ -50,9 +50,7 @@ MODEL = st.sidebar.radio(
 )
 
 
-def predict(text):
-    tokenizer = AutoTokenizer.from_pretrained(MODEL)
-    model = AutoModelForSequenceClassification.from_pretrained(MODEL)
+def predict(text, model, tokenizer):
     inputs = tokenizer(text, return_tensors="pt")
     outputs = model(**inputs)
     output = outputs.logits.argmax().item()
@@ -63,7 +61,22 @@ def predict(text):
 
 if st.sidebar.button("Predict"):
     df = pd.read_csv(FILE)
+    total_rows = df.shape[0]
+
+    with st.spinner("Downloading necessary models. It may take few minutes. Please wait..."):
+        tokenizer = AutoTokenizer.from_pretrained(MODEL)
+        model = AutoModelForSequenceClassification.from_pretrained(MODEL)
+
+    progress_bar = st.empty()
+
     for index, row in df.iterrows():
-        df.loc[index, "sentiment"] = predict(row["text"])
+        df.loc[index, "sentiment"] = predict(row["text"], model, tokenizer)
         with placeholder.container():
-            st.write(df)
+            st.dataframe(df[["text", "sentiment"]][max(0, index - 10) : max(10, index)])
+            progress = (index + 1) / total_rows
+            progress_bar.progress(progress, text=f"Predicting text: {progress * 100:.2f}% complete")
+
+    with placeholder.container():
+        st.dataframe(df)
+    progress_bar.empty()
+    st.success("Prediction completed", icon="✅")
