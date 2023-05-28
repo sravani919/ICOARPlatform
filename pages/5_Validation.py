@@ -14,7 +14,7 @@ container = st.container()
 st.sidebar.header(title)
 
 if "output" not in st.session_state:
-    st.session_state.output = pd.DataFrame()
+    st.session_state.output = None
 
 FILE = st.sidebar.selectbox("Select a file", [file for file in glob.glob("./data/*.csv")])
 
@@ -57,6 +57,4 @@ if st.sidebar.button("Predict"):
     with placeholder.container():
         st.dataframe(df)
     progress_bar.empty()
-
-    st.session_state.output = df
     st.success("Prediction completed", icon="✅")
