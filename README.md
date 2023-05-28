@@ -25,9 +25,9 @@ Integrative Cyberinfrastructure for Online Abuse Research (ICOAR)
     poetry shell
     ```
 
-4. Create configuration files for the project in the `./streamlit` directory.
+4. Create configuration files for the project in the `.streamlit` directory.
 
-    - `./streamlit/secrets.toml`
+    - `.streamlit/secrets.toml`
 
     ```toml
     [api_token]
