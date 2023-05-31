@@ -75,7 +75,7 @@ def filter_no_text(row):
 
 
 @none_avoidance
-def lowercase_words(row):  # Does not work
+def lowercase_words(row):
     return row["text"].lower()
 
 
@@ -96,6 +96,6 @@ def strip_stop_words(row):
 
 
 @none_avoidance
-def lemmatize_words(row):  # Does not work callable assertion error
+def lemmatize_words(row):
     doc = nlp(row["text"])
     return " ".join([token.lemma_ for token in doc])
