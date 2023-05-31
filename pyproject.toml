@@ -20,6 +20,12 @@ torch = "^2.0.0"
 torchvision = "^0.15.1"
 torchaudio = "^2.0.1"
 emoji = "^2.2.0"
+setuptools = "^60.8.2"
+wheel = "^0.37.1"
+spacy = "^3.5.3"
+spacy-transformers = "^1.0.6"
+en_core_web_sm = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.5.0/en_core_web_sm-3.5.0.tar.gz" }
+
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"
