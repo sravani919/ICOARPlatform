@@ -1,12 +1,22 @@
+import glob
+
 import matplotlib.pyplot as plt
+import pandas as pd
 import streamlit as st
 
-if "output" not in st.session_state or st.session_state.output.empty:
-    st.warning("Please run the Validation step before the Visualisation step!")
-else:
+if "filename_pred" not in st.session_state:
+    st.session_state.filename_pred = ""
+
+option = st.selectbox("Select a file", [file for file in glob.glob("./predicted/*.csv")])
+
+if st.button("Load"):
+    st.session_state.filename_pred = option
+
+if st.session_state.filename_pred != "":
+    df = pd.read_csv(st.session_state.filename_pred)
     options = ["Bar Plot", "Pie Chart"]
     selected_option = st.selectbox("Select an type of visualisation", options)
-    data = st.session_state.output
+    data = df
     fig, ax = plt.subplots()
 
     value_counts = data["sentiment"].value_counts()
