@@ -14,7 +14,7 @@ container = st.container()
 st.sidebar.header(title)
 
 if "output" not in st.session_state:
-    st.session_state.output = None
+    st.session_state.output = pd.DataFrame()
 if "model_list" not in st.session_state:
     st.session_state.model_list = []
 
@@ -94,4 +94,6 @@ if st.sidebar.button("Predict"):
     with placeholder.container():
         st.dataframe(df)
     progress_bar.empty()
+
+    st.session_state.output = df
     st.success("Prediction completed", icon="✅")
