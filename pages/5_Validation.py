@@ -1,4 +1,5 @@
 import glob
+import os
 
 import pandas as pd
 import streamlit as st
@@ -17,6 +18,8 @@ if "output" not in st.session_state:
     st.session_state.output = pd.DataFrame()
 if "model_list" not in st.session_state:
     st.session_state.model_list = []
+if "predict" not in st.session_state:
+    st.session_state.predict = False
 
 FILE = st.sidebar.selectbox("Select a file", [file for file in glob.glob("./data/*.csv")])
 
@@ -65,6 +68,14 @@ else:
     )
 
 
+def save_file(df, filename):
+    if not os.path.exists("predicted"):
+        os.makedirs("predicted")
+    file_path = f"predicted/{filename}.csv"
+    df.to_csv(file_path, index=False)
+    return file_path
+
+
 def predict(text, model, tokenizer):
     inputs = tokenizer(text, return_tensors="pt")
     outputs = model(**inputs)
@@ -75,6 +86,7 @@ def predict(text, model, tokenizer):
 
 
 if st.sidebar.button("Predict"):
+    st.session_state.predict = True
     df = pd.read_csv(FILE)
     total_rows = df.shape[0]
 
@@ -97,3 +109,12 @@ if st.sidebar.button("Predict"):
 
     st.session_state.output = df
     st.success("Prediction completed", icon="✅")
+
+
+if st.session_state.predict:
+    filename = st.text_input("Enter file name  to save predicted data")
+    save = st.button("Save File")
+    if save:
+        file_path = save_file(st.session_state.output, filename)
+        st.session_state.predict = False
+        st.success("Saved to '" + file_path + "'")
