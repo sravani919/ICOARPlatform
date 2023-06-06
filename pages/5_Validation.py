@@ -1,11 +1,12 @@
 import glob
+import os
 
 import pandas as pd
 import streamlit as st
+from huggingface_hub import HfApi
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 title = "Validation"
-
 st.set_page_config(page_title=title)
 
 placeholder = st.empty()
@@ -15,17 +16,64 @@ st.sidebar.header(title)
 
 if "output" not in st.session_state:
     st.session_state.output = pd.DataFrame()
+if "model_list" not in st.session_state:
+    st.session_state.model_list = []
+if "predict" not in st.session_state:
+    st.session_state.predict = False
 
 FILE = st.sidebar.selectbox("Select a file", [file for file in glob.glob("./data/*.csv")])
 
-MODEL = st.sidebar.radio(
-    "Select a model",
-    [
-        "cardiffnlp/twitter-roberta-base-sentiment",
-        "finiteautomata/bertweet-base-sentiment-analysis",
-        "Seethal/sentiment_analysis_generic_dataset",
-    ],
+model_type = st.sidebar.radio(
+    "Select a model type",
+    ["Recomended", "Search on huggingface"],
 )
+
+
+def fetch_models_from_hf():
+    # Or configure a HfApi client
+    hf_api = HfApi(
+        endpoint="https://huggingface.co",  # Can be a Private Hub endpoint.
+        token=st.secrets.api_token.hf,  # Token is not persisted on the machine.
+    )
+
+    print("Fetching model list from hugging face...")
+    models = hf_api.list_models(filter="text-classification", search=search_text)
+    model_list = []
+    for model in models:
+        model_list.append(model.modelId)
+
+    return model_list
+
+
+if model_type == "Search on huggingface":
+    search_text = st.sidebar.text_input("Enter model name")
+    search_button = st.sidebar.button("Search")
+
+    if search_button:
+        st.session_state.model_list = fetch_models_from_hf()
+        search_button = False
+
+    MODEL = st.sidebar.radio(
+        "Select a model",
+        st.session_state.model_list,
+    )
+else:
+    MODEL = st.sidebar.radio(
+        "Select a model",
+        [
+            "cardiffnlp/twitter-roberta-base-sentiment",
+            "finiteautomata/bertweet-base-sentiment-analysis",
+            "Seethal/sentiment_analysis_generic_dataset",
+        ],
+    )
+
+
+def save_file(df, filename):
+    if not os.path.exists("predicted"):
+        os.makedirs("predicted")
+    file_path = f"predicted/{filename}.csv"
+    df.to_csv(file_path, index=False)
+    return file_path
 
 
 def predict(text, model, tokenizer):
@@ -38,6 +86,7 @@ def predict(text, model, tokenizer):
 
 
 if st.sidebar.button("Predict"):
+    st.session_state.predict = True
     df = pd.read_csv(FILE)
     total_rows = df.shape[0]
 
@@ -60,3 +109,12 @@ if st.sidebar.button("Predict"):
 
     st.session_state.output = df
     st.success("Prediction completed", icon="✅")
+
+
+if st.session_state.predict:
+    filename = st.text_input("Enter file name  to save predicted data")
+    save = st.button("Save File")
+    if save:
+        file_path = save_file(st.session_state.output, filename)
+        st.session_state.predict = False
+        st.success("Saved to '" + file_path + "'")
