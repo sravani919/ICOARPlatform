@@ -1,8 +1,11 @@
+import os
 from datetime import datetime
+from urllib.request import HTTPCookieProcessor, build_opener
 
 import pandas as pd
 import streamlit as st
 import tweepy
+from PIL import Image
 
 
 def init_connection():
@@ -25,6 +28,7 @@ def full_results(client, keywords, max_results):
             "referenced_tweets.id",
             "referenced_tweets.id.author_id",
             "entities.mentions.username,geo.place_id",
+            "attachments.media_keys",
         ],
         tweet_fields=[
             "attachments",
@@ -64,11 +68,60 @@ def full_results(client, keywords, max_results):
             "withheld",
         ],
         place_fields=["contained_within", "country", "country_code", "full_name", "geo", "id", "name", "place_type"],
+        media_fields=[
+            "alt_text",
+            "duration_ms",
+            "height",
+            "media_key",
+            "non_public_metrics",
+            "organic_metrics",
+            "preview_image_url",
+            "promoted_metrics",
+            "public_metrics",
+            "type",
+            "url",
+            "variants",
+            "width",
+        ],
     )
     return res
 
 
+def get_urls(tweet, all_media):
+    """
+    Gets the image urls from the tweet
+    Each tweet has a list of media keys, those keys can be used to search the media for the correct urls
+    :param tweet: The tweet with images we want to get the urls for
+    :param all_media: The media from the response from the Twitter API (Sections are removed as they are searched)
+    :return: A list of urls to the images in the tweet
+    """
+    try:
+        tweets_media_keys = tweet["attachments"]["media_keys"]  # The media keys associated with this tweet
+    except KeyError:
+        return []  # If there are no media keys, there are no images in the tweet
+    except TypeError:
+        return []  # Couldn't find the attachments key
+
+    media_urls = []
+    # Iterating through all the media to see if any of them match the media keys from the tweet
+    # If they do match, that media is removed from the all_media list so future searches are faster
+    for media in all_media.copy():
+        if media["media_key"] in tweets_media_keys:
+            url = media["url"]
+            if url is not None:
+                media_urls.append(media["url"])
+            all_media.remove(media)
+
+    return media_urls
+
+
 def format_tweet_results(res):
+    """
+    Converts the JSON response from Twitter into a list of dictionaries with the data we want
+    :param res: The JSON response from Twitter
+    :param download_images: Whether to download the images from the tweets or just save their links
+    :return: A list of dictionaries with the data we want
+    """
     tweets = []
     for i in range(len(res.data)):
         id = res.data[i].id
@@ -85,8 +138,9 @@ def format_tweet_results(res):
 
         hashtags = []
         mentions = []
+        image_urls = []
 
-        if res.data[i].entities is not None:  # Is None when there are no hashtags or mentions
+        if res.data[i].entities is not None:  # When there are no entities, there are no hashtags, mentions, or urls
             # Getting hashtags
             if "hashtags" in res.data[i].entities:
                 for hashtag in res.data[i].entities["hashtags"]:
@@ -96,6 +150,9 @@ def format_tweet_results(res):
             if "mentions" in res.data[i].entities:
                 for mention in res.data[i].entities["mentions"]:
                     mentions.append(mention["username"])
+
+            # Getting direct image urls
+            image_urls = get_urls(res.data[i], res.includes["media"])
 
         created_at = res.data[i].created_at
 
@@ -110,13 +167,14 @@ def format_tweet_results(res):
                 "retweet_count": retweet_count,
                 "hashtags": hashtags,
                 "mentions": mentions,
+                "image_urls": image_urls,
             }
         )
     return tweets
 
 
 @st.cache_data
-def preview_tweets(keywords, count):
+def grab_tweets(keywords, count: int):
     client = init_connection()
     res = client.get_recent_tweets_count(keywords)
     start = min([datetime.strptime(data["start"], "%Y-%m-%dT%H:%M:%S.%fZ") for data in getattr(res, "data")])
@@ -128,12 +186,41 @@ def preview_tweets(keywords, count):
     if res.data is None:  # No tweets found with the given keywords
         return start, end, tweet_count, []
 
+    # Formatting the tweets into a list of dictionaries
     tweets = format_tweet_results(res)
 
     return start, end, tweet_count, tweets
 
 
-def save_tweets(tweets, filename):
+def save_images(tweet, images_path):
+    """
+    Takes in a tweet dictionary and then downloads the images off the internet and saves them to the given file path
+    :param tweet: The tweet dictionary
+    :param images_path: The file path to save the images to
+
+    """
+    id = tweet["id"]
+    tweet_folder = images_path + "/" + str(id)  # Folder for all of the images from this tweet
+    # Creating a folder for the images if it doesn't already exist
+    if not os.path.exists(tweet_folder):
+        os.makedirs(tweet_folder)
+
+    urls = tweet["image_urls"]
+    if urls is None or len(urls) == 0:
+        return []
+
+    opener = build_opener(HTTPCookieProcessor())
+
+    for i, url in enumerate(urls):
+        if url is None:
+            continue
+
+        response = opener.open(url)
+        image = Image.open(response).convert("RGB")
+        image.save(f"{tweet_folder}/{i}.jpg")
+
+
+def save_tweets(tweets, filename, download_images=False):
     # client = init_connection()
     # tweets = []
     # for tweet in tweepy.Paginator(client.search_recent_tweets, keywords, max_results=100).flatten(limit=limit):
@@ -141,4 +228,16 @@ def save_tweets(tweets, filename):
     df = pd.DataFrame(tweets)
     file_path = f"data/{filename}.csv"
     df.to_csv(file_path, index=False)
-    return file_path
+
+    images_path = None
+    if download_images:
+        images_path = f"data/{filename}_images"
+        if not os.path.exists(images_path):
+            os.makedirs(images_path)
+
+        # Iterate through the tweets and download the images
+        for tweet in tweets:
+            if len(tweet["image_urls"]) > 0:
+                save_images(tweet, images_path)
+
+    return file_path, images_path

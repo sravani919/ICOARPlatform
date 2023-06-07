@@ -1,6 +1,6 @@
 import streamlit as st
 
-from data_collection import preview_tweets, save_tweets
+from data_collection import grab_tweets, save_tweets
 
 title = "Data Collection"
 
@@ -28,7 +28,7 @@ if st.sidebar.button("Preview"):
     elif keywords == "":
         st.sidebar.error("Please enter keywords")
     else:
-        start, end, tweet_count, tweets = preview_tweets(keywords, tweet_count)
+        start, end, tweet_count, tweets = grab_tweets(keywords, tweet_count)
         if not tweets:  # The list is empty
             st.sidebar.error("No tweets found with the given keywords")
         st.session_state.start = start
@@ -42,8 +42,12 @@ if st.sidebar.button("Preview"):
 if st.session_state.tweet_count != 0:
     st.text(f"There is {st.session_state.tweet_count} tweets from {st.session_state.start} to {st.session_state.end}")
     st.dataframe(st.session_state.tweets)
+
     # Having a text prompt for the name of the file to save
     filename = st.text_input("File name:", value=keywords)
+    download_images = st.checkbox("Download the images")
     if st.button("Save"):
-        file_path = save_tweets(st.session_state.tweets, filename)
-        st.success("Saved to '" + file_path + "'")
+        file_path, image_path = save_tweets(st.session_state.tweets, filename, download_images)
+        st.success("Saved data to '" + file_path + "'")
+        if download_images:
+            st.success("Successfully downloaded all the images to '" + image_path + "'")
