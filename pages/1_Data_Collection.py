@@ -10,6 +10,7 @@ st.sidebar.header(title)
 
 option = st.sidebar.multiselect("Social Medias", ["Twitter", "Reddit (Coming Soon)"])
 keywords = st.sidebar.text_input("Enter keywords:")
+must_have_images = st.sidebar.checkbox("Tweets must have images")
 tweet_count = st.sidebar.number_input("Number of tweets:", min_value=10, max_value=100, value=100)
 
 if "start" not in st.session_state:
@@ -28,7 +29,7 @@ if st.sidebar.button("Preview"):
     elif keywords == "":
         st.sidebar.error("Please enter keywords")
     else:
-        start, end, tweet_count, tweets = grab_tweets(keywords, tweet_count)
+        start, end, tweet_count, tweets = grab_tweets(keywords, tweet_count, must_have_images)
         if not tweets:  # The list is empty
             st.sidebar.error("No tweets found with the given keywords")
         st.session_state.start = start

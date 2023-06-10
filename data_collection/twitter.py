@@ -12,16 +12,21 @@ def init_connection():
     return tweepy.Client(st.secrets.api_token.twitter)
 
 
-def full_results(client, keywords, max_results):
+def full_results(client, keywords, max_results, must_have_images):
     """
     Uses extensions and fields to get a lot more data from Twitter than the default.
+    :param must_have_images: Whether every tweet must have an image attached
     :param client: The tweepy.Client made from init_connection()
     :param keywords: The keywords to search for
     :param max_results: The maximum number of results to return
     :return: The full results from the search organized as a list of dictionaries
     """
+    query = keywords
+    if must_have_images:
+        query += " has:images -is:retweet"
+
     res = client.search_recent_tweets(
-        keywords,
+        query,
         max_results=max_results,
         expansions=[
             "author_id",
@@ -49,6 +54,7 @@ def full_results(client, keywords, max_results):
             "reply_settings",
             "source",
             "text",
+            "withheld",
         ],
         user_fields=[
             "created_at",
@@ -87,7 +93,7 @@ def full_results(client, keywords, max_results):
     return res
 
 
-def get_urls(tweet, all_media):
+def get_image_urls(tweet, all_media):
     """
     Gets the image urls from the tweet
     Each tweet has a list of media keys, those keys can be used to search the media for the correct urls
@@ -100,7 +106,7 @@ def get_urls(tweet, all_media):
     except KeyError:
         return []  # If there are no media keys, there are no images in the tweet
     except TypeError:
-        return []  # Couldn't find the attachments key
+        return []  # Couldn't find the attachment's keys
 
     media_urls = []
     # Iterating through all the media to see if any of them match the media keys from the tweet
@@ -123,6 +129,10 @@ def format_tweet_results(res):
     :return: A list of dictionaries with the data we want
     """
     tweets = []
+    no_media = False
+    if "media" not in res.includes:
+        no_media = True
+
     for i in range(len(res.data)):
         id = res.data[i].id
         text = res.data[i].text
@@ -133,7 +143,7 @@ def format_tweet_results(res):
 
         # Public Metrics
         # retweet_count, reply_count, like_count, quote_count, impression_count
-        # Only retweet_count has a large variety of values, the rest are almost always 0.
+        # Only retweet_count has a large variety of values; the rest are almost always 0.
         retweet_count = res.data[i].public_metrics["retweet_count"]
 
         hashtags = []
@@ -152,7 +162,8 @@ def format_tweet_results(res):
                     mentions.append(mention["username"])
 
             # Getting direct image urls
-            image_urls = get_urls(res.data[i], res.includes["media"])
+            if not no_media:
+                image_urls = get_image_urls(res.data[i], res.includes["media"])
 
         created_at = res.data[i].created_at
 
@@ -174,15 +185,17 @@ def format_tweet_results(res):
 
 
 @st.cache_data
-def grab_tweets(keywords, count: int):
+def grab_tweets(keywords, count: int, must_have_images):
     client = init_connection()
+
+    # Seeing how many tweets there are
     res = client.get_recent_tweets_count(keywords)
     start = min([datetime.strptime(data["start"], "%Y-%m-%dT%H:%M:%S.%fZ") for data in getattr(res, "data")])
     end = max([datetime.strptime(data["end"], "%Y-%m-%dT%H:%M:%S.%fZ") for data in getattr(res, "data")])
     tweet_count = sum([data["tweet_count"] for data in getattr(res, "data")])
 
-    # Getting the tweets
-    res = full_results(client, keywords, count)
+    # Getting the actual tweets
+    res = full_results(client, keywords, count, must_have_images)
     if res.data is None:  # No tweets found with the given keywords
         return start, end, tweet_count, []
 
