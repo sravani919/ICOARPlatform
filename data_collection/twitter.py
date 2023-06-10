@@ -1,4 +1,6 @@
 import os
+import socket
+import urllib.error
 from datetime import datetime
 from urllib.request import HTTPCookieProcessor, build_opener
 
@@ -6,6 +8,8 @@ import pandas as pd
 import streamlit as st
 import tweepy
 from PIL import Image
+
+IMAGE_DOWNLOAD_MAX_ATTEMPTS = 3
 
 
 def init_connection():
@@ -205,52 +209,80 @@ def grab_tweets(keywords, count: int, must_have_images):
     return start, end, tweet_count, tweets
 
 
-def save_images(tweet, images_path):
+def download_image(url):
     """
-    Takes in a tweet dictionary and then downloads the images off the internet and saves them to the given file path
+    Downloads an image from the given url
+    :param url: The direct url to the image
+    :return: PIL Image object or None if the image couldn't be downloaded
+    """
+    if url is None:
+        return
+
+    opener = build_opener(HTTPCookieProcessor())
+
+    attempt = 0
+    while attempt < IMAGE_DOWNLOAD_MAX_ATTEMPTS:
+        try:
+            response = opener.open(url, timeout=2)
+            image = Image.open(response).convert("RGB")
+            return image
+        except urllib.error.URLError:
+            print(f"URLError opening {url}")
+        except socket.timeout:
+            print(f"Socket timeout opening {url}")
+        attempt += 1
+        print(f"Retrying... ({attempt}/{IMAGE_DOWNLOAD_MAX_ATTEMPTS})")
+
+    return
+
+
+def save_tweet_images(tweet, images_path):
+    """
+    Takes in a single tweet dictionary and then downloads the images off the internet
+    and saves them to the given file path
     :param tweet: The tweet dictionary
     :param images_path: The file path to save the images to
 
     """
     id = tweet["id"]
-    tweet_folder = images_path + "/" + str(id)  # Folder for all of the images from this tweet
+    tweet_folder = images_path + "/" + str(id)  # Folder for all the images from this tweet
     # Creating a folder for the images if it doesn't already exist
     if not os.path.exists(tweet_folder):
         os.makedirs(tweet_folder)
 
+    # Checking if the tweet has any images
     urls = tweet["image_urls"]
     if urls is None or len(urls) == 0:
         return []
 
-    opener = build_opener(HTTPCookieProcessor())
-
-    for i, url in enumerate(urls):
-        if url is None:
-            continue
-
-        response = opener.open(url)
-        image = Image.open(response).convert("RGB")
-        image.save(f"{tweet_folder}/{i}.jpg")
+    # Downloading and saving the images
+    for i in range(len(urls)):
+        image = download_image(urls[i])
+        if image is not None:
+            image.save(f"{tweet_folder}/{i}.jpg")
 
 
-def save_tweets(tweets, filename, download_images=False):
-    # client = init_connection()
-    # tweets = []
-    # for tweet in tweepy.Paginator(client.search_recent_tweets, keywords, max_results=100).flatten(limit=limit):
-    #     tweets.append({"id": tweet.id, "text": tweet.text})
+def save_tweets(tweets, filename):
     df = pd.DataFrame(tweets)
     file_path = f"data/{filename}.csv"
     df.to_csv(file_path, index=False)
 
-    images_path = None
-    if download_images:
-        images_path = f"data/{filename}_images"
+    return file_path
+
+
+def save_images(tweets, filename, i):
+    """
+    Saves the images from the given tweet to the given file path
+    Uses an index i so a loading bar can be implemented on the front end while still having all the code here
+    :param tweets: The full list of tweet dictionaries
+    :param filename: The filename being used to save the tweets
+    :param i: The index of the tweet to save the images from (allows for easy iteration for a loading bar)
+    :return: The file path to the folder containing the images from the tweet
+    """
+    images_path = f"data/{filename}_images"
+    if i == 0:
         if not os.path.exists(images_path):
             os.makedirs(images_path)
+    save_tweet_images(tweets[i], images_path)
 
-        # Iterate through the tweets and download the images
-        for tweet in tweets:
-            if len(tweet["image_urls"]) > 0:
-                save_images(tweet, images_path)
-
-    return file_path, images_path
+    return images_path
