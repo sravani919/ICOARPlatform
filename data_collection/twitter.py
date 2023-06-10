@@ -137,13 +137,21 @@ def format_tweet_results(res):
     if "media" not in res.includes:
         no_media = True
 
+    all_users = res.includes["users"].copy()
+
     for i in range(len(res.data)):
         id = res.data[i].id
         text = res.data[i].text
 
-        author_id = res.includes["users"][i]["id"]
-        author_name = res.includes["users"][i]["name"]
-        author_username = res.includes["users"][i]["username"]
+        author_id = res.data[i].author_id
+        # Searching through all the users to find the author of this tweet
+        author_username = None
+        author_name = None
+        for user in all_users:
+            if user["id"] == author_id:
+                author_username = user["username"]
+                author_name = user["name"]
+                break
 
         # Public Metrics
         # retweet_count, reply_count, like_count, quote_count, impression_count
@@ -183,6 +191,7 @@ def format_tweet_results(res):
                 "hashtags": hashtags,
                 "mentions": mentions,
                 "image_urls": image_urls,
+                # "tweet_url": f"https://twitter.com/{author_username}/status/{id}",
             }
         )
     return tweets
