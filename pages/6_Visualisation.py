@@ -5,8 +5,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import pyLDAvis
 import pyLDAvis.gensim_models as gensimvis
-import streamlit as st
 import seaborn as sns
+import streamlit as st
 from nltk.tokenize import word_tokenize
 
 if "filename_pred" not in st.session_state:
@@ -19,12 +19,10 @@ if st.button("Load"):
 
 if st.session_state.filename_pred != "":
     df = pd.read_csv(st.session_state.filename_pred)
-    options = ["Topic Modeling","Temporal Analysis", "Bar Plot", "Pie Chart"]
+    options = ["Topic Modeling", "Temporal Analysis", "Bar Plot", "Pie Chart"]
     selected_option = st.selectbox("Select an type of visualisation", options)
     data = df
     fig, ax = plt.subplots()
-
-    
 
     if selected_option == "Bar Plot":
         fig, ax = plt.subplots()
@@ -75,38 +73,38 @@ if st.session_state.filename_pred != "":
 
     elif selected_option == "Temporal Analysis":
         fig, ax = plt.subplots(figsize=(10, 6))
-        data['date'] = pd.to_datetime(data['date'], errors='coerce')
+        data["date"] = pd.to_datetime(data["date"], errors="coerce")
 
-        data = data[data['date'].notna()]
+        data = data[data["date"].notna()]
 
-        keywords = st.text_input("Enter the keywords of interest seperated by comma (i.e., covid, lockdown, ... ):").lower().split(',')
-        
-
-
-
+        keywords = (
+            st.text_input("Enter the keywords of interest seperated by comma (i.e., covid, lockdown, ... ):")
+            .lower()
+            .split(",")
+        )
 
         # keywords = input("Enter the keywords of interest seperated by comma (i.e., covid, lockdown, ... ): ")
 
-        masks = [data['text'].str.contains(keyword.strip(), case=False, na=False) for keyword in keywords]
+        masks = [data["text"].str.contains(keyword.strip(), case=False, na=False) for keyword in keywords]
 
-        daily_counts = [data.loc[mask, 'date'].value_counts().sort_index().resample('D').sum() for mask in masks]
+        daily_counts = [data.loc[mask, "date"].value_counts().sort_index().resample("D").sum() for mask in masks]
 
-        colors = ['blue', 'red', 'purple']
+        colors = ["blue", "red", "purple"]
         labels = [f"{keyword.capitalize()}" for keyword in keywords]
 
         sns.set(style="whitegrid")
         color_palette = sns.color_palette("Set2", len(daily_counts))
 
         for i, count in enumerate(daily_counts):
-            ax.plot(count.index, count.values, color=color_palette[i],linewidth=3, label=labels[i])
+            ax.plot(count.index, count.values, color=color_palette[i], linewidth=3, label=labels[i])
 
-        ax.set_xlabel('Date')
-        ax.set_ylabel('Tweets Count')
+        ax.set_xlabel("Date")
+        ax.set_ylabel("Tweets Count")
         ax.legend()
         ax.set_xticks(count.index)  # Set the tick locations to count.index
         ax.xaxis.set_major_locator(plt.MaxNLocator(6))
         ax.grid(True)
-        plt.xticks(rotation=45, ha='right')
+        plt.xticks(rotation=45, ha="right")
         fig.tight_layout()
 
         # Display the plot
