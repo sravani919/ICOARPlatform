@@ -1,7 +1,7 @@
 import os
 import socket
+import time  # For sleeping between requests
 import urllib.error
-from datetime import datetime
 from urllib.request import HTTPCookieProcessor, build_opener
 
 import pandas as pd
@@ -16,84 +16,160 @@ def init_connection():
     return tweepy.Client(st.secrets.api_token.twitter)
 
 
-def full_results(client, keywords, max_results, must_have_images):
+def full_results(client, keywords, count, must_have_images, start_time, end_time):
     """
     Uses extensions and fields to get a lot more data from Twitter than the default.
+    :param start_time: The oldest date to get tweets from
     :param must_have_images: Whether every tweet must have an image attached
     :param client: The tweepy.Client made from init_connection()
     :param keywords: The keywords to search for
-    :param max_results: The maximum number of results to return
+    :param count: The number of tweets to return
     :return: The full results from the search organized as a list of dictionaries
     """
+    if start_time is not None:
+        start_time = start_time.strftime("%Y-%m-%dT0:0:0Z")
+    if end_time is not None:
+        end_time = end_time.strftime("%Y-%m-%dT0:0:0Z")
+
+    pb = st.progress(0)
+    wn = st.empty()
+    wn.empty()
+
     query = keywords
     if must_have_images:
         query += " has:images -is:retweet"
 
-    res = client.search_recent_tweets(
-        query,
-        max_results=max_results,
-        expansions=[
-            "author_id",
-            "referenced_tweets.id",
-            "referenced_tweets.id.author_id",
-            "entities.mentions.username,geo.place_id",
-            "attachments.media_keys",
-        ],
-        tweet_fields=[
-            "attachments",
-            "author_id",
-            "context_annotations",
-            "conversation_id",
-            "created_at",
-            "edit_controls",
-            "edit_history_tweet_ids",
-            "entities",
-            "geo",
-            "id",
-            "in_reply_to_user_id",
-            "lang",
-            "possibly_sensitive",
-            "public_metrics",
-            "referenced_tweets",
-            "reply_settings",
-            "source",
-            "text",
-            "withheld",
-        ],
-        user_fields=[
-            "created_at",
-            "description",
-            "entities",
-            "id",
-            "location",
-            "name",
-            "pinned_tweet_id",
-            "profile_image_url",
-            "protected",
-            "public_metrics",
-            "url",
-            "username",
-            "verified",
-            "verified_type",
-            "withheld",
-        ],
-        place_fields=["contained_within", "country", "country_code", "full_name", "geo", "id", "name", "place_type"],
-        media_fields=[
-            "alt_text",
-            "duration_ms",
-            "height",
-            "media_key",
-            "non_public_metrics",
-            "organic_metrics",
-            "preview_image_url",
-            "promoted_metrics",
-            "public_metrics",
-            "type",
-            "url",
-            "variants",
-            "width",
-        ],
-    )
+    total_tweets_gotten = 0
+    next_token = None
+    res = None
+    # Doing multiple requests to get all the tweets
+    while total_tweets_gotten < count:
+        c = count - total_tweets_gotten
+        if c > 500:
+            c = 500
+        elif c < 10:
+            c = 10
+
+        print("Still need:", count - total_tweets_gotten, "Getting", c, "tweets with next token:", next_token)
+        try:
+            sub_res = client.search_all_tweets(
+                query,
+                max_results=c,
+                expansions=[
+                    "author_id",
+                    "referenced_tweets.id",
+                    "referenced_tweets.id.author_id",
+                    "entities.mentions.username,geo.place_id",
+                    "attachments.media_keys",
+                ],
+                tweet_fields=[
+                    "attachments",
+                    "author_id",
+                    "conversation_id",
+                    "created_at",
+                    "edit_controls",
+                    "edit_history_tweet_ids",
+                    "entities",
+                    "geo",
+                    "id",
+                    "in_reply_to_user_id",
+                    "lang",
+                    "possibly_sensitive",
+                    "public_metrics",
+                    "referenced_tweets",
+                    "reply_settings",
+                    "source",
+                    "text",
+                    "withheld",
+                ],
+                user_fields=[
+                    "created_at",
+                    "description",
+                    "entities",
+                    "id",
+                    "location",
+                    "name",
+                    "pinned_tweet_id",
+                    "profile_image_url",
+                    "protected",
+                    "public_metrics",
+                    "url",
+                    "username",
+                    "verified",
+                    "verified_type",
+                    "withheld",
+                ],
+                place_fields=[
+                    "contained_within",
+                    "country",
+                    "country_code",
+                    "full_name",
+                    "geo",
+                    "id",
+                    "name",
+                    "place_type",
+                ],
+                media_fields=[
+                    "alt_text",
+                    "duration_ms",
+                    "height",
+                    "media_key",
+                    "non_public_metrics",
+                    "organic_metrics",
+                    "preview_image_url",
+                    "promoted_metrics",
+                    "public_metrics",
+                    "type",
+                    "url",
+                    "variants",
+                    "width",
+                ],
+                next_token=next_token,
+                start_time=start_time,
+                end_time=end_time,
+            )
+
+            # Getting the next token to avoid duplicates
+            if (
+                "next_token" not in sub_res.meta
+                or sub_res.meta["next_token"] is None
+                or sub_res is None
+                or sub_res.data is None
+                or len(sub_res.data) == 0
+            ):
+                wn.warning("No more tweets that match the search criteria")
+                return res
+            else:
+                next_token = sub_res.meta["next_token"]
+
+            # Appending this sub_res to the res
+            if res is None:
+                res = sub_res
+            else:
+                res.data.extend(sub_res.data)
+                for key in sub_res.includes:
+                    if key not in res.includes:
+                        res.includes[key] = sub_res.includes[key]
+                    else:
+                        res.includes[key].extend(sub_res.includes[key])
+
+            # Updating the count
+            total_tweets_gotten += len(sub_res.data)
+
+        except tweepy.errors.TooManyRequests:
+            wn.warning("Too many requests, sleeping for 3 seconds")
+            time.sleep(3)
+            continue
+        if total_tweets_gotten > count:
+            total_tweets_gotten = count
+        pb.progress(total_tweets_gotten / count, text=f"{total_tweets_gotten}/{count} tweets")
+
+    pb.empty()
+    wn.empty()
+    # Trimming excess tweets
+    while len(res.data) > count:
+        res.data.pop()
+
     return res
 
 
@@ -198,24 +274,17 @@ def format_tweet_results(res):
 
 
 @st.cache_data
-def grab_tweets(keywords, count: int, must_have_images):
+def grab_tweets(keywords, count: int, must_have_images, start_time, end_time):
     client = init_connection()
 
-    # Seeing how many tweets there are
-    res = client.get_recent_tweets_count(keywords)
-    start = min([datetime.strptime(data["start"], "%Y-%m-%dT%H:%M:%S.%fZ") for data in getattr(res, "data")])
-    end = max([datetime.strptime(data["end"], "%Y-%m-%dT%H:%M:%S.%fZ") for data in getattr(res, "data")])
-    tweet_count = sum([data["tweet_count"] for data in getattr(res, "data")])
-
     # Getting the actual tweets
-    res = full_results(client, keywords, count, must_have_images)
-    if res.data is None:  # No tweets found with the given keywords
-        return start, end, tweet_count, []
-
+    res = full_results(client, keywords, count, must_have_images, start_time, end_time)
+    if res is None:
+        return []
     # Formatting the tweets into a list of dictionaries
     tweets = format_tweet_results(res)
 
-    return start, end, tweet_count, tweets
+    return tweets
 
 
 def download_image(url):
