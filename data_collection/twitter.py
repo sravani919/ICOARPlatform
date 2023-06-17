@@ -32,6 +32,8 @@ def full_results(client, keywords, count, must_have_images, start_time, end_time
         end_time = end_time.strftime("%Y-%m-%dT0:0:0Z")
 
     pb = st.progress(0)
+    pb_start = time.time()
+
     wn = st.empty()
     wn.empty()
 
@@ -50,7 +52,6 @@ def full_results(client, keywords, count, must_have_images, start_time, end_time
         elif c < 10:
             c = 10
 
-        print("Still need:", count - total_tweets_gotten, "Getting", c, "tweets with next token:", next_token)
         try:
             sub_res = client.search_all_tweets(
                 query,
@@ -162,7 +163,10 @@ def full_results(client, keywords, count, must_have_images, start_time, end_time
             continue
         if total_tweets_gotten > count:
             total_tweets_gotten = count
-        pb.progress(total_tweets_gotten / count, text=f"{total_tweets_gotten}/{count} tweets")
+        time_left = (time.time() - pb_start) / total_tweets_gotten * (count - total_tweets_gotten)
+        pb.progress(
+            total_tweets_gotten / count, text=f"{total_tweets_gotten}/{count} tweets gotten, {time_left:.2f}s left"
+        )
 
     pb.empty()
     wn.empty()
