@@ -1,3 +1,4 @@
+import datetime
 import time
 
 import streamlit as st
@@ -28,8 +29,9 @@ if "tweets" not in st.session_state:
     st.session_state.tweets = []
 
 if st.sidebar.checkbox("Choose date range"):
-    st.session_state.start = st.sidebar.date_input("Start date")
-    st.session_state.end = st.sidebar.date_input("End date")
+    # The min_value is the date when Twitter was launched
+    st.session_state.start = st.sidebar.date_input("Start date", min_value=datetime.date(2006, 3, 21))
+    st.session_state.end = st.sidebar.date_input("End date", min_value=datetime.date(2006, 3, 21))
 
 if st.sidebar.button("Preview"):
     if option == []:
