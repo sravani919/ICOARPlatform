@@ -2,6 +2,7 @@ import glob
 
 import gensim
 import matplotlib.pyplot as plt
+import networkx as nx
 import pandas as pd
 import pyLDAvis
 import pyLDAvis.gensim_models as gensimvis
@@ -19,7 +20,7 @@ if st.button("Load"):
 
 if st.session_state.filename_pred != "":
     df = pd.read_csv(st.session_state.filename_pred)
-    options = ["Topic Modeling", "Temporal Analysis", "Bar Plot", "Pie Chart"]
+    options = ["Topic Modeling", "Temporal Analysis", "User Network", "Bar Plot", "Pie Chart"]
     selected_option = st.selectbox("Select an type of visualisation", options)
     data = df
     fig, ax = plt.subplots()
@@ -108,4 +109,54 @@ if st.session_state.filename_pred != "":
         fig.tight_layout()
 
         # Display the plot
+        st.pyplot(fig)
+
+    elif selected_option == "User Network":
+        fig, ax = plt.subplots(figsize=(10, 6))
+        keywords = st.text_input("Enter the keywords (comma-separated): ")
+        keywords = [keyword.strip() for keyword in keywords.split(",")]
+
+        G = nx.Graph()
+
+        # Define color palette
+        colors = sns.color_palette("Set2", len(keywords))
+
+        filtered_data = data[data["text"].str.contains("|".join(keywords), case=False)]
+
+        # Iterate over each filtered row
+        for index, row in filtered_data.iterrows():
+            text = row["text"]
+            user = row["author_username"]
+
+            # Check which keyword(s) are present in the text
+            present_keywords = [keyword.capitalize() for keyword in keywords if keyword.lower() in text.lower()]
+
+            # Add edges for the present keywords
+            for keyword in present_keywords:
+                G.add_edge(user, keyword, color=colors[keywords.index(keyword.lower())])
+
+        # Position nodes using Fruchterman-Reingold layout
+        pos = nx.fruchterman_reingold_layout(G)
+
+        # Draw edges with colors
+        edges = [(u, v) for (u, v, d) in G.edges(data=True)]
+
+        # Draw the edges
+        for edge in edges:
+            color = G[edge[0]][edge[1]]["color"]
+            nx.draw_networkx_edges(G, pos, edgelist=[edge], edge_color=color, alpha=0.5)
+
+        # Draw the nodes (hidden in this case)
+        nx.draw_networkx_nodes(G, pos, node_color="white", node_size=0)
+        plt.axis("off")
+
+        # Create legends
+        legends = [
+            plt.Line2D([], [], color=colors[i], alpha=0.5, label=keywords[i].capitalize()) for i in range(len(keywords))
+        ]
+
+        # Add legends to the plot
+        plt.legend(handles=legends, loc="upper right")
+
+        # Show the graph
         st.pyplot(fig)
