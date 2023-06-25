@@ -27,6 +27,10 @@ spacy-transformers = "^1.0.6"
 en_core_web_sm = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.5.0/en_core_web_sm-3.5.0.tar.gz" }
 huggingface-hub = "^0.14.1"
 matplotlib = "^3.7.1"
+gensim = "^4.3.1"
+seaborn = "^0.12.2"
+networkx = "^3.1"
+praw = "^7.7.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"
