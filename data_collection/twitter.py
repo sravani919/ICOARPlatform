@@ -1,15 +1,11 @@
 import os
-import socket
 import time  # For sleeping between requests
-import urllib.error
-from urllib.request import HTTPCookieProcessor, build_opener
 
 import pandas as pd
 import streamlit as st
 import tweepy
-from PIL import Image
 
-IMAGE_DOWNLOAD_MAX_ATTEMPTS = 3
+from .utils import download_image
 
 
 def init_connection():
@@ -289,33 +285,6 @@ def grab_tweets(keywords, count: int, must_have_images, start_time, end_time):
     tweets = format_tweet_results(res)
 
     return tweets
-
-
-def download_image(url):
-    """
-    Downloads an image from the given url
-    :param url: The direct url to the image
-    :return: PIL Image object or None if the image couldn't be downloaded
-    """
-    if url is None:
-        return
-
-    opener = build_opener(HTTPCookieProcessor())
-
-    attempt = 0
-    while attempt < IMAGE_DOWNLOAD_MAX_ATTEMPTS:
-        try:
-            response = opener.open(url, timeout=2)
-            image = Image.open(response).convert("RGB")
-            return image
-        except urllib.error.URLError:
-            print(f"URLError opening {url}")
-        except socket.timeout:
-            print(f"Socket timeout opening {url}")
-        attempt += 1
-        print(f"Retrying... ({attempt}/{IMAGE_DOWNLOAD_MAX_ATTEMPTS})")
-
-    return
 
 
 def save_tweet_images(tweet, images_path):

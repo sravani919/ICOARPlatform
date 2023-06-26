@@ -3,7 +3,7 @@ import time
 
 import streamlit as st
 
-from data_collection import grab_tweets, save_images, save_tweets
+from data_collection import reddit, twitter
 
 title = "Data Collection"
 
@@ -11,13 +11,21 @@ st.set_page_config(page_title=title)
 
 st.sidebar.header(title)
 
-option = st.sidebar.selectbox("Social Medias", ["Twitter", "Reddit (Coming Soon)"])
-keywords = st.sidebar.text_input("Enter keywords or any query string:")
+option = st.sidebar.multiselect("Social Medias", ["Twitter", "Reddit"])
+thing_name = ""  # This is for the text prompt for the number of tweets/posts
+if len(option) > 0:
+    if "Twitter" in option:
+        thing_name = "tweets"
+    elif "Reddit" in option:
+        thing_name = "posts"
+    elif "Twitter" in option and "Reddit" in option:
+        thing_name = "tweets/posts"
+    else:
+        raise ValueError("Invalid options: " + str(option))
 
-if option == "Twitter":
-    must_have_images = st.sidebar.checkbox("Tweets must have images")
-    tweet_count = st.sidebar.number_input("Number of tweets:", min_value=10, max_value=10000, value=100)
-
+    keywords = st.sidebar.text_input("Enter keywords:")
+    must_have_images = st.sidebar.checkbox(thing_name.capitalize() + " must have images")
+    tweet_count = st.sidebar.number_input(f"Number of {thing_name}:", min_value=10, max_value=10000, value=100)
 
 if "start" not in st.session_state:
     st.session_state.start = None
@@ -39,12 +47,16 @@ if st.sidebar.button("Preview"):
     elif keywords == "":
         st.sidebar.error("Please enter keywords")
     else:
-        if option == "Twitter":
-            tweets = grab_tweets(keywords, tweet_count, must_have_images, st.session_state.start, st.session_state.end)
+        if "Twitter" in option:
+            start, end, tweet_count, tweets = twitter.grab_tweets(
+                keywords, tweet_count, must_have_images, st.session_state.start, st.session_state.end
+            )
             if not tweets:  # The list is empty
                 st.sidebar.error("No tweets found with the given keywords")
+            st.session_state.start = start
+            st.session_state.end = end
+            st.session_state.tweet_count = tweet_count
             st.session_state.tweets = tweets
-            st.session_state.tweet_count = len(tweets)
             if len(tweets) > 0:
                 st.success(
                     f'{len(tweets)} tweets are now available. \
@@ -52,25 +64,66 @@ if st.sidebar.button("Preview"):
                     icon="✅",
                 )
 
-if st.session_state.tweet_count != 0:
+        if "Reddit" in option:
+            start, end, tweet_count, posts = reddit.grab_posts(keywords, tweet_count, must_have_images)
+            if not posts:
+                st.sidebar.error("No posts found with the given keywords")
+            st.session_state.start = start
+            st.session_state.end = end
+            st.session_state.tweet_count = tweet_count
+            st.session_state.posts = posts
+            if len(posts) > 0:
+                st.success(
+                    f'{len(posts)} posts are now available. \
+                    Click on the "Save" button below to store all the posts.',
+                    icon="✅",
+                )
+
+if st.session_state.tweet_count != 0 and st.session_state.tweets:  # Update this condition
+    st.text(f"There are {st.session_state.tweet_count} tweets from {st.session_state.start} to {st.session_state.end}")
+    st.text(f"Here are {len(st.session_state.tweets)} tweets")
     st.dataframe(st.session_state.tweets)
 
     # Having a text prompt for the name of the file to save
     filename = st.text_input("File name:", value=keywords)
     download_images = st.checkbox("Download the images")
     if st.button("Save"):
-        file_path = save_tweets(st.session_state.tweets, filename)
+        file_path = twitter.save_tweets(st.session_state.tweets, filename)
         st.success("Saved data to '" + file_path + "'")
         download_images_progress_bar = st.empty()
         if download_images:
             image_path = ""
             pb_start = time.time()
             for i in range(len(st.session_state.tweets)):
-                image_path = save_images(st.session_state.tweets, filename, i)
+                image_path = twitter.save_images(st.session_state.tweets, filename, i)
                 time_left = (time.time() - pb_start) * (len(st.session_state.tweets) - i) / (i + 1)
                 download_images_progress_bar.progress(
                     i / len(st.session_state.tweets),
                     text=f"Downloading images (images from {i+1}/{len(st.session_state.tweets)} tweets downloaded) \
                     - {time_left:.2f} seconds left",
+                )
+            st.success("Successfully downloaded all the images to '" + image_path + "'")
+
+elif st.session_state.tweet_count != 0 and st.session_state.posts:  # Update this condition
+    st.text(
+        f"There are {st.session_state.tweet_count} Reddit posts from {st.session_state.start} to {st.session_state.end}"
+    )
+    st.text(f"Here are {len(st.session_state.posts)} posts")
+    st.dataframe(st.session_state.posts)
+
+    # Having a text prompt for the name of the file to save
+    filename = st.text_input("File name:", value=keywords)
+    download_imagesa = st.checkbox("Download the images")
+    if st.button("Save"):
+        file_path = reddit.save_data(st.session_state.posts, filename)
+        st.success("Saved data to '" + file_path + "'")
+        download_images_progress_bar = st.progress(0)
+        if download_imagesa:
+            image_path = ""
+            for i in range(len(st.session_state.posts)):
+                image_path = reddit.download_images(st.session_state.posts, filename, i)
+                download_images_progress_bar.progress(
+                    i / len(st.session_state.posts),
+                    text=f"Downloading images (images from {i+1}/{len(st.session_state.posts)} tweets downloaded)",
                 )
             st.success("Successfully downloaded all the images to '" + image_path + "'")
