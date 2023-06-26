@@ -40,6 +40,9 @@ if st.sidebar.checkbox("Choose date range"):
     # The min_value is the date when Twitter was launched
     st.session_state.start = st.sidebar.date_input("Start date", min_value=datetime.date(2006, 3, 21))
     st.session_state.end = st.sidebar.date_input("End date", min_value=datetime.date(2006, 3, 21))
+else:
+    st.session_state.start = None
+    st.session_state.end = None
 
 if st.sidebar.button("Preview"):
     if option == []:
@@ -48,14 +51,13 @@ if st.sidebar.button("Preview"):
         st.sidebar.error("Please enter keywords")
     else:
         if "Twitter" in option:
-            start, end, tweet_count, tweets = twitter.grab_tweets(
+            tweets = twitter.grab_tweets(
                 keywords, tweet_count, must_have_images, st.session_state.start, st.session_state.end
             )
             if not tweets:  # The list is empty
                 st.sidebar.error("No tweets found with the given keywords")
-            st.session_state.start = start
-            st.session_state.end = end
-            st.session_state.tweet_count = tweet_count
+
+            st.session_state.tweet_count = len(tweets)
             st.session_state.tweets = tweets
             if len(tweets) > 0:
                 st.success(
