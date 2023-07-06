@@ -30,7 +30,6 @@ def preprocess(filename, given_options):
     if given_options[1]:
         # It's important that this one goes first, so the other options don't mess with the text in
         # a way that makes it harder to detect the URLs, Hashtags, and Mentions
-        # df["text"] = df["text"].apply(p.clean)
         df["text"] = df.apply(remove_url_hashtags_mentions, axis=1)
     if given_options[2]:
         df["text"] = df.apply(strip_special_characters, axis=1)
@@ -45,7 +44,6 @@ def preprocess(filename, given_options):
     if given_options[7]:
         df["text"] = df.apply(strip_punctuation, axis=1)
     if given_options[8]:  # Removes extra spaces
-        # df["text"] = df["text"].apply(lambda x: " ".join(x.split()))
         df["text"] = df.apply(remove_extra_spaces, axis=1)
 
     # Shift rows the fill gaps in the index from the removed rows
