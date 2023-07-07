@@ -41,6 +41,8 @@ def format_tweets(tweets):
         for link in tweet.links:
             links.append(link.url)
 
+        place = tweet.place.fullName if tweet.place is not None else None
+
         formatted_tweet = {
             "id": tweet.id,
             "text": tweet.rawContent,
@@ -52,7 +54,7 @@ def format_tweets(tweets):
             "mentions": mentions,
             "hashtags": tweet.hashtags,
             "coordinates": coordinates,
-            "place": tweet.place,
+            "place": place,
             "url": tweet.url,
             "image_urls": image_urls,
             "links": links,
