@@ -230,3 +230,6 @@ models/
 
 ### Intellij ###
 .idea
+
+### twscraoe ###
+accounts.db
