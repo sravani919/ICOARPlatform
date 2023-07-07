@@ -30,7 +30,7 @@ def preprocess(filename, given_options):
     if given_options[1]:
         # It's important that this one goes first, so the other options don't mess with the text in
         # a way that makes it harder to detect the URLs, Hashtags, and Mentions
-        df["text"] = df["text"].apply(p.clean)
+        df["text"] = df.apply(remove_url_hashtags_mentions, axis=1)
     if given_options[2]:
         df["text"] = df.apply(strip_special_characters, axis=1)
     if given_options[3]:
@@ -44,7 +44,7 @@ def preprocess(filename, given_options):
     if given_options[7]:
         df["text"] = df.apply(strip_punctuation, axis=1)
     if given_options[8]:  # Removes extra spaces
-        df["text"] = df["text"].apply(lambda x: " ".join(x.split()))
+        df["text"] = df.apply(remove_extra_spaces, axis=1)
 
     # Shift rows the fill gaps in the index from the removed rows
     df.reset_index(drop=True, inplace=True)
@@ -99,3 +99,13 @@ def strip_stop_words(row):
 def lemmatize_words(row):
     doc = nlp(row["text"])
     return " ".join([token.lemma_ for token in doc])
+
+
+@none_avoidance
+def remove_extra_spaces(row):
+    return " ".join(row["text"].split())
+
+
+@none_avoidance
+def remove_url_hashtags_mentions(row):
+    return p.clean(row["text"])
