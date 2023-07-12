@@ -4,6 +4,7 @@ import gensim
 import matplotlib.pyplot as plt
 import networkx as nx
 import pandas as pd
+import plotly.graph_objects as go
 import pyLDAvis
 import pyLDAvis.gensim_models as gensimvis
 import seaborn as sns
@@ -90,26 +91,70 @@ if st.session_state.filename_pred != "":
 
         daily_counts = [data.loc[mask, "date"].value_counts().sort_index().resample("D").sum() for mask in masks]
 
-        colors = ["blue", "red", "purple"]
-        labels = [f"{keyword.capitalize()}" for keyword in keywords]
+        # Create the layout for the first figure (daily counts)
+        layout_counts = go.Layout(
+            title="Daily Text Pattern Counts",
+            xaxis=dict(title="Date"),
+            yaxis=dict(title="Count"),
+            legend=dict(orientation="h"),
+        )
 
-        sns.set(style="whitegrid")
-        color_palette = sns.color_palette("Set2", len(daily_counts))
+        # Create the figure for the first figure (daily counts)
+        fig_counts = go.Figure(layout=layout_counts)
 
+        # Add traces to the first figure
         for i, count in enumerate(daily_counts):
-            ax.plot(count.index, count.values, color=color_palette[i], linewidth=3, label=labels[i])
+            fig_counts.add_trace(go.Scatter(x=count.index, y=count.values, mode="lines", name=keywords[i].capitalize()))
 
-        ax.set_xlabel("Date")
-        ax.set_ylabel("Tweets Count")
-        ax.legend()
-        ax.set_xticks(count.index)  # Set the tick locations to count.index
-        ax.xaxis.set_major_locator(plt.MaxNLocator(6))
-        ax.grid(True)
-        plt.xticks(rotation=45, ha="right")
-        fig.tight_layout()
+        # Display the first figure (daily counts)
+        # fig_counts.show()
+        st.plotly_chart(fig_counts)
+
+        # Create the layout for the second figure (top posters)
+        layout_top_posters = go.Layout(
+            title="Top Posters for Each Keyword", xaxis=dict(title="User"), yaxis=dict(title="Count"), barmode="group"
+        )
+
+        # Create the figure for the second figure (top posters)
+        fig_top_posters = go.Figure(layout=layout_top_posters)
+
+        # Add traces to the second figure
+        for i, mask in enumerate(masks):
+            top_posters = data.loc[mask, "user_name"].value_counts().nlargest(10)
+            fig_top_posters.add_trace(go.Bar(x=top_posters.index, y=top_posters.values, name=keywords[i].capitalize()))
+
+        # Display the second figure (top posters)
+        # fig_top_posters.show()
+        # fig.tight_layout()
 
         # Display the plot
-        st.pyplot(fig)
+        st.plotly_chart(fig_top_posters)
+
+        trace1 = go.Scatter(x=daily_counts.index, y=daily_counts.values, mode="lines", name="Daily Tweet Count")
+
+        # Create the layout for daily tweet counts
+        layout1 = go.Layout(title="Daily Tweet Counts", xaxis=dict(title="Date"), yaxis=dict(title="Count"))
+
+        # Create the figure for daily tweet counts
+        fig1 = go.Figure(data=[trace1], layout=layout1)
+
+        # Display the figure for daily tweet counts
+        st.plotly_chart(fig1)
+
+        # Calculate the top 10 posters
+        top_posters = data["user_name"].value_counts().nlargest(10)
+
+        # Create a bar plot for the top 10 posters
+        trace2 = go.Bar(x=top_posters.index, y=top_posters.values, name="Top 10 Posters")
+
+        # Create the layout for top posters
+        layout2 = go.Layout(title="Top 10 Posters", xaxis=dict(title="User"), yaxis=dict(title="Tweet Count"))
+
+        # Create the figure for top posters
+        fig2 = go.Figure(data=[trace2], layout=layout2)
+
+        # Display the figure for top posters
+        st.plotly_chart(fig2)
 
     elif selected_option == "User Network":
         fig, ax = plt.subplots(figsize=(10, 6))
