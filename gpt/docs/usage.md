@@ -5,4 +5,3 @@ chain = load_chain("chain.yaml")
 chain.run("YOUR TEXT")
 
 ```
-
