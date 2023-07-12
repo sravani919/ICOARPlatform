@@ -2,7 +2,6 @@ from collections import defaultdict
 from typing import List
 
 import streamlit as st
-
 from doccano_mini.models.entity import Entity
 from doccano_mini.storages.session_storage import SessionStorage
 

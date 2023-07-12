@@ -7,12 +7,7 @@ import streamlit as st
 from langchain.chains import LLMChain
 from langchain.prompts.few_shot import FewShotPromptTemplate
 
-from gpt.components import (
-    display_download_button,
-    openai_model_form,
-    task_instruction_editor,
-    usage,
-)
+from gpt.components import display_download_button, openai_model_form, task_instruction_editor, usage
 from gpt.utils import escape_markdown
 
 

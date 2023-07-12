@@ -1,5 +1,4 @@
 import streamlit as st
-
 from doccano_mini.models.stepper import Stepper
 from doccano_mini.storages.session_storage import SessionStorage
 
