@@ -4,6 +4,7 @@ import gensim
 import matplotlib.pyplot as plt
 import networkx as nx
 import pandas as pd
+import plotly.graph_objects as go
 import pyLDAvis
 import pyLDAvis.gensim_models as gensimvis
 import seaborn as sns
@@ -45,28 +46,22 @@ if st.session_state.filename_pred != "":
     elif selected_option == "Topic Modeling":
         data = data["text"].tolist()
 
-        # Tokenize the documents
         tokenized_data = [word_tokenize(text) for text in data]
 
-        # Create dictionary and corpus
         dictionary = gensim.corpora.Dictionary(tokenized_data)
         corpus = [dictionary.doc2bow(text) for text in tokenized_data]
 
-        # Train LDA model
         lda_model = gensim.models.LdaModel(corpus=corpus, id2word=dictionary, num_topics=10, passes=10)
 
-        # Extract topic labels
         topic_labels = []
         topics = lda_model.show_topics(num_topics=10, num_words=10, formatted=False)
         for topic in topics:
             words = [word for word, _ in topic[1]]
             topic_labels.append(" ".join(words))
 
-        # Display topic labels
         for i, label in enumerate(topic_labels):
             st.write(f"Topic {i + 1}: {label}")
 
-        # Prepare data for visualization
         vis_data = gensimvis.prepare(lda_model, corpus, dictionary)
         html_string = pyLDAvis.prepared_data_to_html(vis_data)
 
@@ -84,32 +79,53 @@ if st.session_state.filename_pred != "":
             .split(",")
         )
 
-        # keywords = input("Enter the keywords of interest seperated by comma (i.e., covid, lockdown, ... ): ")
-
         masks = [data["text"].str.contains(keyword.strip(), case=False, na=False) for keyword in keywords]
 
         daily_counts = [data.loc[mask, "date"].value_counts().sort_index().resample("D").sum() for mask in masks]
 
-        colors = ["blue", "red", "purple"]
-        labels = [f"{keyword.capitalize()}" for keyword in keywords]
+        layout_counts = go.Layout(
+            title="Daily Text Pattern Counts",
+            xaxis=dict(title="Date"),
+            yaxis=dict(title="Count"),
+            legend=dict(orientation="h"),
+        )
 
-        sns.set(style="whitegrid")
-        color_palette = sns.color_palette("Set2", len(daily_counts))
+        fig_counts = go.Figure(layout=layout_counts)
 
         for i, count in enumerate(daily_counts):
-            ax.plot(count.index, count.values, color=color_palette[i], linewidth=3, label=labels[i])
+            fig_counts.add_trace(go.Scatter(x=count.index, y=count.values, mode="lines", name=keywords[i].capitalize()))
 
-        ax.set_xlabel("Date")
-        ax.set_ylabel("Tweets Count")
-        ax.legend()
-        ax.set_xticks(count.index)  # Set the tick locations to count.index
-        ax.xaxis.set_major_locator(plt.MaxNLocator(6))
-        ax.grid(True)
-        plt.xticks(rotation=45, ha="right")
-        fig.tight_layout()
+        st.plotly_chart(fig_counts)
 
-        # Display the plot
-        st.pyplot(fig)
+        layout_top_posters = go.Layout(
+            title="Top Posters for Each Keyword", xaxis=dict(title="User"), yaxis=dict(title="Count"), barmode="group"
+        )
+
+        fig_top_posters = go.Figure(layout=layout_top_posters)
+
+        for i, mask in enumerate(masks):
+            top_posters = data.loc[mask, "user_name"].value_counts().nlargest(10)
+            fig_top_posters.add_trace(go.Bar(x=top_posters.index, y=top_posters.values, name=keywords[i].capitalize()))
+
+        st.plotly_chart(fig_top_posters)
+
+        trace1 = go.Scatter(x=daily_counts.index, y=daily_counts.values, mode="lines", name="Daily Tweet Count")
+
+        layout1 = go.Layout(title="Daily Tweet Counts", xaxis=dict(title="Date"), yaxis=dict(title="Count"))
+
+        fig1 = go.Figure(data=[trace1], layout=layout1)
+
+        st.plotly_chart(fig1)
+
+        top_posters = data["user_name"].value_counts().nlargest(10)
+
+        trace2 = go.Bar(x=top_posters.index, y=top_posters.values, name="Top 10 Posters")
+
+        layout2 = go.Layout(title="Top 10 Posters", xaxis=dict(title="User"), yaxis=dict(title="Tweet Count"))
+
+        fig2 = go.Figure(data=[trace2], layout=layout2)
+
+        st.plotly_chart(fig2)
 
     elif selected_option == "User Network":
         fig, ax = plt.subplots(figsize=(10, 6))
