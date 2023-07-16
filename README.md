@@ -41,6 +41,14 @@ Integrative Cyberinfrastructure for Online Abuse Research (ICOAR)
     streamlit run Home.py
     ```
 
+6. Create folder /model in ICOAR project directory. </br>
+   Download the image classification model from - https://drive.google.com/drive/folders/1q0bxYKrcQgEgg0Ps2N_WxgTApQK997g9 </br>
+   Copy the model in the above directory.
+
+
+7. Create folder /data/images/image in ICOAR project directory.
+
+
 ## Contributing
 
 1. Install development and testing dependencies
