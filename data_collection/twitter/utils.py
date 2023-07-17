@@ -1,7 +1,5 @@
 import os
 
-import pandas as pd
-
 from data_collection.utils import download_image
 
 
@@ -47,11 +45,3 @@ def save_images(tweets, filename, i):
     save_tweet_images(tweets[i], images_path)
 
     return images_path
-
-
-def save_tweets(tweets, filename):
-    df = pd.DataFrame(tweets)
-    file_path = f"data/{filename}.csv"
-    df.to_csv(file_path, index=False)
-
-    return file_path

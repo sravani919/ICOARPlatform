@@ -226,6 +226,7 @@ Temporary Items
 
 ### ICOAR Project ###
 data/
+predicted/
 models/
 
 ### Intellij ###

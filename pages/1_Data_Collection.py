@@ -4,6 +4,7 @@ import time
 import streamlit as st
 
 from data_collection import reddit, tiktok, twitter
+from data_collection.utils import save_data
 
 title = "Data Collection"
 
@@ -101,7 +102,7 @@ if st.session_state.post_count != 0 and st.session_state.tweets:  # Update this 
     filename = st.text_input("File name:", value=keywords)
     download_images = st.checkbox("Download the images")
     if st.button("Save"):
-        file_path = twitter.save_tweets(st.session_state.tweets, filename)
+        file_path = save_data(st.session_state.tweets, filename)
         st.success("Saved data to '" + file_path + "'")
         download_images_progress_bar = st.empty()
         if download_images:
@@ -118,9 +119,6 @@ if st.session_state.post_count != 0 and st.session_state.tweets:  # Update this 
             st.success("Successfully downloaded all the images to '" + image_path + "'")
 
 elif st.session_state.post_count != 0 and st.session_state.posts:  # Update this condition
-    st.text(
-        f"There are {st.session_state.post_count} Reddit posts from {st.session_state.start} to {st.session_state.end}"
-    )
     st.text(f"Here are {len(st.session_state.posts)} posts")
     st.dataframe(st.session_state.posts)
 
@@ -128,7 +126,7 @@ elif st.session_state.post_count != 0 and st.session_state.posts:  # Update this
     filename = st.text_input("File name:", value=keywords)
     download_imagesa = st.checkbox("Download the images")
     if st.button("Save"):
-        file_path = reddit.save_data(st.session_state.posts, filename)
+        file_path = save_data(st.session_state.posts, filename)
         st.success("Saved data to '" + file_path + "'")
         download_images_progress_bar = st.progress(0)
         if download_imagesa:

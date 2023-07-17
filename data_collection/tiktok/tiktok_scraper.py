@@ -1,4 +1,14 @@
+"""
+Built to work using Russell-Newton's TikTok Scraper library: https://github.com/Russell-Newton/TikTokPy
+
+Can scrape about 2 videos per second
+"""
+
+
 from tiktokapipy.async_api import TikTokAPI
+from tqdm.auto import tqdm
+
+from data_collection.utils import save_data
 
 
 def format_videos(videos):
@@ -44,9 +54,12 @@ def hashtag_search(hashtag, max_results):
 
     with TikTokAPI() as api:
         print("Searching for videos with hashtag: " + hashtag)
-        challenge = api.challenge(hashtag)
+        challenge = api.challenge(hashtag, video_limit=max_results)
         videos = []
+
+        loading_bar = tqdm(total=max_results, desc="Collecting videos", position=0, leave=True)
         for video in challenge.videos:
+            loading_bar.update(1)
             videos.append(video)
             if len(videos) >= max_results:
                 break
@@ -54,6 +67,31 @@ def hashtag_search(hashtag, max_results):
     return format_videos(videos)
 
 
+def get_video(video_id):
+    """
+    Collects the video with the given id
+    Is only useful if you already have the id of the video you want
+    :param video_id: The id of the video to collect
+    :return: A list containing the video dictionary
+    """
+
+    with TikTokAPI() as api:
+        video = api.video(video_id)
+
+    return format_videos([video])
+
+
 if __name__ == "__main__":
-    # for testing
-    print(hashtag_search("#fun", 10))
+    """
+    Variables to change for testing below
+    """
+
+    hashtag = "chicken"
+    count = 50
+
+    """
+    Variables to change for testing above
+    """
+
+    vids = hashtag_search(hashtag, count)
+    print("tiktoks saved to ", save_data(vids, hashtag, folder_path="../../data"))

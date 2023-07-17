@@ -1,7 +1,6 @@
 import os
 from datetime import datetime
 
-import pandas as pd
 import praw
 import requests
 import streamlit as st
@@ -75,13 +74,6 @@ def download_images(posts, filename, i):
             continue
 
     return images_path
-
-
-def save_data(posts, filename):
-    df = pd.DataFrame(posts)
-    file_path = f"data/{filename}.csv"
-    df.to_csv(file_path, index=False)
-    return file_path
 
 
 @st.cache_data
