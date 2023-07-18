@@ -50,10 +50,7 @@ def hashtag_search(hashtag, max_results):
     if hashtag[0] == "#":
         hashtag = hashtag[1:]
 
-    print("About to initialize TikTokAPI")
-
     with TikTokAPI() as api:
-        print("Searching for videos with hashtag: " + hashtag)
         challenge = api.challenge(hashtag, video_limit=max_results)
         videos = []
 

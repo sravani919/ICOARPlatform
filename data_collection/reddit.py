@@ -5,6 +5,8 @@ import praw
 import requests
 import streamlit as st
 
+query_options = ["keywords", "date", "images"]
+
 
 def init_connection():
     reddit = praw.Reddit(

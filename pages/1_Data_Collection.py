@@ -3,7 +3,7 @@ import time
 
 import streamlit as st
 
-from data_collection import reddit, tiktok, twitter
+from data_collection import facebook, reddit, tiktok, twitter
 from data_collection.utils import save_data
 
 title = "Data Collection"
@@ -12,18 +12,33 @@ st.set_page_config(page_title=title)
 
 st.sidebar.header(title)
 
-option = st.sidebar.selectbox("Social Medias", ["Twitter", "Reddit", "Tiktok"])
-thing_names = {"Twitter": "tweets", "Reddit": "posts", "Tiktok": "tiktoks"}
+option = st.sidebar.selectbox("Social Medias", ["Twitter", "Reddit", "Tiktok", "Facebook"])
+thing_names = {"Twitter": "tweets", "Reddit": "posts", "Tiktok": "tiktoks", "Facebook": "posts"}
 
 thing_name = ""
 if option is not None:
     thing_name = thing_names[option]
+
+    query_options = {
+        "Twitter": twitter.query_options,
+        "Reddit": reddit.query_options,
+        "Tiktok": tiktok.query_options,
+        "Facebook": facebook.query_options,
+    }[option]
+
     keywords = ""
     must_have_images = False
+    tiktok_hashtag = ""
+    st.session_state.start = None
+    st.session_state.end = None
 
-    if not option == "Tiktok":
+    if "keywords" in query_options:
         keywords = st.sidebar.text_input("Enter keywords:")
-        must_have_images = st.sidebar.checkbox(thing_name.capitalize() + " must have images")
+
+    if "hashtag" in query_options:
+        tiktok_hashtag = st.sidebar.text_input("TikTok hashtag:")
+
+    if "date" in query_options:
         if st.sidebar.checkbox("Choose date range"):
             # The min_value is the date when Twitter was launched
             st.session_state.start = st.sidebar.date_input("Start date", min_value=datetime.date(2006, 3, 21))
@@ -31,8 +46,10 @@ if option is not None:
         else:
             st.session_state.start = None
             st.session_state.end = None
-    else:
-        tiktok_hashtag = st.sidebar.text_input("TikTok hashtag:")
+
+    if "images" in query_options:
+        must_have_images = st.sidebar.checkbox(thing_name.capitalize() + " must have images")
+
     post_count = st.sidebar.number_input(f"Number of {thing_name}:", min_value=10, max_value=10000, value=100)
 
 if "start" not in st.session_state:
@@ -43,6 +60,8 @@ if "post_count" not in st.session_state:
     st.session_state.post_count = 0
 if "tweets" not in st.session_state:
     st.session_state.tweets = []
+if "posts" not in st.session_state:
+    st.session_state.posts = []
 
 if st.sidebar.button("Preview"):
     if option == []:
@@ -93,13 +112,30 @@ if st.sidebar.button("Preview"):
             st.session_state.post_count = len(tiktoks)
             st.session_state.posts = tiktoks
 
+        if "Facebook" in option:
+            if keywords == "":
+                st.error("Please enter keywords")
+            posts = facebook.grab_posts(keywords, post_count)
+            if not posts:
+                st.sidebar.error("No posts found with the given keywords")
+            st.session_state.posts = posts
+            st.session_state.post_count = len(st.session_state.posts)
+            if len(posts) > 0:
+                st.success(
+                    f'{len(posts)} posts are now available. \
+                    Click on the "Save" button below to store all the posts.',
+                    icon="✅",
+                )
+
 if st.session_state.post_count != 0 and st.session_state.tweets:  # Update this condition
-    st.text(f"There are {st.session_state.post_count} tweets from {st.session_state.start} to {st.session_state.end}")
-    st.text(f"Here are {len(st.session_state.tweets)} tweets")
+    st.text(
+        f"There are {st.session_state.post_count} {thing_name} from {st.session_state.start} to {st.session_state.end}"
+    )
+    st.text(f"Here are {len(st.session_state.tweets)} {thing_name}s:")
     st.dataframe(st.session_state.tweets)
 
     # Having a text prompt for the name of the file to save
-    filename = st.text_input("File name:", value=keywords)
+    filename = st.text_input("File name:", value=option + "-" + keywords)
     download_images = st.checkbox("Download the images")
     if st.button("Save"):
         file_path = save_data(st.session_state.tweets, filename)
@@ -123,7 +159,7 @@ elif st.session_state.post_count != 0 and st.session_state.posts:  # Update this
     st.dataframe(st.session_state.posts)
 
     # Having a text prompt for the name of the file to save
-    filename = st.text_input("File name:", value=keywords)
+    filename = st.text_input("File name:", value=option + "-" + keywords)
     download_imagesa = st.checkbox("Download the images")
     if st.button("Save"):
         file_path = save_data(st.session_state.posts, filename)

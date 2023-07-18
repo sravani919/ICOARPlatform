@@ -39,6 +39,7 @@ playwright = "1.30.0"
 nltk = "^3.8.1"
 pyldavis = "^3.4.1"
 tiktokapipy = "^0.2.0.post2"
+facebook-scraper = {git = "https://github.com/seabnavin19/facebook-scraper.git", branch="fix/get_post_by_search"}
 
 
 [tool.poetry.group.dev.dependencies]
