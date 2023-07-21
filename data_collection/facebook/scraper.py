@@ -37,7 +37,7 @@ def format_posts(posts):
                 "comments": comments,
                 "shares": shares,
                 "time": time,
-                "image": image,
+                "image_urls": [image],
                 "video": video,
                 "username": username,
                 "user_id": user_id,
