@@ -1,10 +1,11 @@
 import os
 from datetime import datetime
 
-import pandas as pd
 import praw
 import requests
 import streamlit as st
+
+query_options = ["keywords", "date", "images"]
 
 
 def init_connection():
@@ -39,7 +40,8 @@ def fetch_data(reddit, keywords, max_results, collect_images, only_images):
                 "post_url": f"https://www.reddit.com{post.permalink}",
                 "created_utc": datetime.utcfromtimestamp(post.created_utc).strftime("%Y-%m-%d %H:%M:%S"),
                 "num_comments": post.num_comments,
-                "selftext": post.selftext,
+                # changed from selftext to text to better align with the preprocessing
+                "text": post.selftext,
                 "total_awards_received": post.total_awards_received,
                 "over_18": post.over_18,
                 "image_urls": image_urls,
@@ -74,13 +76,6 @@ def download_images(posts, filename, i):
             continue
 
     return images_path
-
-
-def save_data(posts, filename):
-    df = pd.DataFrame(posts)
-    file_path = f"data/{filename}.csv"
-    df.to_csv(file_path, index=False)
-    return file_path
 
 
 @st.cache_data

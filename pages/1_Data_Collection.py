@@ -3,7 +3,8 @@ import time
 
 import streamlit as st
 
-from data_collection import reddit, twitter
+from data_collection import facebook, reddit, tiktok, twitter
+from data_collection.utils import save_data
 
 title = "Data Collection"
 
@@ -11,53 +12,72 @@ st.set_page_config(page_title=title)
 
 st.sidebar.header(title)
 
-option = st.sidebar.multiselect("Social Medias", ["Twitter", "Reddit"])
-thing_name = ""  # This is for the text prompt for the number of tweets/posts
-if len(option) > 0:
-    if "Twitter" in option:
-        thing_name = "tweets"
-    elif "Reddit" in option:
-        thing_name = "posts"
-    elif "Twitter" in option and "Reddit" in option:
-        thing_name = "tweets/posts"
-    else:
-        raise ValueError("Invalid options: " + str(option))
+option = st.sidebar.selectbox("Social Medias", ["Twitter", "Reddit", "Tiktok", "Facebook"])
+thing_names = {"Twitter": "tweets", "Reddit": "posts", "Tiktok": "tiktoks", "Facebook": "posts"}
 
-    keywords = st.sidebar.text_input("Enter keywords:")
-    must_have_images = st.sidebar.checkbox(thing_name.capitalize() + " must have images")
-    tweet_count = st.sidebar.number_input(f"Number of {thing_name}:", min_value=10, max_value=10000, value=100)
+thing_name = ""
+if option is not None:
+    thing_name = thing_names[option]
+
+    query_options = {
+        "Twitter": twitter.query_options,
+        "Reddit": reddit.query_options,
+        "Tiktok": tiktok.query_options,
+        "Facebook": facebook.query_options,
+    }[option]
+
+    keywords = ""
+    must_have_images = False
+    tiktok_hashtag = ""
+    st.session_state.start = None
+    st.session_state.end = None
+
+    if "keywords" in query_options:
+        keywords = st.sidebar.text_input("Enter keywords:")
+
+    if "hashtag" in query_options:
+        tiktok_hashtag = st.sidebar.text_input("TikTok hashtag:")
+
+    if "date" in query_options:
+        if st.sidebar.checkbox("Choose date range"):
+            # The min_value is the date when Twitter was launched
+            st.session_state.start = st.sidebar.date_input("Start date", min_value=datetime.date(2006, 3, 21))
+            st.session_state.end = st.sidebar.date_input("End date", min_value=datetime.date(2006, 3, 21))
+        else:
+            st.session_state.start = None
+            st.session_state.end = None
+
+    if "images" in query_options:
+        must_have_images = st.sidebar.checkbox(thing_name.capitalize() + " must have images")
+
+    post_count = st.sidebar.number_input(f"Number of {thing_name}:", min_value=10, max_value=10000, value=100)
 
 if "start" not in st.session_state:
     st.session_state.start = None
 if "end" not in st.session_state:
     st.session_state.end = None
-if "tweet_count" not in st.session_state:
-    st.session_state.tweet_count = 0
+if "post_count" not in st.session_state:
+    st.session_state.post_count = 0
 if "tweets" not in st.session_state:
     st.session_state.tweets = []
-
-if st.sidebar.checkbox("Choose date range"):
-    # The min_value is the date when Twitter was launched
-    st.session_state.start = st.sidebar.date_input("Start date", min_value=datetime.date(2006, 3, 21))
-    st.session_state.end = st.sidebar.date_input("End date", min_value=datetime.date(2006, 3, 21))
-else:
-    st.session_state.start = None
-    st.session_state.end = None
+if "posts" not in st.session_state:
+    st.session_state.posts = []
 
 if st.sidebar.button("Preview"):
     if option == []:
         st.sidebar.error("Please select social media")
-    elif keywords == "":
-        st.sidebar.error("Please enter keywords")
     else:
         if "Twitter" in option:
+            if keywords == "":
+                st.error("Please enter keywords")
+
             tweets = twitter.grab_tweets(
-                keywords, tweet_count, must_have_images, st.session_state.start, st.session_state.end
+                keywords, post_count, must_have_images, st.session_state.start, st.session_state.end
             )
             if not tweets:  # The list is empty
                 st.sidebar.error("No tweets found with the given keywords")
 
-            st.session_state.tweet_count = len(tweets)
+            st.session_state.post_count = len(tweets)
             st.session_state.tweets = tweets
             if len(tweets) > 0:
                 st.success(
@@ -67,12 +87,14 @@ if st.sidebar.button("Preview"):
                 )
 
         if "Reddit" in option:
-            start, end, tweet_count, posts = reddit.grab_posts(keywords, tweet_count, must_have_images)
+            if keywords == "":
+                st.error("Please enter keywords")
+            start, end, post_count, posts = reddit.grab_posts(keywords, post_count, must_have_images)
             if not posts:
                 st.sidebar.error("No posts found with the given keywords")
             st.session_state.start = start
             st.session_state.end = end
-            st.session_state.tweet_count = tweet_count
+            st.session_state.post_count = post_count
             st.session_state.posts = posts
             if len(posts) > 0:
                 st.success(
@@ -81,16 +103,42 @@ if st.sidebar.button("Preview"):
                     icon="✅",
                 )
 
-if st.session_state.tweet_count != 0 and st.session_state.tweets:  # Update this condition
-    st.text(f"There are {st.session_state.tweet_count} tweets from {st.session_state.start} to {st.session_state.end}")
-    st.text(f"Here are {len(st.session_state.tweets)} tweets")
+        if "Tiktok" in option:
+            if tiktok_hashtag is None or tiktok_hashtag == "":
+                st.sidebar.error("Please enter a TikTok hashtag")
+            else:
+                tiktoks = tiktok.hashtag_search(tiktok_hashtag, post_count)
+
+            st.session_state.post_count = len(tiktoks)
+            st.session_state.posts = tiktoks
+
+        if "Facebook" in option:
+            if keywords == "":
+                st.error("Please enter keywords")
+            posts = facebook.grab_posts(keywords, post_count)
+            if not posts:
+                st.sidebar.error("No posts found with the given keywords")
+            st.session_state.posts = posts
+            st.session_state.post_count = len(st.session_state.posts)
+            if len(posts) > 0:
+                st.success(
+                    f'{len(posts)} posts are now available. \
+                    Click on the "Save" button below to store all the posts.',
+                    icon="✅",
+                )
+
+if st.session_state.post_count != 0 and st.session_state.tweets:  # Update this condition
+    st.text(
+        f"There are {st.session_state.post_count} {thing_name} from {st.session_state.start} to {st.session_state.end}"
+    )
+    st.text(f"Here are {len(st.session_state.tweets)} {thing_name}s:")
     st.dataframe(st.session_state.tweets)
 
     # Having a text prompt for the name of the file to save
-    filename = st.text_input("File name:", value=keywords)
+    filename = st.text_input("File name:", value=option + "-" + keywords)
     download_images = st.checkbox("Download the images")
     if st.button("Save"):
-        file_path = twitter.save_tweets(st.session_state.tweets, filename)
+        file_path = save_data(st.session_state.tweets, filename)
         st.success("Saved data to '" + file_path + "'")
         download_images_progress_bar = st.empty()
         if download_images:
@@ -106,18 +154,15 @@ if st.session_state.tweet_count != 0 and st.session_state.tweets:  # Update this
                 )
             st.success("Successfully downloaded all the images to '" + image_path + "'")
 
-elif st.session_state.tweet_count != 0 and st.session_state.posts:  # Update this condition
-    st.text(
-        f"There are {st.session_state.tweet_count} Reddit posts from {st.session_state.start} to {st.session_state.end}"
-    )
+elif st.session_state.post_count != 0 and st.session_state.posts:  # Update this condition
     st.text(f"Here are {len(st.session_state.posts)} posts")
     st.dataframe(st.session_state.posts)
 
     # Having a text prompt for the name of the file to save
-    filename = st.text_input("File name:", value=keywords)
+    filename = st.text_input("File name:", value=option + "-" + keywords)
     download_imagesa = st.checkbox("Download the images")
     if st.button("Save"):
-        file_path = reddit.save_data(st.session_state.posts, filename)
+        file_path = save_data(st.session_state.posts, filename)
         st.success("Saved data to '" + file_path + "'")
         download_images_progress_bar = st.progress(0)
         if download_imagesa:

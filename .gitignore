@@ -226,7 +226,11 @@ Temporary Items
 
 ### ICOAR Project ###
 data/
+predicted/
 models/
 
 ### Intellij ###
 .idea
+
+### twscrape ###
+accounts.db
