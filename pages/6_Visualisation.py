@@ -31,17 +31,56 @@ if st.session_state.filename_pred != "":
         value_counts = data["sentiment"].value_counts()
         ax.bar(value_counts.index, value_counts.values)
 
-        ax.set_xlabel("Sentiment")
-        ax.set_ylabel("Count")
-        ax.set_title("Classification of tweets")
+        with st.expander("Show more graph options"):
+            cols = st.columns(3)
+            with cols[0]:
+                title = st.text_input("Title", "Classification of tweets")
+                title_font_size = st.slider("Title font size", 5, 50, 20)
 
-        st.pyplot(fig)
+            with cols[1]:
+                x_label = st.text_input("X label", "Sentiment")
+                y_label = st.text_input("Y label", "Count")
+                label_font_size = st.slider("Label font size", 5, 50, 15)
+
+            with cols[2]:
+                x_tick_font_size = st.slider("X tick font size", 5, 50, 10)
+                y_tick_font_size = st.slider("Y tick font size", 5, 50, 10)
+                outer_background_color = st.color_picker("Outer background color", "#FFFFFF")
+                inner_background_color = st.color_picker("Inner background color", "#FFFFFF")
+
+        ax.tick_params(axis="x", labelsize=x_tick_font_size)
+        ax.tick_params(axis="y", labelsize=y_tick_font_size)
+
+        ax.set_xlabel(x_label, fontsize=label_font_size)
+        ax.set_ylabel(y_label, fontsize=label_font_size)
+        ax.set_title(title, fontsize=title_font_size)
+
+        # Change the background color that's between the bars
+        ax.set_facecolor(inner_background_color)
+
+        st.pyplot(fig, facecolor=outer_background_color)
     elif selected_option == "Pie Chart":
         fig, ax = plt.subplots()
         value_counts = data["sentiment"].value_counts()
         ax.pie(value_counts.values, labels=data["sentiment"].unique(), autopct="%1.1f%%")
-        ax.set_title("Pie Chart")
-        st.pyplot(fig)
+        with st.expander("Show more graph options"):
+            cols = st.columns(2)
+            with cols[0]:
+                title = st.text_input("Title", "Pie Chart")
+                title_font_size = st.slider("Title font size", 10, 50, 20)
+            with cols[1]:
+                label_font_size = st.slider("Label font size", 10, 50, 15)
+                percentages_font_size = st.slider("Percentages font size", 10, 50, 15)
+                background_color = st.color_picker("Background color", "#FFFFFF")
+
+        for text in ax.texts:
+            if "%" in text.get_text():
+                text.set_fontsize(percentages_font_size)
+            else:
+                text.set_fontsize(label_font_size)
+
+        ax.set_title(title, fontsize=title_font_size)
+        st.pyplot(fig, facecolor=background_color)
 
     elif selected_option == "Topic Modeling":
         data = data["text"].tolist()
