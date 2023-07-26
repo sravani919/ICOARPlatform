@@ -1,3 +1,5 @@
+import glob
+import os
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Dict, List
@@ -74,4 +76,41 @@ class BasePage(ABC):
 
             chain.save("config.yaml")
             display_download_button()
+
         usage()
+
+        st.header("Label Your Data")
+        option = st.selectbox("Select a file", [file for file in glob.glob("./data/*.csv")])
+        if st.button("Predict Labels"):
+            st.session_state.predict = True
+            st.session_state.filename_pred = option
+            df = pd.read_csv(option)
+            total_rows = df.shape[0]
+
+            progress_bar = st.empty()
+
+            for index, row in df.iterrows():
+                progress = (index + 1) / total_rows
+                progress_bar.progress(progress, text=f"Predicting text: {progress * 100:.2f}% complete")
+
+            st.dataframe(df)
+            progress_bar.empty()
+
+            st.session_state.output = df
+            st.success("Prediction completed", icon="✅")
+
+        if st.session_state.predict:
+            filename = st.text_input("Enter file name  to save predicted data")
+            save = st.button("Save File")
+            if save:
+                file_path = save_file(st.session_state.output, filename)
+                st.session_state.predict = False
+                st.success("Saved to '" + file_path + "'")
+
+
+def save_file(df, filename):
+    if not os.path.exists("predicted"):
+        os.makedirs("predicted")
+    file_path = f"predicted/{filename}.csv"
+    df.to_csv(file_path, index=False)
+    return file_path
