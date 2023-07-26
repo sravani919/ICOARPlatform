@@ -12,7 +12,8 @@ class TextClassificationPage(BasePage):
 
     if "output" not in st.session_state:
         st.session_state.output = pd.DataFrame()
-    st.session_state.predict = False
+    if "predict" not in st.session_state:
+        st.session_state.predict = False
 
     def make_prompt(self, examples: List[Dict]):
         return make_classification_prompt(examples)
