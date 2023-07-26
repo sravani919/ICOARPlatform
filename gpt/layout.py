@@ -97,11 +97,12 @@ class BasePage(ABC):
             total_rows = df.shape[0]
             progress_bar = st.empty()
 
+            chain = LLMChain(llm=llm, prompt=prompt)
+
             for index, row in df.iterrows():
                 retries = 5
                 while retries > 0:
                     try:
-                        chain = LLMChain(llm=llm, prompt=prompt)
                         response = chain.run(row["text"])
                         response = response.replace("label:", "").strip()
                         df.loc[index, "label"] = response
