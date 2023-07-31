@@ -104,7 +104,7 @@ class BasePage(ABC):
                 while retries > 0:
                     try:
                         response = chain.run(row["text"])
-                        response = response.replace("label:", "").strip()
+                        response = response.replace("label:", "").strip().capitalize()
                         df.loc[index, "label"] = response
                         progress = (index + 1) / total_rows
                         progress_bar.progress(progress, text=f"Predicting text: {progress * 100:.2f}% complete")
