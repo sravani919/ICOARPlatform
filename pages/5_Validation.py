@@ -106,7 +106,6 @@ def predictCovidModel(text, model, tokenizer):
 
 
 if st.sidebar.button("Predict"):
-    st.session_state.predict = True
     df = pd.read_csv(FILE)
     total_rows = df.shape[0]
 
@@ -135,16 +134,17 @@ if st.sidebar.button("Predict"):
             progress = (index + 1) / total_rows
             progress_bar.progress(progress, text=f"Predicting text: {progress * 100:.2f}% complete")
 
-    with placeholder.container():
-        st.dataframe(df)
     progress_bar.empty()
 
     st.session_state.output = df
     st.success("Prediction completed", icon="✅")
+    st.session_state.predict = True
 
 
 if st.session_state.predict:
-    filename = st.text_input("Enter file name  to save predicted data")
+    with placeholder.container():
+        st.dataframe(st.session_state.output)
+    filename = st.text_input("Enter file name to save predicted data")
     save = st.button("Save File")
     if save:
         file_path = save_file(st.session_state.output, filename)
