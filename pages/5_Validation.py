@@ -144,9 +144,13 @@ if st.sidebar.button("Predict"):
 if st.session_state.predict:
     with placeholder.container():
         st.dataframe(st.session_state.output)
-    filename = st.text_input("Enter file name to save predicted data")
-    save = st.button("Save File")
+        filename = st.text_input("Enter file name to save predicted data", value="predicted")
+        save = st.button("Save File")
     if save:
         file_path = save_file(st.session_state.output, filename)
-        st.session_state.predict = False
         st.success("Saved to '" + file_path + "'")
+else:
+    st.info("Please select a file and model to predict")
+    # Resetting these elements to None to avoid duplication
+    filename = None
+    save = None
