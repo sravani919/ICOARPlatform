@@ -3,28 +3,24 @@ import time
 
 import streamlit as st
 
-from data_collection import facebook, reddit, tiktok, twitter
+import data_collection
+from data_collection import facebook, reddit, tiktok, twitter, youtube
 from data_collection.utils import save_data
 
 title = "Data Collection"
 
-st.set_page_config(page_title=title)
+# st.set_page_config(page_title=title)
 
 st.sidebar.header(title)
 
-option = st.sidebar.selectbox("Social Medias", ["Twitter", "Reddit", "Tiktok", "Facebook"])
-thing_names = {"Twitter": "tweets", "Reddit": "posts", "Tiktok": "tiktoks", "Facebook": "posts"}
+option = st.sidebar.selectbox("Social Medias", ["Twitter", "Reddit", "Tiktok", "Facebook", "Youtube"])
+thing_names = {"Twitter": "tweets", "Reddit": "posts", "Tiktok": "tiktoks", "Facebook": "posts", "Youtube": "comments"}
 
 thing_name = ""
 if option is not None:
     thing_name = thing_names[option]
 
-    query_options = {
-        "Twitter": twitter.query_options,
-        "Reddit": reddit.query_options,
-        "Tiktok": tiktok.query_options,
-        "Facebook": facebook.query_options,
-    }[option]
+    query_options = getattr(data_collection, option.lower()).query_options
 
     keywords = ""
     must_have_images = False
@@ -49,6 +45,9 @@ if option is not None:
 
     if "images" in query_options:
         must_have_images = st.sidebar.checkbox(thing_name.capitalize() + " must have images")
+
+    if "url" in query_options:
+        url = st.sidebar.text_input("Enter URL:")
 
     post_count = st.sidebar.number_input(f"Number of {thing_name}:", min_value=10, max_value=10000, value=100)
 
@@ -127,6 +126,21 @@ if st.sidebar.button("Preview"):
                     icon="✅",
                 )
 
+        if "Youtube" in option:
+            if url == "":
+                st.error("Please enter a url to a Youtube video")
+            comments = youtube.extract_comments(url, post_count)
+            if not comments:
+                st.sidebar.error("No comments found")
+            st.session_state.posts = comments
+            st.session_state.post_count = len(st.session_state.posts)
+            if len(comments) > 0:
+                st.success(
+                    f'{len(comments)} {thing_name} are now available. \
+                    Click on the "Save" button below to store all the {thing_name}.',
+                    icon="✅",
+                )
+
 if st.session_state.post_count != 0 and st.session_state.tweets:  # Update this condition
     st.text(
         f"There are {st.session_state.post_count} {thing_name} from {st.session_state.start} to {st.session_state.end}"
@@ -155,7 +169,7 @@ if st.session_state.post_count != 0 and st.session_state.tweets:  # Update this 
             st.success("Successfully downloaded all the images to '" + image_path + "'")
 
 elif st.session_state.post_count != 0 and st.session_state.posts:  # Update this condition
-    st.text(f"Here are {len(st.session_state.posts)} posts")
+    st.text(f"Here are {len(st.session_state.posts)} {thing_name}")
     st.dataframe(st.session_state.posts)
 
     # Having a text prompt for the name of the file to save
