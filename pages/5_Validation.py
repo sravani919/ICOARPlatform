@@ -6,7 +6,6 @@ import streamlit as st
 import torch
 from huggingface_hub import HfApi
 from transformers import (
-    
     AutoModelForSequenceClassification,
     AutoTokenizer,
     BertConfig,
@@ -67,41 +66,30 @@ if model_type == "Search on huggingface":
     )
 else:
     MODELS = {
-        "Covid offensive tweets Detection":{
-            "model": "covid-twitter-bert"
-        },
+        "Covid offensive tweets Detection": {"model": "covid-twitter-bert"},
         "Sentiment Analysis": {
             "tokenizer": AutoTokenizer,
             "model": "cardiffnlp/twitter-roberta-base-sentiment",
-            "id2label": {0: 'Negative', 1: 'Neutral', 2: 'Positive'}
+            "id2label": {0: "Negative", 1: "Neutral", 2: "Positive"},
         },
         "Toxic Content Detection": {
             "tokenizer": AutoTokenizer,
-            "model": "s-nlp/roberta_toxicity_classifier",},
-
+            "model": "s-nlp/roberta_toxicity_classifier",
+        },
         "Hate Speech Detection": {
             "tokenizer": AutoTokenizer,
             "model": "cardiffnlp/twitter-roberta-base-hate-latest",
         },
-
         "Cyberbully Detection": {
             "tokenizer": AutoTokenizer,
             "model": "sreeniketh/cyberbullying_sentiment_dsce_2023",
-        }
-
-
-        }
-    
+        },
+    }
 
     selected_model_name = st.sidebar.radio("Select a model", list(MODELS.keys()))
 
     MODELS = MODELS[selected_model_name]
     MODEL = MODELS["model"]
-
-    
-    
-
-
 
 
 def save_file(df, filename):
@@ -118,7 +106,7 @@ def predict(text, model, tokenizer):
     output = outputs.logits.argmax().item()
 
     config = model.config
-    if hasattr(config,"id2label"):
+    if hasattr(config, "id2label"):
         label = config.id2label[output]
     else:
         label = output
@@ -157,7 +145,6 @@ if st.sidebar.button("Predict"):
                 model = AutoModelForSequenceClassification.from_pretrained(MODEL, id2label=MODELS["id2label"])
             else:
                 model = AutoModelForSequenceClassification.from_pretrained(MODEL)
-            
 
     progress_bar = st.empty()
 
@@ -166,7 +153,7 @@ if st.sidebar.button("Predict"):
         if MODEL == "covid-twitter-bert":
             predicted_value = predictCovidModel(row["text"], model, tokenizer)
         else:
-            predicted_value = predict(row["text"], model ,tokenizer)
+            predicted_value = predict(row["text"], model, tokenizer)
         df.loc[index, "sentiment"] = predicted_value
         with placeholder.container():
             st.dataframe(df[["text", "sentiment"]][max(0, index - 10) : max(10, index)])
