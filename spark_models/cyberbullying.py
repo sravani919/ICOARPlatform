@@ -25,19 +25,17 @@ MODEL_NAME = "classifierdl_use_cyberbullying"
 
 documentAssembler = DocumentAssembler().setInputCol("text").setOutputCol("document")
 
-# Used to create universal sentence encodings (use)
 use = (
     UniversalSentenceEncoder.pretrained(name="tfhub_use", lang="en")
     .setInputCols(["document"])
     .setOutputCol("sentence_embeddings")
 )
 
-# Takes the sentence embeddings and outputs the sentiment
+
 sentimentdl = (
     ClassifierDLModel.pretrained(name=MODEL_NAME).setInputCols(["sentence_embeddings"]).setOutputCol("sentiment")
 )
 
-# Links the above stages together
 nlpPipeline = Pipeline(stages=[documentAssembler, use, sentimentdl])
 
 
@@ -48,7 +46,7 @@ def predict(text_list: list[str]):
     # Convert the result to a simple list of strings
     result = result.select("sentiment.result").collect()
     result = [row.result for row in result]
-    print(result)
+    return result
 
 
 if __name__ == "__main__":

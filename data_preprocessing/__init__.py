@@ -5,6 +5,7 @@ import spacy
 import requests
 import os
 
+
 def download_fasttext_model():
     response = requests.get("https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin")
     # Need to create the models directory if it doesn't exist

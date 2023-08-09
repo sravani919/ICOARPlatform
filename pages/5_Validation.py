@@ -12,6 +12,7 @@ from transformers import (
     BertForSequenceClassification,
     BertTokenizer,
 )
+import spark_models
 
 title = "Validation"
 st.set_page_config(page_title=title)
@@ -132,38 +133,41 @@ def predictCovidModel(text, model, tokenizer):
 
 if st.sidebar.button("Predict"):
     df = pd.read_csv(FILE)
-    total_rows = df.shape[0]
-
-    if MODEL == "covid-twitter-bert":
-        model_config = BertConfig.from_json_file("model/config.json")
-        model_state_dict = torch.load("model/pytorch_model.bin", map_location=torch.device("cpu"))
-        model = BertForSequenceClassification(config=model_config)
-        model.load_state_dict(model_state_dict)
-        tokenizer = BertTokenizer.from_pretrained("digitalepidemiologylab/covid-twitter-bert-v2")
+    if MODELS["tokenizer"] == "use":  # This is a spark model
+        df = spark_models.predict(MODEL, df)
     else:
-        with st.spinner("Downloading necessary models. It may take few minutes. Please wait..."):
-            tokenizer = AutoTokenizer.from_pretrained(MODEL)
+        total_rows = df.shape[0]
 
-            if "id2label" in MODELS:
-                model = AutoModelForSequenceClassification.from_pretrained(MODEL, id2label=MODELS["id2label"])
-            else:
-                model = AutoModelForSequenceClassification.from_pretrained(MODEL)
-
-    progress_bar = st.empty()
-
-    # print("model - ", MODEL)
-    for index, row in df.iterrows():
         if MODEL == "covid-twitter-bert":
-            predicted_value = predictCovidModel(row["text"], model, tokenizer)
+            model_config = BertConfig.from_json_file("model/config.json")
+            model_state_dict = torch.load("model/pytorch_model.bin", map_location=torch.device("cpu"))
+            model = BertForSequenceClassification(config=model_config)
+            model.load_state_dict(model_state_dict)
+            tokenizer = BertTokenizer.from_pretrained("digitalepidemiologylab/covid-twitter-bert-v2")
         else:
-            predicted_value = predict(row["text"], model, tokenizer)
-        df.loc[index, "sentiment"] = predicted_value
-        with placeholder.container():
-            st.dataframe(df[["text", "sentiment"]][max(0, index - 10) : max(10, index)])
-            progress = (index + 1) / total_rows
-            progress_bar.progress(progress, text=f"Predicting text: {progress * 100:.2f}% complete")
+            with st.spinner("Downloading necessary models. It may take few minutes. Please wait..."):
+                tokenizer = AutoTokenizer.from_pretrained(MODEL)
 
-    progress_bar.empty()
+                if "id2label" in MODELS:
+                    model = AutoModelForSequenceClassification.from_pretrained(MODEL, id2label=MODELS["id2label"])
+                else:
+                    model = AutoModelForSequenceClassification.from_pretrained(MODEL)
+
+        progress_bar = st.empty()
+
+        # print("model - ", MODEL)
+        for index, row in df.iterrows():
+            if MODEL == "covid-twitter-bert":
+                predicted_value = predictCovidModel(row["text"], model, tokenizer)
+            else:
+                predicted_value = predict(row["text"], model, tokenizer)
+            df.loc[index, "sentiment"] = predicted_value
+            with placeholder.container():
+                st.dataframe(df[["text", "sentiment"]][max(0, index - 10) : max(10, index)])
+                progress = (index + 1) / total_rows
+                progress_bar.progress(progress, text=f"Predicting text: {progress * 100:.2f}% complete")
+
+        progress_bar.empty()
 
     st.session_state.output = df
     st.success("Prediction completed", icon="✅")
