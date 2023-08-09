@@ -32,7 +32,7 @@ FILE = st.sidebar.selectbox("Select a file", [file for file in glob.glob("./data
 
 model_type = st.sidebar.radio(
     "Select a model type",
-    ["Recomended", "Search on huggingface"],
+    ["Recommended", "Search on huggingface"],
 )
 
 
@@ -83,6 +83,10 @@ else:
         "Cyberbully Detection": {
             "tokenizer": AutoTokenizer,
             "model": "sreeniketh/cyberbullying_sentiment_dsce_2023",
+        },
+        "JS Cyberbullying Classifier": {
+            "tokenizer": "use",  # Universal Sentence Encoder
+            "model": "classifierdl_use_cyberbullying",
         },
     }
 
@@ -169,7 +173,7 @@ if st.sidebar.button("Predict"):
 
 
 if st.session_state.predict:
-    filename = st.text_input("Enter file name  to save predicted data")
+    filename = st.text_input("Enter file name to save predicted data")
     save = st.button("Save File")
     if save:
         file_path = save_file(st.session_state.output, filename)
