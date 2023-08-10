@@ -1,6 +1,6 @@
 import glob
 import os
-
+import nlu
 import pandas as pd
 import streamlit as st
 import torch
@@ -12,7 +12,8 @@ from transformers import (
     BertForSequenceClassification,
     BertTokenizer,
 )
-import spark_models
+# import spark_models
+from transformers import AutoConfig, AutoModelForSequenceClassification, AutoTokenizer
 
 title = "Validation"
 st.set_page_config(page_title=title)
@@ -31,93 +32,54 @@ if "predict" not in st.session_state:
 
 FILE = st.sidebar.selectbox("Select a file", [file for file in glob.glob("./data/*.csv")])
 
-model_type = st.sidebar.radio(
-    "Select a model type",
-    ["Recommended", "Search on huggingface"],
-)
+
+MODELS = {
+    "cardiffnlp/twitter-roberta-base-sentiment": {
+        "tokenizer": AutoTokenizer,
+        "model": "cardiffnlp/twitter-roberta-base-sentiment",
+    },
+    "Toxic hugging face": {"tokenizer": AutoTokenizer, "model": "s-nlp/roberta_toxicity_classifier"},
+    "Seethal/sentiment_analysis_generic_dataset": {
+        "tokenizer": AutoTokenizer,
+        "model": AutoModelForSequenceClassification,
+    },
+    "Cyberbullying": {"NLU": "", "model": "en.classify.cyberbullying"},
+    "Fakenews": {"NLU": "", "model": "en.classify.fakenews"},
+    "Toxic": {"NLU": "", "model": "en.classify.toxic"},
+}
+
+MODEL = st.sidebar.radio("Select a model", list(MODELS.keys()))
 
 
-def fetch_models_from_hf():
-    # Or configure a HfApi client
-    hf_api = HfApi(
-        endpoint="https://huggingface.co",  # Can be a Private Hub endpoint.
-        token=st.secrets.api_token.hf,  # Token is not persisted on the machine.
-    )
+def load_model(model_info):
+    if "tokenizer" in model_info:
+        pass
 
-    print("Fetching model list from hugging face...")
-    models = hf_api.list_models(filter="text-classification", search=search_text)
-    model_list = []
-    for model in models:
-        model_list.append(model.modelId)
-
-    return model_list
-
-
-if model_type == "Search on huggingface":
-    search_text = st.sidebar.text_input("Enter model name")
-    search_button = st.sidebar.button("Search")
-
-    if search_button:
-        st.session_state.model_list = fetch_models_from_hf()
-        search_button = False
-
-    MODEL = st.sidebar.radio(
-        "Select a model",
-        st.session_state.model_list,
-    )
-else:
-    MODELS = {
-        "Covid offensive tweets Detection": {"model": "covid-twitter-bert"},
-        "Sentiment Analysis": {
-            "tokenizer": AutoTokenizer,
-            "model": "cardiffnlp/twitter-roberta-base-sentiment",
-            "id2label": {0: "Negative", 1: "Neutral", 2: "Positive"},
-        },
-        "Toxic Content Detection": {
-            "tokenizer": AutoTokenizer,
-            "model": "s-nlp/roberta_toxicity_classifier",
-        },
-        "Hate Speech Detection": {
-            "tokenizer": AutoTokenizer,
-            "model": "cardiffnlp/twitter-roberta-base-hate-latest",
-        },
-        "Cyberbully Detection": {
-            "tokenizer": AutoTokenizer,
-            "model": "sreeniketh/cyberbullying_sentiment_dsce_2023",
-        },
-        "JS Cyberbullying Classifier": {
-            "tokenizer": "use",  # Universal Sentence Encoder
-            "model": "classifierdl_use_cyberbullying",
-        },
-    }
-
-    selected_model_name = st.sidebar.radio("Select a model", list(MODELS.keys()))
-
-    MODELS = MODELS[selected_model_name]
-    MODEL = MODELS["model"]
-
-
-def save_file(df, filename):
-    if not os.path.exists("predicted"):
-        os.makedirs("predicted")
-    file_path = f"predicted/{filename}.csv"
-    df.to_csv(file_path, index=False)
-    return file_path
-
-
-def predict(text, model, tokenizer):
-    inputs = tokenizer(text, return_tensors="pt")
-    outputs = model(**inputs)
-    output = outputs.logits.argmax().item()
-
-    config = model.config
-    if hasattr(config, "id2label"):
-        label = config.id2label[output]
     else:
-        label = output
+        loaded_model = nlu.load(model_info["model"])
+        return loaded_model
 
-    return label
 
+def predict(text, model_info, model):
+    if "tokenizer" in model_info:
+        # tokenizer, model = model_info["tokenizer"], model_info["model"]
+        tokenizer = AutoTokenizer.from_pretrained(model_info["model"])
+        model = AutoModelForSequenceClassification.from_pretrained(model_info["model"])
+        config = AutoConfig.from_pretrained(model_info["model"])
+
+        inputs = tokenizer(text, return_tensors="pt")
+        outputs = model(**inputs)
+        output = outputs.logits.argmax().item()
+        label = config.id2label[output]
+
+        return label
+    else:
+        result = model.predict(text)
+        result = result.drop("sentence_embedding_use", axis=1)
+        # result = result.drop("sentence", axis=1)
+        # column_names = result.columns.tolist()
+
+    return result
 
 def predictCovidModel(text, model, tokenizer):
     tokens = tokenizer.encode_plus(text, max_length=512, truncation=True, padding="max_length", return_tensors="pt")
@@ -133,58 +95,19 @@ def predictCovidModel(text, model, tokenizer):
 
 if st.sidebar.button("Predict"):
     df = pd.read_csv(FILE)
-    if MODELS["tokenizer"] == "use":  # This is a spark model
-        df = spark_models.predict(MODEL, df)
-    else:
-        total_rows = df.shape[0]
 
-        if MODEL == "covid-twitter-bert":
-            model_config = BertConfig.from_json_file("model/config.json")
-            model_state_dict = torch.load("model/pytorch_model.bin", map_location=torch.device("cpu"))
-            model = BertForSequenceClassification(config=model_config)
-            model.load_state_dict(model_state_dict)
-            tokenizer = BertTokenizer.from_pretrained("digitalepidemiologylab/covid-twitter-bert-v2")
+    model_info = MODELS[MODEL]
+
+    model = load_model(model_info)
+
+    for index, row in df.iterrows():
+        if "tokenizer" in model_info:
+            df.loc[index, "sentiment"] = predict(row["text"], model_info, [])
+
         else:
-            with st.spinner("Downloading necessary models. It may take few minutes. Please wait..."):
-                tokenizer = AutoTokenizer.from_pretrained(MODEL)
+            result = predict([row["text"]], [], model)
 
-                if "id2label" in MODELS:
-                    model = AutoModelForSequenceClassification.from_pretrained(MODEL, id2label=MODELS["id2label"])
-                else:
-                    model = AutoModelForSequenceClassification.from_pretrained(MODEL)
+            df.loc[index, result.columns] = result.values[0]
 
-        progress_bar = st.empty()
-
-        # print("model - ", MODEL)
-        for index, row in df.iterrows():
-            if MODEL == "covid-twitter-bert":
-                predicted_value = predictCovidModel(row["text"], model, tokenizer)
-            else:
-                predicted_value = predict(row["text"], model, tokenizer)
-            df.loc[index, "sentiment"] = predicted_value
-            with placeholder.container():
-                st.dataframe(df[["text", "sentiment"]][max(0, index - 10) : max(10, index)])
-                progress = (index + 1) / total_rows
-                progress_bar.progress(progress, text=f"Predicting text: {progress * 100:.2f}% complete")
-
-        progress_bar.empty()
-
-    st.session_state.output = df
-    st.success("Prediction completed", icon="✅")
-    st.session_state.predict = True
-
-
-if st.session_state.predict:
-    with placeholder.container():
-        st.dataframe(st.session_state.output)
-        filename = st.text_input("Enter file name to save predicted data", value="predicted")
-        save = st.button("Save File")
-
-    if save:
-        file_path = save_file(st.session_state.output, filename)
-        st.success("Saved to '" + file_path + "'")
-else:
-    st.info("Please select a file and model to predict")
-    # Resetting these elements to None to avoid duplication
-    filename = None
-    save = None
+        with placeholder.container():
+            st.write(df)

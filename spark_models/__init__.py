@@ -1,4 +1,6 @@
 """
+Not necessary anymore because you can just load the models with NLU
+
 A lot of the models from John Snow use pyspark
 Each model can be implemented as another module here
 """

@@ -35,7 +35,7 @@ snscrape = {git = "https://github.com/JustAnotherArchivist/snscrape.git"}
 twscrape = "^0.4.2"
 playwright = "1.30.0"
 nltk = "^3.8.1"
-pyldavis = "^3.4.1"
+# pyldavis = "^3.4.1"
 # tiktokapipy = "^0.2.0.post2"
 facebook-scraper = {git = "https://github.com/seabnavin19/facebook-scraper.git", branch="fix/get_post_by_search"}
 langchain = "^0.0.231"
@@ -45,8 +45,10 @@ tensorflow = "^2.13.0"
 tensorflow-io-gcs-filesystem = "0.31.0"
 scikit-image = "^0.21.0"
 # wordcloud = "^1.9.2"
-pyspark = "3.3.0"
-spark-nlp = "4.2.8"
+pyspark = "3.0.2"
+# spark-nlp = "4.2.8"
+nlu = "^4.2.0"
+pandas = "1.5.3"  # Cannot use 2.x.x version for NLU
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"
