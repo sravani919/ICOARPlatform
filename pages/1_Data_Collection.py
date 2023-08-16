@@ -33,10 +33,13 @@ if option is not None:
     st.session_state.end = None
 
     if "keywords" in query_options:
-        keywords = st.sidebar.text_input("Enter keywords:")
+        keywords = st.sidebar.text_input("Enter keywords: (separate with commas)")
 
     if "hashtag" in query_options:
         tiktok_hashtag = st.sidebar.text_input("TikTok hashtag:")
+
+    if "hashtags" in query_options:
+        hashtags = st.sidebar.text_input("Enter hashtags: (separate with commas)")
 
     if "date" in query_options:
         if st.sidebar.checkbox("Choose date range"):
@@ -104,11 +107,24 @@ if st.sidebar.button("Preview"):
                 )
 
         if "Tiktok" in option:
-            if tiktok_hashtag is None or tiktok_hashtag == "":
-                st.sidebar.error("Please enter a TikTok hashtag")
+            # Converting the date to the format that TikTok API accepts i.e. yyyymmdd
+            if st.session_state.start is not None:
+                start = st.session_state.start.strftime("%Y%m%d")
             else:
-                tiktoks = tiktok.hashtag_search(tiktok_hashtag, post_count)
+                start = None
 
+            if st.session_state.end is not None:
+                end = st.session_state.end.strftime("%Y%m%d")
+            else:
+                end = None
+
+            print("start,end", start, end)
+
+            tiktoks = tiktok.get_videos(
+                keywords=keywords, start_date=start, end_date=end, hashtags=hashtags, max_count=post_count
+            )
+            print("tiktoks", tiktoks)
+            print("len(tiktoks)", len(tiktoks))
             st.session_state.post_count = len(tiktoks)
             st.session_state.posts = tiktoks
 
