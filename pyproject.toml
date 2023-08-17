@@ -44,11 +44,12 @@ plotly = "^5.15.0"
 tensorflow = "^2.13.0"
 tensorflow-io-gcs-filesystem = "0.31.0"
 scikit-image = "^0.21.0"
-# wordcloud = "^1.9.2"
 pyspark = "3.0.2"
 # spark-nlp = "4.2.8"
 nlu = "^4.2.0"
 pandas = "1.5.3"  # Cannot use 2.x.x version for NLU
+wordcloud = "^1.9.2"
+selenium = "^4.11.2"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"

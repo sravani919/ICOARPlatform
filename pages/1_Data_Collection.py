@@ -2,7 +2,7 @@ import streamlit as st
 
 title = "Data Collection"
 
-st.set_page_config(page_title=title)
+# st.set_page_config(page_title=title)
 
 st.sidebar.header(title)
 
