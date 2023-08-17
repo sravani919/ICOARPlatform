@@ -1,5 +1,7 @@
-from data_collection.tiktok.tiktok_api import get_videos
+from . import api
 
-__all__ = ["get_videos"]
-
-query_options = ["hashtags", "date", "keywords"]
+name = "TikTok"
+collection_methods = {
+    # note - Scraper is not currently supported
+    "API": api
+}

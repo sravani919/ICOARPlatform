@@ -1,4 +1,6 @@
-from data_collection.youtube.video_comments import extract_comments
+from . import comments
 
-query_options = ["url"]
-__all__ = ["extract_comments"]
+name = "YouTube"
+collection_methods = {
+    "Comments": comments,
+}

@@ -7,6 +7,8 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
+from data_collection.utils import BaseDataCollector
+
 st_status = st.empty()
 
 
@@ -87,3 +89,14 @@ if __name__ == "__main__":
         if comment[0] == "":
             count += 1
     print("Number of comments without a username: " + str(count))
+
+
+class Collector(BaseDataCollector):
+    def __init__(self):
+        pass
+
+    def query_options(self):
+        return ["video_url", "count"]
+
+    def collect(self, video_url, count):
+        return extract_comments(video_url, count)
