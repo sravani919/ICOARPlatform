@@ -1,5 +1,6 @@
 import glob
 import os
+import string
 
 import pandas as pd
 import streamlit as st
@@ -7,10 +8,13 @@ import torch
 from huggingface_hub import HfApi
 from transformers import (
     AutoModelForSequenceClassification,
+    AutoModelForTokenClassification,
     AutoTokenizer,
     BertConfig,
     BertForSequenceClassification,
     BertTokenizer,
+    TokenClassificationPipeline,
+    pipeline,
 )
 
 title = "Validation"
@@ -84,6 +88,14 @@ else:
             "tokenizer": AutoTokenizer,
             "model": "sreeniketh/cyberbullying_sentiment_dsce_2023",
         },
+        "Named Entity Recognition": {
+            "tokenizer": AutoTokenizer,
+            "model": "dslim/bert-base-NER",
+        },
+        "Parts of Speech": {
+            "tokenizer": AutoTokenizer,
+            "model": "QCRI/bert-base-multilingual-cased-pos-english",
+        },
     }
 
     selected_model_name = st.sidebar.radio("Select a model", list(MODELS.keys()))
@@ -143,6 +155,12 @@ if st.sidebar.button("Predict"):
 
             if "id2label" in MODELS:
                 model = AutoModelForSequenceClassification.from_pretrained(MODEL, id2label=MODELS["id2label"])
+            elif MODEL == "dslim/bert-base-NER":
+                model = AutoModelForTokenClassification.from_pretrained(MODEL)
+                nlp = pipeline("ner", model=model, tokenizer=tokenizer)
+            elif MODEL == "QCRI/bert-base-multilingual-cased-pos-english":
+                model = AutoModelForTokenClassification.from_pretrained(MODEL)
+                pipeline = TokenClassificationPipeline(model=model, tokenizer=tokenizer)
             else:
                 model = AutoModelForSequenceClassification.from_pretrained(MODEL)
 
@@ -150,6 +168,36 @@ if st.sidebar.button("Predict"):
 
     # print("model - ", MODEL)
     for index, row in df.iterrows():
+        if MODEL == "dslim/bert-base-NER" or MODEL == "QCRI/bert-base-multilingual-cased-pos-english":
+            if MODEL == "dslim/bert-base-NER":
+                output = nlp(row["text"])
+            elif MODEL == "QCRI/bert-base-multilingual-cased-pos-english":
+                output = pipeline(row["text"])
+            predicted_entities = {}
+            for entity_info in output:
+                entity_group = entity_info["entity"]
+                word = entity_info["word"]
+
+                if entity_group not in predicted_entities:
+                    predicted_entities[entity_group] = []
+
+                predicted_entities[entity_group].append(word)
+
+            # Remove punctuation words from the predicted_entities
+            for punctuation in string.punctuation:
+                if punctuation in predicted_entities:
+                    del predicted_entities[punctuation]
+
+            for entity_group, words_list in predicted_entities.items():
+                if entity_group not in df.columns:
+                    df[entity_group] = ""
+                df.at[index, entity_group] = ", ".join(words_list)  # Convert the list to a string
+
+            with placeholder.container():
+                progress = (index + 1) / total_rows
+                progress_bar.progress(progress, text=f"Predicting text: {progress * 100:.2f}% complete")
+            continue
+
         if MODEL == "covid-twitter-bert":
             predicted_value = predictCovidModel(row["text"], model, tokenizer)
         else:
