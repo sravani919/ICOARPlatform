@@ -47,7 +47,8 @@ class BasePage(ABC):
 
     def render(self) -> None:
         st.title(self.title)
-        st.header("Annotate your data")
+        st.divider()
+        st.header("Annotate sample data")
         columns = self.columns
         examples = self.make_examples(columns)
         examples = self.annotate(examples)
@@ -56,15 +57,18 @@ class BasePage(ABC):
         prompt = task_instruction_editor(prompt)
 
         st.header("Test")
-        col1, col2 = st.columns([3, 1])
+        # col1, col2 = st.columns([3, 1])
 
-        with col1:
-            inputs = self.prepare_inputs(columns)
-
-        with col2:
+        inputs = self.prepare_inputs(columns)
+        with st.sidebar:
             llm = openai_model_form()
+        # with col1:
+        #     inputs = self.prepare_inputs(columns)
+        #
+        # with col2:
+        #     llm = openai_model_form()
 
-        with st.expander("See your prompt"):
+        with st.expander("See your full prompt"):
             st.markdown(f"```\n{prompt.format(**inputs)}\n```")
 
         if llm is None:
