@@ -35,7 +35,8 @@ if st.session_state.filename != "":
 
     if st.button("Process"):
         st.session_state.preprocessing_status, st.session_state.processed_df = preprocess(
-            st.session_state.filename, selected_options)
+            st.session_state.filename, selected_options
+        )
 
 if st.session_state.preprocessing_status:
     st.dataframe(st.session_state.processed_df)

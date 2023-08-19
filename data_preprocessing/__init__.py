@@ -1,9 +1,10 @@
+import os
+
 import fasttext
 import pandas as pd
 import preprocessor as p
-import spacy
 import requests
-import os
+import spacy
 
 
 def download_fasttext_model():
