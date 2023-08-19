@@ -1,5 +1,6 @@
 import glob
 import os
+import string
 
 import pandas as pd
 import streamlit as st
@@ -7,19 +8,22 @@ import torch
 from huggingface_hub import HfApi
 from transformers import (
     AutoModelForSequenceClassification,
+    AutoModelForTokenClassification,
     AutoTokenizer,
     BertConfig,
     BertForSequenceClassification,
     BertTokenizer,
+    TokenClassificationPipeline,
+    pipeline,
 )
 
 title = "Validation"
 st.set_page_config(page_title=title)
 
-placeholder = st.empty()
 container = st.container()
 
-st.sidebar.header(title)
+st.subheader(title)
+FILE = st.selectbox("Select a file", [file for file in glob.glob("./data/*.csv")])
 
 if "output" not in st.session_state:
     st.session_state.output = pd.DataFrame()
@@ -28,11 +32,13 @@ if "model_list" not in st.session_state:
 if "predict" not in st.session_state:
     st.session_state.predict = False
 
-FILE = st.sidebar.selectbox("Select a file", [file for file in glob.glob("./data/*.csv")])
-
-model_type = st.sidebar.radio(
+st.session_state.horizontal = True
+model_type = st.radio(
     "Select a model type",
-    ["Recomended", "Search on huggingface"],
+    ["Recommended Models", "Search on huggingface"],
+    horizontal=st.session_state.horizontal,
+    help="You will need to input a huggingface API token to search via huggingface, or "
+    "you can select from the recommended models that have already been set up",
 )
 
 
@@ -53,14 +59,14 @@ def fetch_models_from_hf():
 
 
 if model_type == "Search on huggingface":
-    search_text = st.sidebar.text_input("Enter model name")
-    search_button = st.sidebar.button("Search")
+    search_text = st.text_input("Enter model name")
+    search_button = st.button("Search")
 
     if search_button:
         st.session_state.model_list = fetch_models_from_hf()
         search_button = False
 
-    MODEL = st.sidebar.radio(
+    MODEL = st.radio(
         "Select a model",
         st.session_state.model_list,
     )
@@ -84,9 +90,17 @@ else:
             "tokenizer": AutoTokenizer,
             "model": "sreeniketh/cyberbullying_sentiment_dsce_2023",
         },
+        "Named Entity Recognition": {
+            "tokenizer": AutoTokenizer,
+            "model": "dslim/bert-base-NER",
+        },
+        "Parts of Speech": {
+            "tokenizer": AutoTokenizer,
+            "model": "QCRI/bert-base-multilingual-cased-pos-english",
+        },
     }
 
-    selected_model_name = st.sidebar.radio("Select a model", list(MODELS.keys()))
+    selected_model_name = st.selectbox("Select a model", list(MODELS.keys()))
 
     MODELS = MODELS[selected_model_name]
     MODEL = MODELS["model"]
@@ -126,7 +140,8 @@ def predictCovidModel(text, model, tokenizer):
     return predicted_labels
 
 
-if st.sidebar.button("Predict"):
+if st.button("Predict"):
+    placeholder = st.empty()
     st.session_state.predict = True
     df = pd.read_csv(FILE)
     total_rows = df.shape[0]
@@ -143,6 +158,12 @@ if st.sidebar.button("Predict"):
 
             if "id2label" in MODELS:
                 model = AutoModelForSequenceClassification.from_pretrained(MODEL, id2label=MODELS["id2label"])
+            elif MODEL == "dslim/bert-base-NER":
+                model = AutoModelForTokenClassification.from_pretrained(MODEL)
+                nlp = pipeline("ner", model=model, tokenizer=tokenizer)
+            elif MODEL == "QCRI/bert-base-multilingual-cased-pos-english":
+                model = AutoModelForTokenClassification.from_pretrained(MODEL)
+                pipeline = TokenClassificationPipeline(model=model, tokenizer=tokenizer)
             else:
                 model = AutoModelForSequenceClassification.from_pretrained(MODEL)
 
@@ -150,6 +171,36 @@ if st.sidebar.button("Predict"):
 
     # print("model - ", MODEL)
     for index, row in df.iterrows():
+        if MODEL == "dslim/bert-base-NER" or MODEL == "QCRI/bert-base-multilingual-cased-pos-english":
+            if MODEL == "dslim/bert-base-NER":
+                output = nlp(row["text"])
+            elif MODEL == "QCRI/bert-base-multilingual-cased-pos-english":
+                output = pipeline(row["text"])
+            predicted_entities = {}
+            for entity_info in output:
+                entity_group = entity_info["entity"]
+                word = entity_info["word"]
+
+                if entity_group not in predicted_entities:
+                    predicted_entities[entity_group] = []
+
+                predicted_entities[entity_group].append(word)
+
+            # Remove punctuation words from the predicted_entities
+            for punctuation in string.punctuation:
+                if punctuation in predicted_entities:
+                    del predicted_entities[punctuation]
+
+            for entity_group, words_list in predicted_entities.items():
+                if entity_group not in df.columns:
+                    df[entity_group] = ""
+                df.at[index, entity_group] = ", ".join(words_list)  # Convert the list to a string
+
+            with placeholder.container():
+                progress = (index + 1) / total_rows
+                progress_bar.progress(progress, text=f"Predicting text: {progress * 100:.2f}% complete")
+            continue
+
         if MODEL == "covid-twitter-bert":
             predicted_value = predictCovidModel(row["text"], model, tokenizer)
         else:
@@ -166,7 +217,6 @@ if st.sidebar.button("Predict"):
 
     st.session_state.output = df
     st.success("Prediction completed", icon="✅")
-
 
 if st.session_state.predict:
     filename = st.text_input("Enter file name  to save predicted data")
