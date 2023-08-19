@@ -92,7 +92,7 @@ if st.session_state.results is not None:
     if do_download_images and "image_urls" not in df.columns:
         st.error("Cannot download images because the results do not have an 'image_urls' column")
     if st.button("Save"):
-        df.to_csv(f"data/{save_name}.csv")
+        data_collection.utils.save_data(st.session_state.results, save_name)
         st.success(f"Saved as data/{save_name}.csv")
 
         if do_download_images:
