@@ -1,0 +1,102 @@
+import time
+
+import streamlit as st
+from selenium.webdriver import Chrome
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+
+from data_collection.utils import BaseDataCollector
+
+st_status = st.empty()
+
+
+def format_comments(data):
+    """
+    Formats the given list of comments into a list of dictionaries
+    :param data: Tuple with username and comment
+    :return: A list of dictionaries containing the formatted comment data
+    """
+    formatted_comments = []
+    for username, comment in data:
+        formatted_comments.append(
+            {
+                "username": username,
+                "comment": comment,
+            }
+        )
+    return formatted_comments
+
+
+def extract_comments(video_url, count):
+    dataset = set()
+    with Chrome() as driver:
+        st_status.text("Loading video webpage...")
+        wait = WebDriverWait(driver, 15)
+
+        driver_good = False
+        for attempt in range(10):
+            st_status.text(f"Loading video webpage... attempt {attempt + 1}")
+            try:
+                driver.get(video_url)
+                driver_good = True
+                break
+            except Exception as e:
+                st.error(f"Error loading video webpage: {e}, retrying...")
+
+        if not driver_good:
+            st_status.error("Could not load video webpage after 10 tries. Check internet connection and video URL.")
+            return list(dataset)
+
+        time.sleep(5)
+
+        # Mutes the video
+        wait.until(EC.visibility_of_element_located((By.TAG_NAME, "body"))).send_keys("m")
+
+        for _ in range(10):
+            # Scrolls down to load initial comments
+            wait.until(EC.visibility_of_element_located((By.TAG_NAME, "body"))).send_keys(Keys.END)
+
+        while True:
+            # Pushing the end key once everything is loaded to move to the bottom
+            wait.until(EC.visibility_of_element_located((By.TAG_NAME, "body"))).send_keys(Keys.END)
+            # "a.style-scope.ytd-comment-renderer"
+            # Collecting the comment and the username
+            comments = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "#comment #content-text")))
+            usernames = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "#comment #author-text")))
+            for comment, username in zip(comments, usernames):
+                dataset.add((username.text, comment.text))
+                st_status.progress(len(dataset) / count, f"Loading comments: {len(dataset)} / {count}")
+
+                # If we have enough comments, stop scrolling
+                if len(dataset) >= count:
+                    st_status.text("Formatting comments...")
+                    formatted = format_comments(list(dataset))
+                    return formatted
+
+
+if __name__ == "__main__":
+    # For testing purposes
+    video_url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ&ab_channel=RickAstley"
+    comments = extract_comments(video_url, 100)
+    print("Extracted " + str(len(comments)) + " comments from " + video_url)
+    print(comments)
+
+    # Getting number of comments without a username
+    count = 0
+    for comment in comments:
+        if comment[0] == "":
+            count += 1
+    print("Number of comments without a username: " + str(count))
+
+
+class Collector(BaseDataCollector):
+    def __init__(self):
+        pass
+
+    def query_options(self):
+        return ["video_url", "count"]
+
+    def collect(self, video_url, count):
+        return extract_comments(video_url, count)

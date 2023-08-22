@@ -3,6 +3,8 @@ import asyncio
 import streamlit as st
 from twscrape import API, AccountsPool, gather
 
+from data_collection.utils import BaseDataCollector
+
 
 def get_accounts():
     # Reading from accounts.csv where the info is seperated by colons, not commas
@@ -99,3 +101,14 @@ async def a_grab_tweets(keywords, tweet_count, must_have_images, start, end):
 
     formatted_tweets = format_tweets(tweets)
     return formatted_tweets
+
+
+class Collector(BaseDataCollector):
+    def __init__(self):
+        pass
+
+    def query_options(self):
+        return ["count", "keywords", "images", "start_date", "end_date"]
+
+    def collect(self, keywords, count, images, start, end):
+        return a_grab_tweets(keywords, count, images, start, end)
