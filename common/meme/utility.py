@@ -14,6 +14,8 @@ test_json_file_path = data_folder + "test_seen2.jsonl"
 
 
 def extract_file():
+    if not (os.path.exists(data_folder + memes_folder_name) and os.path.isdir(data_folder + memes_folder_name)):
+        os.makedirs(data_folder + memes_folder_name)
     zip_file_path = data_folder + memes_file_name
     with zipfile.ZipFile(zip_file_path, "r") as zip_ref:
         zip_ref.extractall(data_folder + memes_folder_name)

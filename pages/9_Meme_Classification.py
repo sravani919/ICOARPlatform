@@ -51,38 +51,6 @@ def reset():
 uploaded_meme = st.file_uploader("Upload a meme", type=["zip"])
 
 
-# def show_predictions():
-#     if st.session_state.predict == "Completed":
-#         i = 0
-#         while i < len(st.session_state.file_list):
-#             col = st.columns(3)
-#             j = 0
-#             with st.container():
-#                 while j < 3 and i < len(st.session_state.file_list):
-#                     image = st.session_state.file_list[i]
-#                     with col[j]:
-#                         st.success(st.session_state.pred_list[i])
-#                         st.image(data_folder + memes_folder_name + '/' + image)
-
-#                         i += 1
-#                     j += 1
-
-
-# def predict():
-#     with st.spinner("Task is in progress..."):
-#         from common.meme.classification import classify_memes
-
-#         result = classify_memes()
-#         pred = result["preds"][0]
-
-#         st.session_state.pred_list = pred = result["preds"]
-
-#         st.session_state.predict = "Completed"
-#         st.write("Prediction complete")
-
-# show_predictions()
-
-
 # Unzip the file and verify if it contains images
 if uploaded_meme and not st.session_state.image_uploaded:
     uploaded_meme.name = "memes"
