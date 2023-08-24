@@ -5,7 +5,6 @@ from collections import Counter
 
 import clip
 import numpy as np
-import pandas as pd
 import torch
 import torch.nn as nn
 from PIL import Image
@@ -17,7 +16,6 @@ ssl._create_default_https_context = (
 ) = ssl._create_default_https_context = ssl._create_unverified_context
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-print(device)
 
 clip_model, preprocess = clip.load("RN50x4", device=device, jit=False)
 print("Loading model completed")
@@ -294,10 +292,3 @@ def classify_memes():
     results["preds"] = results["preds"].reshape(-1)
     results["probs"] = results["probs"].reshape(-1)
     return results
-
-    df = pd.DataFrame(results)
-    df = df[["ids", "probs", "preds"]]
-    df.columns = ["id", "proba", "label"]
-    df.label = df.label.astype(int)
-
-    df.to_csv("final_multimodal_prediction.csv", index=False, float_format="%.3f")
