@@ -1,176 +1,107 @@
-import datetime
-import time
+import pkgutil
 
+import pandas as pd
 import streamlit as st
 
-from data_collection import facebook, reddit, tiktok, twitter
-from data_collection.utils import save_data
+import data_collection
+from data_collection.utils import download_images
+
+
+def none_default_sidebar_text_input(label):
+    v = st.sidebar.text_input(label)
+    if v == "":
+        return None
+    return v
+
+
+def query_builder(option):
+    if option == "keywords":
+        return none_default_sidebar_text_input("Keywords (Comma separated)")
+    if option == "count":
+        return st.sidebar.number_input("Number of posts", value=100)
+    if option == "images":
+        return st.sidebar.checkbox("Must have images")
+    if option == "start_date":
+        return st.sidebar.date_input("Start date")
+    if option == "end_date":
+        return st.sidebar.date_input("End date")
+    if option == "locations":
+        return none_default_sidebar_text_input("Locations e.g. US,MX")
+    if option == "hashtags":
+        return none_default_sidebar_text_input("Hashtags e.g. fun,comedy")
+    if option == "video_url":
+        return none_default_sidebar_text_input("Video URL")
+
+    raise ValueError(f"Unknown query option: {option}")
+
 
 title = "Data Collection"
-
-st.set_page_config(page_title=title)
+# st.set_page_config(page_title=title)
 
 st.sidebar.header(title)
 
-option = st.sidebar.selectbox("Social Medias", ["Twitter", "Reddit", "Tiktok", "Facebook"])
-thing_names = {"Twitter": "tweets", "Reddit": "posts", "Tiktok": "tiktoks", "Facebook": "posts"}
+if "results" not in st.session_state:
+    st.session_state.results = None
 
-thing_name = ""
-if option is not None:
-    thing_name = thing_names[option]
+# Grabs all the packages in the data_collection folder
+social_medias_package_names = [
+    name for _, name, is_pkg in pkgutil.walk_packages([data_collection.__path__[0]]) if is_pkg
+]
 
-    query_options = {
-        "Twitter": twitter.query_options,
-        "Reddit": reddit.query_options,
-        "Tiktok": tiktok.query_options,
-        "Facebook": facebook.query_options,
-    }[option]
+social_medias = {}
+for social_media_package_name in social_medias_package_names:
+    social_media = getattr(data_collection, social_media_package_name)
+    social_medias[social_media.name] = social_media
 
-    keywords = ""
-    must_have_images = False
-    tiktok_hashtag = ""
-    st.session_state.start = None
-    st.session_state.end = None
+social_media = social_medias[st.sidebar.selectbox("Select a social media platform", social_medias.keys())]
 
-    if "keywords" in query_options:
-        keywords = st.sidebar.text_input("Enter keywords:")
+collector = social_media.collection_methods[
+    st.sidebar.selectbox("Select a collection type", social_media.collection_methods.keys())
+].Collector()
 
-    if "hashtag" in query_options:
-        tiktok_hashtag = st.sidebar.text_input("TikTok hashtag:")
+st.sidebar.markdown("---")
+st.sidebar.header("Query Options")
 
-    if "date" in query_options:
-        if st.sidebar.checkbox("Choose date range"):
-            # The min_value is the date when Twitter was launched
-            st.session_state.start = st.sidebar.date_input("Start date", min_value=datetime.date(2006, 3, 21))
-            st.session_state.end = st.sidebar.date_input("End date", min_value=datetime.date(2006, 3, 21))
-        else:
-            st.session_state.start = None
-            st.session_state.end = None
+query_options = collector.query_options()
+query_values = {}
+for query_option in query_options:
+    query_values[query_option] = query_builder(query_option)
 
-    if "images" in query_options:
-        must_have_images = st.sidebar.checkbox(thing_name.capitalize() + " must have images")
+if st.sidebar.button("Collect"):
+    st.session_state.results = None
+    with st.spinner("Collecting data..."):
+        st.session_state.results = collector.collect(**query_values)
 
-    post_count = st.sidebar.number_input(f"Number of {thing_name}:", min_value=10, max_value=10000, value=100)
+if st.session_state.results is not None:
+    st.write("Found ", len(st.session_state.results), " results")
+    df = pd.DataFrame(st.session_state.results)
+    tabs = st.tabs(["Results", "Raw Data"])
+    with tabs[0]:
+        # Convert results to a dataframe
+        st.dataframe(df)
 
-if "start" not in st.session_state:
-    st.session_state.start = None
-if "end" not in st.session_state:
-    st.session_state.end = None
-if "post_count" not in st.session_state:
-    st.session_state.post_count = 0
-if "tweets" not in st.session_state:
-    st.session_state.tweets = []
-if "posts" not in st.session_state:
-    st.session_state.posts = []
+    with tabs[1]:
+        st.write(st.session_state.results)
 
-if st.sidebar.button("Preview"):
-    if option == []:
-        st.sidebar.error("Please select social media")
+    # Option to save
+    if "keywords" in query_values.keys():
+        save_name = st.text_input("Save name", value=f"{social_media.name}-{query_values['keywords']}")
     else:
-        if "Twitter" in option:
-            if keywords == "":
-                st.error("Please enter keywords")
-
-            tweets = twitter.grab_tweets(
-                keywords, post_count, must_have_images, st.session_state.start, st.session_state.end
-            )
-            if not tweets:  # The list is empty
-                st.sidebar.error("No tweets found with the given keywords")
-
-            st.session_state.post_count = len(tweets)
-            st.session_state.tweets = tweets
-            if len(tweets) > 0:
-                st.success(
-                    f'{len(tweets)} tweets are now available. \
-                    Click on the "Save" button below to store all the tweets.',
-                    icon="✅",
-                )
-
-        if "Reddit" in option:
-            if keywords == "":
-                st.error("Please enter keywords")
-            start, end, post_count, posts = reddit.grab_posts(keywords, post_count, must_have_images)
-            if not posts:
-                st.sidebar.error("No posts found with the given keywords")
-            st.session_state.start = start
-            st.session_state.end = end
-            st.session_state.post_count = post_count
-            st.session_state.posts = posts
-            if len(posts) > 0:
-                st.success(
-                    f'{len(posts)} posts are now available. \
-                    Click on the "Save" button below to store all the posts.',
-                    icon="✅",
-                )
-
-        if "Tiktok" in option:
-            if tiktok_hashtag is None or tiktok_hashtag == "":
-                st.sidebar.error("Please enter a TikTok hashtag")
-            else:
-                tiktoks = tiktok.hashtag_search(tiktok_hashtag, post_count)
-
-            st.session_state.post_count = len(tiktoks)
-            st.session_state.posts = tiktoks
-
-        if "Facebook" in option:
-            if keywords == "":
-                st.error("Please enter keywords")
-            posts = facebook.grab_posts(keywords, post_count)
-            if not posts:
-                st.sidebar.error("No posts found with the given keywords")
-            st.session_state.posts = posts
-            st.session_state.post_count = len(st.session_state.posts)
-            if len(posts) > 0:
-                st.success(
-                    f'{len(posts)} posts are now available. \
-                    Click on the "Save" button below to store all the posts.',
-                    icon="✅",
-                )
-
-if st.session_state.post_count != 0 and st.session_state.tweets:  # Update this condition
-    st.text(
-        f"There are {st.session_state.post_count} {thing_name} from {st.session_state.start} to {st.session_state.end}"
-    )
-    st.text(f"Here are {len(st.session_state.tweets)} {thing_name}s:")
-    st.dataframe(st.session_state.tweets)
-
-    # Having a text prompt for the name of the file to save
-    filename = st.text_input("File name:", value=option + "-" + keywords)
-    download_images = st.checkbox("Download the images")
+        save_name = st.text_input("Save name", value=f"{social_media.name}-")
+    do_download_images = st.checkbox("Download images with save")
+    if do_download_images and "image_urls" not in df.columns:
+        st.error("Cannot download images because the results do not have an 'image_urls' column")
     if st.button("Save"):
-        file_path = save_data(st.session_state.tweets, filename)
-        st.success("Saved data to '" + file_path + "'")
-        download_images_progress_bar = st.empty()
-        if download_images:
-            image_path = ""
-            pb_start = time.time()
-            for i in range(len(st.session_state.tweets)):
-                image_path = twitter.save_images(st.session_state.tweets, filename, i)
-                time_left = (time.time() - pb_start) * (len(st.session_state.tweets) - i) / (i + 1)
-                download_images_progress_bar.progress(
-                    i / len(st.session_state.tweets),
-                    text=f"Downloading images (images from {i+1}/{len(st.session_state.tweets)} tweets downloaded) \
-                    - {time_left:.2f} seconds left",
-                )
-            st.success("Successfully downloaded all the images to '" + image_path + "'")
+        data_collection.utils.save_data(st.session_state.results, save_name)
+        st.success(f"Saved as data/{save_name}.csv")
 
-elif st.session_state.post_count != 0 and st.session_state.posts:  # Update this condition
-    st.text(f"Here are {len(st.session_state.posts)} posts")
-    st.dataframe(st.session_state.posts)
-
-    # Having a text prompt for the name of the file to save
-    filename = st.text_input("File name:", value=option + "-" + keywords)
-    download_imagesa = st.checkbox("Download the images")
-    if st.button("Save"):
-        file_path = save_data(st.session_state.posts, filename)
-        st.success("Saved data to '" + file_path + "'")
-        download_images_progress_bar = st.progress(0)
-        if download_imagesa:
+        if do_download_images:
+            download_images_progress_bar = st.progress(0)
             image_path = ""
-            for i in range(len(st.session_state.posts)):
-                image_path = reddit.download_images(st.session_state.posts, filename, i)
+            for i in range(len(st.session_state.results)):
+                image_path = download_images(st.session_state.results, save_name, i)
                 download_images_progress_bar.progress(
-                    i / len(st.session_state.posts),
-                    text=f"Downloading images (images from {i+1}/{len(st.session_state.posts)} tweets downloaded)",
+                    i / len(st.session_state.results),
+                    text=f"Downloading images (images from {i + 1}/{len(st.session_state.results)} results downloaded)",
                 )
             st.success("Successfully downloaded all the images to '" + image_path + "'")

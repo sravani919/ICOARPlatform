@@ -1,6 +1,6 @@
 from . import scraper
 
-name = "Facebook"
+name = "Reddit"
 collection_methods = {
     "Scraper": scraper,
 }

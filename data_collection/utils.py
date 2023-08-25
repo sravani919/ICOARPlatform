@@ -4,6 +4,7 @@ import urllib.error
 from urllib.request import HTTPCookieProcessor, build_opener
 
 import pandas as pd
+import requests
 from PIL import Image
 
 IMAGE_DOWNLOAD_MAX_ATTEMPTS = 3
@@ -54,3 +55,52 @@ def save_data(posts, filename, folder_path="data"):
     file_path = f"{folder_path}/{filename}.csv"
     df.to_csv(file_path, index=False)
     return file_path
+
+
+def download_images(posts, filename, i):
+    """
+    Downloads the images from the given posts to the given file path
+    :param posts: The list of post dictionaries
+    :param filename: The filename being used to save the posts
+    :param i: The index of the post to download the images from
+    """
+    print(posts, filename, i)
+    post = posts[i]
+    images_path = ""
+
+    for i, url in enumerate(post["image_urls"]):
+        try:
+            response = requests.get(url)
+            if response.status_code == 200:
+                file_name = f"{post['id']}_{i}.jpg"
+                images_path = f"data/{filename}_images"
+                if not os.path.exists(images_path):
+                    os.makedirs(images_path)
+                file_path = os.path.join(images_path, file_name)
+                with open(file_path, "wb") as file:
+                    file.write(response.content)
+        except requests.exceptions.RequestException:
+            continue
+
+    return images_path
+
+
+class BaseDataCollector:
+    """
+    This class is Abstract and should be inherited by all data collectors.
+    Some example data collectors are the Twitter Scraper, Facebook Scraper, YouTube Comment Scraper, TikTok API, etc.
+    """
+
+    @property
+    def query_options(self):
+        """
+        Should return a list of query options such as ['count', 'keywords', 'start_date', 'end_date']
+        """
+        raise NotImplementedError
+
+    def collect(self, *args, **kwargs):
+        """
+        Should take in the query options and return a list of dictionaries with each dictionary
+        being a singe result.
+        """
+        raise NotImplementedError

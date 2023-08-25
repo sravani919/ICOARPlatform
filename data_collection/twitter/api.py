@@ -3,6 +3,10 @@ import time  # For sleeping between requests
 import streamlit as st
 import tweepy
 
+from data_collection.utils import BaseDataCollector
+
+query_options = ["count", "keywords", "start_date", "end_date", "images"]
+
 
 def init_connection():
     return tweepy.Client(st.secrets.api_token.twitter)
@@ -281,3 +285,14 @@ def grab_tweets(keywords, count: int, must_have_images, start_time, end_time):
     tweets = format_tweet_results(res)
 
     return tweets
+
+
+class Collector(BaseDataCollector):
+    def __init__(self):
+        pass
+
+    def query_options(self):
+        return ["keywords", "count", "images", "start_date", "end_date"]
+
+    def collect(self, keywords, count, images, start_time, end_time):
+        return grab_tweets(keywords, count, images, start_time, end_time)

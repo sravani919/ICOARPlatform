@@ -1,15 +1,15 @@
 """
 Scrapes from Facebook using the facebook-scraper package
-Couldn't be named facebook_scraper because that's the name of the package it's using
 
 """
 
 import streamlit as st
 from facebook_scraper import get_posts_by_search
 
-from data_collection.utils import mike, save_data
+from data_collection.utils import BaseDataCollector, mike, save_data
 
 credentials = (mike["gmail_username"], mike["facebook_password"])
+
 
 options = {"progress": True}
 
@@ -70,3 +70,14 @@ if __name__ == "__main__":
 
     posts = format_posts(posts)
     print(len(posts), "posts Saved to", save_data(posts, "facebook"))
+
+
+class Collector(BaseDataCollector):
+    def __init__(self):
+        pass
+
+    def query_options(self):
+        return ["count", "keywords"]
+
+    def collect(self, keywords, count):
+        return grab_posts(keywords, count)

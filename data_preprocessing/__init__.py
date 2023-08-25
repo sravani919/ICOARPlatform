@@ -1,9 +1,29 @@
+import os
+
 import fasttext
 import pandas as pd
 import preprocessor as p
+import requests
 import spacy
 
-fmodel = fasttext.load_model("./models/lid.176.bin")
+
+def download_fasttext_model():
+    response = requests.get("https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin")
+    # Need to create the models directory if it doesn't exist
+    if not os.path.exists("./models"):
+        os.makedirs("./models")
+
+    with open("./models/lid.176.bin", "wb") as f:
+        f.write(response.content)
+
+
+try:
+    fmodel = fasttext.load_model("./models/lid.176.bin")
+except ValueError:
+    print("Downloading fasttext language detection model...")
+    download_fasttext_model()
+    fmodel = fasttext.load_model("./models/lid.176.bin")
+
 nlp = spacy.load("en_core_web_sm")
 
 PUNCTUATION = [".", ",", "!", "?", ";", ":", "-", "(", ")", "[", "]", "{", "}", "'", '"', "\n", "\t", "\r", "\\", "/"]
