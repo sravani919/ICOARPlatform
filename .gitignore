@@ -234,3 +234,6 @@ models/
 
 ### twscrape ###
 accounts.db
+
+# Sphinx documentation
+docs/_build/
