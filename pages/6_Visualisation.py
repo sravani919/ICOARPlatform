@@ -29,7 +29,7 @@ if st.session_state.filename_pred != "":
     if selected_option == "Bar Plot":
         fig, ax = plt.subplots()
         value_counts = data["sentiment"].value_counts()
-        ax.bar(value_counts.index, value_counts.values)
+        bars = ax.bar(value_counts.index, value_counts.values)
 
         with st.expander("Show more graph options"):
             cols = st.columns(3)
@@ -58,11 +58,30 @@ if st.session_state.filename_pred != "":
         # Change the background color that's between the bars
         ax.set_facecolor(inner_background_color)
 
+        for bar in bars:
+            height = bar.get_height()
+            ax.text(
+                bar.get_x() + bar.get_width() / 2,
+                height,
+                f"{height}",
+                ha="center",
+                va="bottom",
+                fontsize=12,  # Adjust the font size of the value labels
+                color="black",  # Set the color of the value labels
+            )
+
         st.pyplot(fig, facecolor=outer_background_color)
+
+        with st.expander("Show Specific Posts"):
+            selected_category = st.selectbox("Select a category", value_counts.index)
+            tweets_in_category = data[data["sentiment"] == selected_category]
+
+            st.write("Tweets in the selected category:")
+            st.dataframe(tweets_in_category.reset_index(drop=True))
     elif selected_option == "Pie Chart":
         fig, ax = plt.subplots()
         value_counts = data["sentiment"].value_counts()
-        ax.pie(value_counts.values, labels=data["sentiment"].unique(), autopct="%1.1f%%")
+        ax.pie(value_counts.values, labels=value_counts.index, autopct="%1.1f%%")
         with st.expander("Show more graph options"):
             cols = st.columns(2)
             with cols[0]:
@@ -82,6 +101,12 @@ if st.session_state.filename_pred != "":
         ax.set_title(title, fontsize=title_font_size)
         st.pyplot(fig, facecolor=background_color)
 
+        with st.expander("Show Specific Posts"):
+            selected_category = st.selectbox("Select a category", value_counts.index)
+            tweets_in_category = data[data["sentiment"] == selected_category]
+
+            st.write("Tweets in the selected category:")
+            st.dataframe(tweets_in_category.reset_index(drop=True))
     elif selected_option == "Topic Modeling":
         data = data["text"].tolist()
 
