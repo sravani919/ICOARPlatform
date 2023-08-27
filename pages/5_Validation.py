@@ -269,14 +269,22 @@ if st.button("Predict"):
     st.session_state.output = df
     st.success("Prediction completed", icon="✅")
 
-if st.session_state.predict:
+if st.session_state.predict and MODEL == "arpanghoshal/EmoRoBERTa":
+    tab1, tab2 = st.tabs(["Save Data", "Emotional Analysis"])
+    with tab1:
+        filename = st.text_input("Enter file name  to save predicted data")
+        save = st.button("Save File")
+        if save:
+            file_path = save_file(st.session_state.output, filename)
+            st.session_state.predict = False
+            st.success("Saved to '" + file_path + "'")
+    with tab2:
+        emotional_analysis(st.session_state.output)
+
+elif st.session_state.predict:
     filename = st.text_input("Enter file name  to save predicted data")
     save = st.button("Save File")
     if save:
         file_path = save_file(st.session_state.output, filename)
         st.session_state.predict = False
         st.success("Saved to '" + file_path + "'")
-
-if MODEL == "arpanghoshal/EmoRoBERTa" and st.session_state.predict:
-    st.session_state.freq = freq
-    emotional_analysis(st.session_state.output)

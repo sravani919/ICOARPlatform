@@ -41,7 +41,7 @@ def emotional_analysis(df):
         "neutral",
     ]
 
-    freq = [len(df[df["emotion"] == emotion]) for emotion in categories]
+    freq = [len(st.session_state.output[st.session_state.output["emotion"] == emotion]) for emotion in categories]
 
     fig1 = go.Figure(data=[go.Pie(labels=categories, values=freq, textinfo="none")])
     fig1.update_layout(title="Frequency Distribution", height=500, width=700)
