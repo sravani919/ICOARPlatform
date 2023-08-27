@@ -17,6 +17,8 @@ from transformers import (
     pipeline,
 )
 
+from emotional_analysis import emotional_analysis
+
 title = "Validation"
 st.set_page_config(page_title=title)
 
@@ -31,6 +33,39 @@ if "model_list" not in st.session_state:
     st.session_state.model_list = []
 if "predict" not in st.session_state:
     st.session_state.predict = False
+if "freq" not in st.session_state:
+    st.session_state.freq = []
+freq = [0] * 28
+categories = [
+    "admiration",
+    "amusement",
+    "anger",
+    "annoyance",
+    "approval",
+    "caring",
+    "confusion",
+    "curiosity",
+    "desire",
+    "disappointment",
+    "disapproval",
+    "disgust",
+    "embarrassment",
+    "excitement",
+    "fear",
+    "gratitude",
+    "grief",
+    "joy",
+    "love",
+    "nervousness",
+    "optimism",
+    "pride",
+    "realization",
+    "relief",
+    "remorse",
+    "sadness",
+    "surprise",
+    "neutral",
+]
 
 st.session_state.horizontal = True
 model_type = st.radio(
@@ -98,6 +133,10 @@ else:
             "tokenizer": AutoTokenizer,
             "model": "QCRI/bert-base-multilingual-cased-pos-english",
         },
+        "Emotion Analysis": {
+            "tokenizer": AutoTokenizer,
+            "model": "arpanghoshal/EmoRoBERTa",
+        },
     }
 
     selected_model_name = st.selectbox("Select a model", list(MODELS.keys()))
@@ -164,6 +203,9 @@ if st.button("Predict"):
             elif MODEL == "QCRI/bert-base-multilingual-cased-pos-english":
                 model = AutoModelForTokenClassification.from_pretrained(MODEL)
                 pipeline = TokenClassificationPipeline(model=model, tokenizer=tokenizer)
+            elif MODEL == "arpanghoshal/EmoRoBERTa":
+                model = AutoModelForSequenceClassification.from_pretrained(MODEL, from_tf=True)
+
             else:
                 model = AutoModelForSequenceClassification.from_pretrained(MODEL)
 
@@ -200,7 +242,16 @@ if st.button("Predict"):
                 progress = (index + 1) / total_rows
                 progress_bar.progress(progress, text=f"Predicting text: {progress * 100:.2f}% complete")
             continue
+        if MODEL == "arpanghoshal/EmoRoBERTa":
+            predicted_value = predict(row["text"], model, tokenizer)
+            df.loc[index, "emotion"] = predicted_value
+            emotion_index = categories.index(predicted_value)
+            freq[emotion_index] += 1
 
+            with placeholder.container():
+                progress = (index + 1) / total_rows
+                progress_bar.progress(progress, text=f"Predicting text: {progress * 100:.2f}% complete")
+            continue
         if MODEL == "covid-twitter-bert":
             predicted_value = predictCovidModel(row["text"], model, tokenizer)
         else:
@@ -225,3 +276,7 @@ if st.session_state.predict:
         file_path = save_file(st.session_state.output, filename)
         st.session_state.predict = False
         st.success("Saved to '" + file_path + "'")
+
+if MODEL == "arpanghoshal/EmoRoBERTa" and st.session_state.predict:
+    st.session_state.freq = freq
+    emotional_analysis(st.session_state.output)
