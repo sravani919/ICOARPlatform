@@ -270,15 +270,17 @@ if st.button("Predict"):
     st.success("Prediction completed", icon="✅")
 
 if st.session_state.predict and MODEL == "arpanghoshal/EmoRoBERTa":
-    tab1, tab2 = st.tabs(["Save Data", "Emotional Analysis"])
-    with tab1:
+    tabs = ["Save Data", "Emotional Analysis"]
+    with st.container():
+        selected_tab = st.radio("Select a tab", tabs)
+    if selected_tab == "Save Data":
         filename = st.text_input("Enter file name  to save predicted data")
         save = st.button("Save File")
         if save:
             file_path = save_file(st.session_state.output, filename)
             st.session_state.predict = False
             st.success("Saved to '" + file_path + "'")
-    with tab2:
+    elif selected_tab == "Emotional Analysis":
         emotional_analysis(st.session_state.output)
 
 elif st.session_state.predict:
