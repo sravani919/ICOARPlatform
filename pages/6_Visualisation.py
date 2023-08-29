@@ -11,6 +11,8 @@ import seaborn as sns
 import streamlit as st
 from nltk.tokenize import word_tokenize
 
+from visualization import add_graph_info
+
 if "filename_pred" not in st.session_state:
     st.session_state.filename_pred = ""
 
@@ -27,61 +29,46 @@ if st.session_state.filename_pred != "":
     fig, ax = plt.subplots()
 
     if selected_option == "Bar Plot":
-        fig, ax = plt.subplots()
         value_counts = data["sentiment"].value_counts()
-        bars = ax.bar(value_counts.index, value_counts.values)
-
         with st.expander("Show more graph options"):
             cols = st.columns(3)
             with cols[0]:
-                title = st.text_input("Title", "Classification of tweets")
-                title_font_size = st.slider("Title font size", 5, 50, 20)
-
-            with cols[1]:
+                title = st.text_input("Title", "Classification of Posts")
+                title_font_size = st.slider("Title font size", 10, 50, 20)
                 x_label = st.text_input("X label", "Sentiment")
                 y_label = st.text_input("Y label", "Count")
-                label_font_size = st.slider("Label font size", 5, 50, 15)
-
-            with cols[2]:
+            with cols[1]:
+                label_font_size = st.slider("Label font size", 10, 50, 15)
                 x_tick_font_size = st.slider("X tick font size", 5, 50, 10)
                 y_tick_font_size = st.slider("Y tick font size", 5, 50, 10)
+            with cols[2]:
+                bar_color = st.color_picker("Bar color", "#1f77b4")
                 outer_background_color = st.color_picker("Outer background color", "#FFFFFF")
                 inner_background_color = st.color_picker("Inner background color", "#FFFFFF")
 
-        ax.tick_params(axis="x", labelsize=x_tick_font_size)
-        ax.tick_params(axis="y", labelsize=y_tick_font_size)
+        fig1 = go.Figure(data=[go.Bar(x=value_counts.index, y=value_counts.values)])
+        fig1.update_traces(marker_color=bar_color)
 
-        ax.set_xlabel(x_label, fontsize=label_font_size)
-        ax.set_ylabel(y_label, fontsize=label_font_size)
-        ax.set_title(title, fontsize=title_font_size)
+        # updates the graph based on the inputs the user put in the above expander
+        fig1.update_layout(
+            title=title,
+            xaxis_title=x_label,
+            yaxis_title=y_label,
+            title_font_size=title_font_size,
+            xaxis=dict(tickfont=dict(size=x_tick_font_size), title_font=dict(size=label_font_size)),
+            yaxis=dict(tickfont=dict(size=y_tick_font_size), title_font=dict(size=label_font_size)),
+            plot_bgcolor=inner_background_color,
+            paper_bgcolor=outer_background_color,
+            height=500,
+            width=700,
+        )
+        st.plotly_chart(fig1)
 
-        # Change the background color that's between the bars
-        ax.set_facecolor(inner_background_color)
+        with st.expander("Show Additional Information"):
+            add_graph_info(value_counts, data)
 
-        for bar in bars:
-            height = bar.get_height()
-            ax.text(
-                bar.get_x() + bar.get_width() / 2,
-                height,
-                f"{height}",
-                ha="center",
-                va="bottom",
-                fontsize=12,  # Adjust the font size of the value labels
-                color="black",  # Set the color of the value labels
-            )
-
-        st.pyplot(fig, facecolor=outer_background_color)
-
-        with st.expander("Show Specific Posts"):
-            selected_category = st.selectbox("Select a category", value_counts.index)
-            tweets_in_category = data[data["sentiment"] == selected_category]
-
-            st.write("Tweets in the selected category:")
-            st.dataframe(tweets_in_category.reset_index(drop=True))
     elif selected_option == "Pie Chart":
-        fig, ax = plt.subplots()
         value_counts = data["sentiment"].value_counts()
-        ax.pie(value_counts.values, labels=value_counts.index, autopct="%1.1f%%")
         with st.expander("Show more graph options"):
             cols = st.columns(2)
             with cols[0]:
@@ -89,24 +76,28 @@ if st.session_state.filename_pred != "":
                 title_font_size = st.slider("Title font size", 10, 50, 20)
             with cols[1]:
                 label_font_size = st.slider("Label font size", 10, 50, 15)
-                percentages_font_size = st.slider("Percentages font size", 10, 50, 15)
+                legend_font_size = st.slider("Legend font size", 10, 50, 15)
                 background_color = st.color_picker("Background color", "#FFFFFF")
 
-        for text in ax.texts:
-            if "%" in text.get_text():
-                text.set_fontsize(percentages_font_size)
-            else:
-                text.set_fontsize(label_font_size)
+        fig1 = go.Figure(data=[go.Pie(labels=value_counts.index, values=value_counts.values)])
 
-        ax.set_title(title, fontsize=title_font_size)
-        st.pyplot(fig, facecolor=background_color)
+        # updates the graph based on the inputs the user put in the above expander
+        fig1.update_layout(
+            title=title,
+            title_font=dict(size=title_font_size),
+            paper_bgcolor=background_color,
+            legend=dict(font=dict(size=legend_font_size)),
+        )
+        fig1.update_traces(
+            textfont_size=label_font_size,
+            hoverinfo="label+percent",
+            texttemplate="%{label}<br>%{percent}",
+            textposition="outside",
+        )
+        st.plotly_chart(fig1)
+        with st.expander("Show Additional Information"):
+            add_graph_info(value_counts, data)
 
-        with st.expander("Show Specific Posts"):
-            selected_category = st.selectbox("Select a category", value_counts.index)
-            tweets_in_category = data[data["sentiment"] == selected_category]
-
-            st.write("Tweets in the selected category:")
-            st.dataframe(tweets_in_category.reset_index(drop=True))
     elif selected_option == "Topic Modeling":
         data = data["text"].tolist()
 
