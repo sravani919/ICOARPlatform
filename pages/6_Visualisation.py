@@ -30,21 +30,25 @@ if st.session_state.filename_pred != "":
 
     if selected_option == "Bar Plot":
         value_counts = data["sentiment"].value_counts()
+
         with st.expander("Show more graph options"):
             cols = st.columns(3)
             with cols[0]:
                 title = st.text_input("Title", "Classification of Posts")
-                title_font_size = st.slider("Title font size", 10, 50, 20)
+
                 x_label = st.text_input("X label", "Sentiment")
                 y_label = st.text_input("Y label", "Count")
-            with cols[1]:
                 label_font_size = st.slider("Label font size", 10, 50, 15)
+            with cols[1]:
+                title_font_size = st.slider("Title font size", 10, 50, 20)
+
                 x_tick_font_size = st.slider("X tick font size", 5, 50, 10)
                 y_tick_font_size = st.slider("Y tick font size", 5, 50, 10)
             with cols[2]:
                 bar_color = st.color_picker("Bar color", "#1f77b4")
                 outer_background_color = st.color_picker("Outer background color", "#FFFFFF")
                 inner_background_color = st.color_picker("Inner background color", "#FFFFFF")
+                text_color = st.color_picker("Text Color", "#000000")
 
         fig1 = go.Figure(data=[go.Bar(x=value_counts.index, y=value_counts.values)])
         fig1.update_traces(marker_color=bar_color)
@@ -52,11 +56,18 @@ if st.session_state.filename_pred != "":
         # updates the graph based on the inputs the user put in the above expander
         fig1.update_layout(
             title=title,
+            title_font=dict(size=title_font_size, color=text_color),
             xaxis_title=x_label,
             yaxis_title=y_label,
             title_font_size=title_font_size,
-            xaxis=dict(tickfont=dict(size=x_tick_font_size), title_font=dict(size=label_font_size)),
-            yaxis=dict(tickfont=dict(size=y_tick_font_size), title_font=dict(size=label_font_size)),
+            xaxis=dict(
+                tickfont=dict(size=x_tick_font_size, color=text_color),
+                title_font=dict(size=label_font_size, color=text_color),
+            ),
+            yaxis=dict(
+                tickfont=dict(size=y_tick_font_size, color=text_color),
+                title_font=dict(size=label_font_size, color=text_color),
+            ),
             plot_bgcolor=inner_background_color,
             paper_bgcolor=outer_background_color,
             height=500,
@@ -74,6 +85,7 @@ if st.session_state.filename_pred != "":
             with cols[0]:
                 title = st.text_input("Title", "Pie Chart")
                 title_font_size = st.slider("Title font size", 10, 50, 20)
+                text_color = st.color_picker("Text Color", "#000000")
             with cols[1]:
                 label_font_size = st.slider("Label font size", 10, 50, 15)
                 legend_font_size = st.slider("Legend font size", 10, 50, 15)
@@ -84,9 +96,10 @@ if st.session_state.filename_pred != "":
         # updates the graph based on the inputs the user put in the above expander
         fig1.update_layout(
             title=title,
-            title_font=dict(size=title_font_size),
+            title_font=dict(size=title_font_size, color=text_color),
             paper_bgcolor=background_color,
-            legend=dict(font=dict(size=legend_font_size)),
+            font=dict(color=text_color),
+            legend=dict(font=dict(size=legend_font_size, color=text_color)),
         )
         fig1.update_traces(
             textfont_size=label_font_size,
