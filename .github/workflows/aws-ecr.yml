@@ -1,12 +1,15 @@
-name: Login to Amazon ECR Private, then build and push a Docker image
+name: Contaiinerization
 
 on:
   push:
     branches: [main]
 
 jobs:
-  pre-commit:
+  containerize:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
