@@ -1,6 +1,7 @@
 import streamlit as st
 
 from tabs.image.meme_classification import meme_classification
+from tabs.validation.validation import validation
 
 st.set_page_config(layout="wide")
 
@@ -12,7 +13,7 @@ def read_css_file():
 
 st.markdown(f"<style>{read_css_file()}</style>", unsafe_allow_html=True)
 
-tab1, tab2 = st.tabs(["Text Classification", "Image Classification"])
+tab1, tab2, validation_tab = st.tabs(["Text Classification", "Image Classification", "Validation"])
 
 with tab1:
     st.subheader("Text classification")
@@ -39,3 +40,15 @@ with tab2:
         st.markdown(multi)
 
         meme_classification()
+
+with validation_tab:
+    st.subheader("Validation")
+    st.markdown(":bulb: In this tab, you can use a pretrained model to label datasets depdending on the task.")
+
+    multi = """:bulb: Steps -
+            :one:  Select the dataset that you want to have labeled by using the dropdown.
+            :two:   Choose a model from our list of recommended ones or find a specific one via huggingface
+            :three:  Click on the predict button and view or save your results.
+                """
+    st.markdown(multi)
+    validation()
