@@ -1,4 +1,3 @@
-
 from typing import Dict, List
 
 import pandas as pd
@@ -6,7 +5,6 @@ import streamlit as st
 
 from gpt.layout import BasePage
 from gpt.prompts import make_classification_prompt
-
 
 
 class TextClassificationPage(BasePage):
@@ -23,8 +21,8 @@ class TextClassificationPage(BasePage):
     def prepare_inputs(self, columns: List[str]):
         return {"input": st.text_area(label="Please enter your text.", value="", height=300)}
 
+
 # Create a subtab for "Text Annotation"
 def text_annotation_tab():
     page = TextClassificationPage(st.subheader("Annotate your own data"))
     page.render()
-
