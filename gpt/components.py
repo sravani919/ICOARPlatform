@@ -26,7 +26,7 @@ def usage():
 
 
 def task_instruction_editor(prompt: FewShotPromptTemplate) -> FewShotPromptTemplate:
-    st.header("Edit Labeling Instructions")
+    # st.header("Edit Labeling Instructions")
     with st.expander("See instruction", expanded=True):
         prompt.prefix = st.text_area(label="Enter task instruction", value=prompt.prefix, height=200)
     return prompt

@@ -2,11 +2,13 @@ import streamlit as st
 from streamlit_option_menu import option_menu
 
 from tabs.image.meme_classification import meme_classification
+from tabs.Text_Annotation.Text_annotation import text_annotation_tab
+from tabs.validation.validation import validation
 
 st.set_page_config(layout="wide")
 
 
-menu_options = ["Text Classification", "Image Classification"]
+menu_options = ["Text Classification", "Image Classification", "Validation", "Text Annotation"]
 selected = option_menu(
     None,
     menu_options,
@@ -64,3 +66,21 @@ if selected == menu_options[1]:
         st.markdown(multi)
 
         meme_classification()
+
+if selected == menu_options[2]:
+    st.subheader("Validation")
+    st.markdown(":bulb: In this tab, you can use a pretrained model to label datasets depdending on the task.")
+
+    multi = """:bulb: Steps -
+            :one:  Select the dataset that you want to have labeled by using the dropdown.
+            :two:   Choose a model from our list of recommended ones or find a specific one via huggingface
+            :three:  Click on the predict button and view or save your results.
+                """
+    st.markdown(multi)
+    validation()
+
+
+if selected == menu_options[3]:
+    # st.subheader("Text Annotation")
+
+    text_annotation_tab()
