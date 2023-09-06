@@ -1,33 +1,58 @@
 import streamlit as st
+from streamlit_option_menu import option_menu
 
 from tabs.image.meme_classification import meme_classification
 
 st.set_page_config(layout="wide")
 
 
-def read_css_file():
-    with open("style.css") as f:
-        return f.read()
+menu_options = ["Text Classification", "Image Classification"]
+selected = option_menu(
+    None,
+    menu_options,
+    icons=["house", "cloud-upload", "list-task", "gear"],
+    menu_icon="cast",
+    default_index=0,
+    orientation="horizontal",
+    styles={
+        "nav-link": {"font-size": "25px", "text-align": "left", "margin": "0px", "--hover-color": "#eee"},
+    },
+)
 
+if selected == menu_options[0]:
+    text_menu_options = ["Retireval", "Preprocessing", "Classification"]
 
-st.markdown(f"<style>{read_css_file()}</style>", unsafe_allow_html=True)
-
-tab1, tab2 = st.tabs(["Text Classification", "Image Classification"])
-
-with tab1:
-    st.subheader("Text classification")
-    tab1_1, tab1_2, tab1_3 = st.tabs(["Retireval", "Preprocessing", "Classification"])
-    with tab1_1:
-        st.subheader("Work in progress")
-
-with tab2:
-    st.subheader("Image classification")
-    tab2_1, tab2_2, tab2_3, tab2_4 = st.tabs(
-        ["Retrieval", "Classification", "Meme Classification", "Deepfake Detection"]
+    selected_option = option_menu(
+        None,
+        text_menu_options,
+        icons=["house", "cloud-upload", "list-task", "gear"],
+        menu_icon="cast",
+        default_index=0,
+        orientation="horizontal",
+        styles={"nav-link-selected": {"background-color": "red"}},
     )
-    with tab2_1:
-        st.subheader("Work in progress")
-    with tab2_3:
+
+    if selected_option == "Retireval":
+        st.header("Work in progress")
+    elif selected_option == "Preprocessing":
+        st.header("Work in progress")
+    elif selected_option == "Classification":
+        st.header("Work in progress")
+
+if selected == menu_options[1]:
+    image_menu_options = ["Retrieval", "Classification", "Meme Classification", "Deepfake Detection"]
+
+    selected_option = option_menu(
+        None,
+        image_menu_options,
+        icons=["house", "cloud-upload", "list-task", "gear"],
+        menu_icon="cast",
+        default_index=0,
+        orientation="horizontal",
+        styles={"nav-link-selected": {"background-color": "red"}},
+    )
+
+    if selected_option == "Meme Classification":
         st.markdown(":bulb: In this tab, you can classify memes as ***Hateful*** or ***Non-Hateful***.")
 
         multi = """:bulb: Steps -
