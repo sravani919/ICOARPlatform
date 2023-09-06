@@ -1070,6 +1070,21 @@ files = [
 tests = ["asttokens", "littleutils", "pytest", "rich"]
 
 [[package]]
+name = "extra-streamlit-components"
+version = "0.1.60"
+description = "An all-in-one place, to find complex or just natively unavailable components on streamlit."
+category = "main"
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "extra_streamlit_components-0.1.60-py3-none-any.whl", hash = "sha256:14378edc31bb7d8bfa1525c0e340a43bddcc6d3855e87edca0e3f014b09ffbae"},
+    {file = "extra_streamlit_components-0.1.60.tar.gz", hash = "sha256:9512870c431fd8af6e11282bb5a5293f3a1b48d834152e5c9e9a11ceed738586"},
+]
+
+[package.dependencies]
+streamlit = ">=1.18.0"
+
+[[package]]
 name = "facebook-scraper"
 version = "0.2.59"
 description = "Scrape Facebook public pages without an API key"
@@ -6804,4 +6819,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.12"
-content-hash = "efbf71c3235677fd9e1a8550d0139899029c1162f54489d9eac0bbbc5c2b79e6"
+content-hash = "c5aa678356d68a80e1f84a8c6ee22aa82f3795de3dacbef91aac7c1fd0363ece"

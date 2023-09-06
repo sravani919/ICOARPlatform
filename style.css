@@ -1,7 +1,0 @@
-button[data-baseweb="tab"] {
-    font-size: 18px;
-    width: 100%;
-  }
-  button[data-baseweb="tab"] > div[data-testid="stMarkdownContainer"] > p {
-    font-size: 18px;
-  }

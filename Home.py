@@ -1,18 +1,21 @@
+import extra_streamlit_components as stx
 import streamlit as st
 from streamlit_option_menu import option_menu
 
-from tabs.image.meme_classification import meme_classification
-from tabs.Text_Annotation.Text_annotation import text_annotation_tab
-from tabs.validation.validation import validation
+st.set_page_config(page_title="ICOAR", layout="wide")
+hide_streamlit_style = """
+            <style>
+            #MainMenu {visibility: hidden;}
+            footer {visibility: hidden;}
+            </style>
+            """
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
-st.set_page_config(layout="wide")
-
-
-menu_options = ["Text Classification", "Image Classification", "Validation", "Text Annotation"]
+menu_options = ["Home", "Text Analysis", "Multimedia Analysis"]
 selected = option_menu(
     None,
     menu_options,
-    icons=["house", "cloud-upload", "list-task", "gear"],
+    icons=["house-fill", "chat-left-text", "images"],
     menu_icon="cast",
     default_index=0,
     orientation="horizontal",
@@ -20,67 +23,71 @@ selected = option_menu(
         "nav-link": {"font-size": "25px", "text-align": "left", "margin": "0px", "--hover-color": "#eee"},
     },
 )
-
 if selected == menu_options[0]:
-    text_menu_options = ["Retireval", "Preprocessing", "Classification"]
+    st.header("Cyberinfrastructure for Online Abuse Research")
 
-    selected_option = option_menu(
+
+elif selected == menu_options[1]:
+    text_sections = ["Text Classification", "Text Annotation", "Validation"]
+    selected_text_section = option_menu(
         None,
-        text_menu_options,
-        icons=["house", "cloud-upload", "list-task", "gear"],
+        text_sections,
+        icons=["chat-left-text", "tag-fill", "clipboard-data-fill"],
         menu_icon="cast",
         default_index=0,
         orientation="horizontal",
-        styles={"nav-link-selected": {"background-color": "red"}},
+        styles={},
     )
 
-    if selected_option == "Retireval":
-        st.header("Work in progress")
-    elif selected_option == "Preprocessing":
-        st.header("Work in progress")
-    elif selected_option == "Classification":
-        st.header("Work in progress")
+    if selected_text_section == text_sections[0]:
+        text_stepper_options = ["Retireval", "Preprocessing", "Classification", "Emotion Analysis"]
 
-if selected == menu_options[1]:
-    image_menu_options = ["Retrieval", "Classification", "Meme Classification", "Deepfake Detection"]
+        selected_option = stx.stepper_bar(steps=text_stepper_options)
 
-    selected_option = option_menu(
-        None,
-        image_menu_options,
-        icons=["house", "cloud-upload", "list-task", "gear"],
-        menu_icon="cast",
-        default_index=0,
-        orientation="horizontal",
-        styles={"nav-link-selected": {"background-color": "red"}},
-    )
+        if selected_option == 0:
+            st.header("Work in progress")
+        elif selected_option == 1:
+            st.header("Work in progress")
+        elif selected_option == 2:
+            st.header("Work in progress")
 
-    if selected_option == "Meme Classification":
-        st.markdown(":bulb: In this tab, you can classify memes as ***Hateful*** or ***Non-Hateful***.")
+    elif selected_text_section == text_sections[1]:
+        from tabs.Text_Annotation.Text_annotation import text_annotation_tab
+
+        text_annotation_tab()
+
+    elif selected_text_section == text_sections[2]:
+        from tabs.validation.validation import validation
+
+        st.subheader("Validation")
+        st.markdown(":bulb: In this tab, you can use a pretrained model to label datasets depdending on the task.")
 
         multi = """:bulb: Steps -
-        :one:  Upload a zip file containing memes (jpeg, png, jpg) format.
-        :two:  We will extract the text from the memes for you.
-        :three:  Make sure it is matching to the actual text in the meme.
-        :four:  Click on the predict button.
-            """
+                :one:  Select the dataset that you want to have labeled by using the dropdown.
+                :two:   Choose a model from our list of recommended ones or find a specific one via huggingface
+                :three:  Click on the predict button and view or save your results.
+                    """
         st.markdown(multi)
+        validation()
+
+elif selected == menu_options[2]:
+    image_sections = ["Image Classification", "Meme Classification", "Deepfake Detection"]
+    selected_image_section = option_menu(
+        None,
+        image_sections,
+        icons=["cloud-arrow-up-fill", "images", "file-earmark-image-fill"],
+        menu_icon="cast",
+        default_index=0,
+        orientation="horizontal",
+        styles={},
+    )
+
+    if selected_image_section == image_sections[0]:
+        image_menu_options = ["Retrieval", "Classification"]
+
+        selected_option = stx.stepper_bar(steps=image_menu_options)
+
+    elif selected_image_section == image_sections[1]:
+        from tabs.image.meme_classification import meme_classification
 
         meme_classification()
-
-if selected == menu_options[2]:
-    st.subheader("Validation")
-    st.markdown(":bulb: In this tab, you can use a pretrained model to label datasets depdending on the task.")
-
-    multi = """:bulb: Steps -
-            :one:  Select the dataset that you want to have labeled by using the dropdown.
-            :two:   Choose a model from our list of recommended ones or find a specific one via huggingface
-            :three:  Click on the predict button and view or save your results.
-                """
-    st.markdown(multi)
-    validation()
-
-
-if selected == menu_options[3]:
-    # st.subheader("Text Annotation")
-
-    text_annotation_tab()
