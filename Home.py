@@ -2,6 +2,8 @@ import streamlit as st
 
 from tabs.image.meme_classification import meme_classification
 from tabs.validation.validation import validation
+from tabs.Text_Annotation.Text_annotation import text_annotation_tab
+
 
 st.set_page_config(layout="wide")
 
@@ -13,7 +15,8 @@ def read_css_file():
 
 st.markdown(f"<style>{read_css_file()}</style>", unsafe_allow_html=True)
 
-tab1, tab2, validation_tab = st.tabs(["Text Classification", "Image Classification", "Validation"])
+
+tab1, tab2, validation_tab, annotation_tab = st.tabs(["Text Classification", "Image Classification", "Validation", "Text Annotation"])
 
 with tab1:
     st.subheader("Text classification")
@@ -52,3 +55,10 @@ with validation_tab:
                 """
     st.markdown(multi)
     validation()
+
+
+if annotation_tab:
+    #st.subheader("Text Annotation")
+    
+    
+    text_annotation_tab()
