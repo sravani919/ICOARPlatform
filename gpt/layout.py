@@ -14,7 +14,6 @@ from gpt.components import display_download_button, openai_model_form, task_inst
 from gpt.utils import escape_markdown
 
 
-
 class BasePage(ABC):
     example_path: str = ""
 
@@ -45,29 +44,33 @@ class BasePage(ABC):
 
     def annotate(self, examples: List[Dict]) -> List[Dict]:
         return examples
-    
 
     def render(self) -> None:
-    
         # st.title(self.title)
         # st.divider()
         # st.header("Annotate your own data")
-        st.markdown("""In this section, you have the opportunity to utilize ChatGPT to annotate text according to your 
-                    custom labels. You have the option to label a CSV file using the provided ChatGPT interface. Below 
+        st.markdown(
+            """In this section, you have the opportunity to utilize ChatGPT to annotate text according to your
+                    custom labels. You have the option to label a CSV file using the provided ChatGPT interface. Below
                     is a demo of how it works:
-                    """)
+                    """
+        )
         st.markdown("In this example, we are using sentiment labels on a text:")
-        st.markdown("""**1. Input Text:** Enter or paste the text you want to annotate into the provided text box along with 
-                    desired labels. This text may include sentences, paragraphs, epending on your annotation needs.""")
+        st.markdown(
+            """**1. Input Text:** Enter or paste the text you want to annotate into the provided text box along with
+                    desired labels. This text may include sentences, paragraphs, epending on your annotation needs."""
+        )
 
         columns = self.columns
         examples = self.make_examples(columns)
         examples = self.annotate(examples)
 
-        st.markdown("""**2. Edit the prompt (optional):** You can modify the prompt that instruct ChatGPT. The choice of 
+        st.markdown(
+            """**2. Edit the prompt (optional):** You can modify the prompt that instruct ChatGPT. The choice of
                     prompt greatly influences the generated responsesand the quality of the annotation. Ensure that your
-                    edits are clear and relevant to the task.""")
-        
+                    edits are clear and relevant to the task."""
+        )
+
         prompt = self.make_prompt(examples)
         prompt = task_instruction_editor(prompt)
 
@@ -104,7 +107,7 @@ class BasePage(ABC):
 
         st.text("This will use the parameters you input in the test section.")
 
-        option = st.selectbox("Select a file", [file for file in glob.glob("./data/*.csv")],key="unique_key_1")
+        option = st.selectbox("Select a file", [file for file in glob.glob("./data/*.csv")], key="unique_key_1")
 
         if llm is None:
             st.error("Enter your API key.")
@@ -151,6 +154,3 @@ class BasePage(ABC):
 
                 st.session_state.predict = False
                 st.success("Saved to '" + file_path + "'")
-
-
-        
