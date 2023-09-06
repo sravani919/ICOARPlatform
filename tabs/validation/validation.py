@@ -2,11 +2,11 @@ import glob
 import os
 import string
 
-import extra_streamlit_components as stx
 import pandas as pd
 import streamlit as st
 import torch
 from huggingface_hub import HfApi
+from streamlit_option_menu import option_menu
 from transformers import (
     AutoModelForSequenceClassification,
     AutoModelForTokenClassification,
@@ -121,14 +121,19 @@ def validation():
         "neutral",
     ]
 
-    chosen_id = stx.tab_bar(
-        data=[
-            stx.TabBarItemData(id="tab1", title="Recommended Models", description="Models we thought you might like"),
-            stx.TabBarItemData(id="tab2", title="Search on Huggingface", description="Look for a specific Model"),
-        ]
+    text_menu_options = ["Recommended Models", "Search on Huggingface"]
+
+    selected_option = option_menu(
+        None,
+        text_menu_options,
+        icons=["house", "cloud-upload", "list-task", "gear"],
+        menu_icon="cast",
+        default_index=0,
+        orientation="horizontal",
+        styles={"nav-link-selected": {"background-color": "red"}},
     )
 
-    if chosen_id == "tab1":
+    if selected_option == "Recommended Models":
         MODELS = {
             "Covid offensive tweets Detection": {"model": "covid-twitter-bert"},
             "Sentiment Analysis": {
@@ -168,7 +173,7 @@ def validation():
         MODEL = MODELS["model"]
         st.session_state.disabled = False
 
-    elif chosen_id == "tab2":
+    elif selected_option == "Search on Huggingface":
         search_text = st.text_input("Enter model name")
         search_button = st.button("Search")
 
