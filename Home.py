@@ -58,7 +58,7 @@ with validation_tab:
     validation()
 
 
-if annotation_tab:
+with annotation_tab:
     # st.subheader("Text Annotation")
 
     text_annotation_tab()
