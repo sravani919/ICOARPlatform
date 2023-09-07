@@ -23,6 +23,7 @@ def load_and_preprocess_image(path):
 def load_and_preprocess_from_path_label(path, label):
     return load_and_preprocess_image(path), label
 
+
 def bully_classification():
     if "image_uploaded" not in st.session_state:
         st.session_state.image_uploaded = False
