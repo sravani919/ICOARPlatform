@@ -87,6 +87,11 @@ elif selected == menu_options[2]:
 
         selected_option = stx.stepper_bar(steps=image_menu_options)
 
+        if selected_option == 1:
+            from tabs.image.bully_classifification import bully_classification
+
+            bully_classification()
+
     elif selected_image_section == image_sections[1]:
         from tabs.image.meme_classification import meme_classification
 
