@@ -228,9 +228,12 @@ Temporary Items
 data/
 predicted/
 models/
+model/
 
 ### Intellij ###
 .idea
 
 ### twscrape ###
 accounts.db
+
+login_error.html
