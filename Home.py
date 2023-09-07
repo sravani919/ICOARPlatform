@@ -40,7 +40,7 @@ elif selected == menu_options[1]:
     )
 
     if selected_text_section == text_sections[0]:
-        text_stepper_options = ["Retireval", "Preprocessing", "Classification", "Emotion Analysis"]
+        text_stepper_options = ["Retireval", "Preprocessing", "Classification", "Visualisation"]
 
         selected_option = stx.stepper_bar(steps=text_stepper_options)
 
@@ -50,6 +50,11 @@ elif selected == menu_options[1]:
             st.header("Work in progress")
         elif selected_option == 2:
             st.header("Work in progress")
+        elif selected_option == 3:
+            from tabs.Visualisation.Text_Visualisation import Text_Visualisation_tab
+
+            Text_Visualisation_tab()
+    # Code above means add visualization into tab "Visualization"
 
     elif selected_text_section == text_sections[1]:
         from tabs.Text_Annotation.Text_annotation import text_annotation_tab
@@ -67,6 +72,20 @@ elif selected == menu_options[1]:
                 :two:   Choose a model from our list of recommended ones or find a specific one via huggingface
                 :three:  Click on the predict button and view or save your results.
                     """
+        st.markdown(multi)
+        validation()
+    # My own code
+    elif selected_text_section == text_sections[3]:
+        from tabs.validation.validation import validation
+
+        st.subheader("Validation")
+        st.markdown(":bulb: In this tab, you can use a pretrained model to label datasets depdending on the task.")
+
+        multi = """:bulb: Steps -
+                    :one:  Select the dataset that you want to have labeled by using the dropdown.
+                    :two:   Choose a model from our list of recommended ones or find a specific one via huggingface
+                    :three:  Click on the predict button and view or save your results.
+                        """
         st.markdown(multi)
         validation()
 
