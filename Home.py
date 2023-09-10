@@ -98,3 +98,8 @@ elif selected == menu_options[2]:
         from tabs.image.meme_classification import meme_classification
 
         meme_classification()
+
+    elif selected_image_section == image_sections[2]:
+        from tabs.image.deepfake_detection import df_detection
+
+        df_detection()
