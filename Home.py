@@ -20,11 +20,13 @@ selected = option_menu(
     default_index=0,
     orientation="horizontal",
     styles={
-        "nav-link": {"font-size": "25px", "text-align": "left", "margin": "0px", "--hover-color": "#eee"},
+        "nav-link": {"font-size": "25px", "text-align": "left", "margin": "0px", "--hover-color": "#B9B5B5"},
     },
 )
 if selected == menu_options[0]:
-    st.header("Cyberinfrastructure for Online Abuse Research")
+    from tabs.home_page import home_content
+
+    home_content()
 
 
 elif selected == menu_options[1]:
