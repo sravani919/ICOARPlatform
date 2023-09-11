@@ -26,6 +26,7 @@ def load_and_preprocess_image(path):
 def load_and_preprocess_from_path_label(path, label):
     return load_and_preprocess_image(path), label
 
+
 # delete all files in DATA_DIR
 def empty_cache():
     file_list = os.listdir(DATA_DIR)
@@ -34,6 +35,7 @@ def empty_cache():
         if os.path.isfile(file_path):
             os.remove(file_path)
     st.session_state.image_uploaded = False
+
 
 def bully_classification():
     if "image_uploaded" not in st.session_state:
