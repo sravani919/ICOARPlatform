@@ -5,7 +5,9 @@ import streamlit as st
 import tensorflow as tf
 from PIL import Image
 from tensorflow import keras
+import zipfile
 
+DATA_DIR = "././data/images/image/"
 
 def preprocess_image(image):
     # Decode and resize image.
@@ -23,34 +25,56 @@ def load_and_preprocess_image(path):
 def load_and_preprocess_from_path_label(path, label):
     return load_and_preprocess_image(path), label
 
+def reset():
+    file_list = os.listdir(DATA_DIR)
+    for file_name in file_list:
+        file_path = os.path.join(DATA_DIR, file_name)
+        if os.path.isfile(file_path):
+            os.remove(file_path)
+    st.session_state.image_uploaded = False
 
 def bully_classification():
     if "image_uploaded" not in st.session_state:
         st.session_state.image_uploaded = False
 
-    image = st.file_uploader("Upload a image file", type=["jpg", "png"])
+    file_ = st.file_uploader(
+        "Upload an image file, or zipfile. Make sure the extension of images is either jpg or png.", 
+        type=["jpg", "png", "zip"]
+        )
 
     if st.button("Reset"):
-        directory = "././data/images/image/"
-        file_list = os.listdir(directory)
-        for file_name in file_list:
-            file_path = os.path.join(directory, file_name)
-            if os.path.isfile(file_path):
-                os.remove(file_path)
-        st.session_state.image_uploaded = False
+        reset()
 
-    if image is not None:
-        file_path = os.path.join("././data/images/image/", image.name)
-        with open(file_path, "wb") as f:
-            f.write(image.read())
-        st.success("File saved successfully!")
-        st.session_state.image_uploaded = True
+    if file_ is not None:
+        # if DATA_DIR is not empty, reset()
+        if len(os.listdir(DATA_DIR)) > 0:
+            reset()
+        # if file_ is a zipfile, extract it
+        if file_.type == "application/zip":
+            save_path = os.path.join(DATA_DIR, "image.zip")
+            with open(save_path, "wb") as f:
+                f.write(file_.getbuffer())
+            with zipfile.ZipFile(save_path, "r") as zip_ref:
+                zip_ref.extractall(DATA_DIR)
+            os.remove(save_path)
+            st.success("File saved successfully!")
+            st.session_state.image_uploaded = True
+        # if file_ is an image, save it
+        else:
+            file_path = os.path.join(DATA_DIR, file_.name)
+            with open(file_path, "wb") as f:
+                f.write(file_.read())
+            st.success("File saved successfully!")
+            st.session_state.image_uploaded = True
 
+    # make predictions on the saved images
+    if st.session_state.image_uploaded:
+        st.success("Predicting... Please wait...")
         model = keras.models.load_model("model/fine_tuned_vgg16_model.h5")
 
         image_paths = sorted(glob.glob("data/images/image" + "/*.jpg") + glob.glob("data/images/image" + "/*.png"))
 
-        label_ids = [0]
+        label_ids = [0]*len(image_paths)
 
         test_dataset = tf.data.Dataset.from_tensor_slices((image_paths, label_ids))
 
@@ -77,6 +101,6 @@ def bully_classification():
                     color_style = "color: green;"
 
                 st.write(f'<h3 style="{color_style}">{title}</h3>', unsafe_allow_html=True)
-                image = Image.open(image_paths[0])
+                image = Image.open(image_paths[idx])
                 resized_image = image.resize((200, 200))
                 st.image(resized_image, use_column_width=False)
