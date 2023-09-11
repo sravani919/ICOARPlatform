@@ -26,15 +26,14 @@ def load_and_preprocess_image(path):
 def load_and_preprocess_from_path_label(path, label):
     return load_and_preprocess_image(path), label
 
-
-def reset():
+# delete all files in DATA_DIR
+def empty_cache():
     file_list = os.listdir(DATA_DIR)
     for file_name in file_list:
         file_path = os.path.join(DATA_DIR, file_name)
         if os.path.isfile(file_path):
             os.remove(file_path)
     st.session_state.image_uploaded = False
-
 
 def bully_classification():
     if "image_uploaded" not in st.session_state:
@@ -45,13 +44,13 @@ def bully_classification():
         type=["jpg", "png", "zip"],
     )
 
-    if st.button("Reset"):
-        reset()
+    # if st.button("Reset"):
+    #     empty_cache()
 
     if file_ is not None:
         # if DATA_DIR is not empty, reset()
         if len(os.listdir(DATA_DIR)) > 0:
-            reset()
+            empty_cache()
         # if file_ is a zipfile, extract it
         if file_.type == "application/zip":
             save_path = os.path.join(DATA_DIR, "image.zip")
@@ -88,6 +87,7 @@ def bully_classification():
         class_names = ["cyberbullying", "non_cyberbullying"]
 
         # Evaluate all the batches.
+        st.subheader("Predictions")
         for image_batch, labels_batch in test_dataset.take(1):
             # Predictions for the current batch.
             predictions = model.predict(image_batch)
