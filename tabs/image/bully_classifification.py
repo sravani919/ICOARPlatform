@@ -1,13 +1,14 @@
 import glob as glob
 import os
+import zipfile
 
 import streamlit as st
 import tensorflow as tf
 from PIL import Image
 from tensorflow import keras
-import zipfile
 
 DATA_DIR = "././data/images/image/"
+
 
 def preprocess_image(image):
     # Decode and resize image.
@@ -25,6 +26,7 @@ def load_and_preprocess_image(path):
 def load_and_preprocess_from_path_label(path, label):
     return load_and_preprocess_image(path), label
 
+
 def reset():
     file_list = os.listdir(DATA_DIR)
     for file_name in file_list:
@@ -33,14 +35,15 @@ def reset():
             os.remove(file_path)
     st.session_state.image_uploaded = False
 
+
 def bully_classification():
     if "image_uploaded" not in st.session_state:
         st.session_state.image_uploaded = False
 
     file_ = st.file_uploader(
-        "Upload an image file, or zipfile. Make sure the extension of images is either jpg or png.", 
-        type=["jpg", "png", "zip"]
-        )
+        "Upload an image file, or zipfile. Make sure the extension of images is either jpg or png.",
+        type=["jpg", "png", "zip"],
+    )
 
     if st.button("Reset"):
         reset()
@@ -74,7 +77,7 @@ def bully_classification():
 
         image_paths = sorted(glob.glob("data/images/image" + "/*.jpg") + glob.glob("data/images/image" + "/*.png"))
 
-        label_ids = [0]*len(image_paths)
+        label_ids = [0] * len(image_paths)
 
         test_dataset = tf.data.Dataset.from_tensor_slices((image_paths, label_ids))
 
