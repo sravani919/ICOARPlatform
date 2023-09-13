@@ -3,8 +3,9 @@ import os
 import streamlit as st
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
-from model.df.classifiers import *
-from model.df.pipeline import *
+# Adding the noqa comment to ignore the unused import warning and importing with *
+from model.df.classifiers import *  # noqa
+from model.df.pipeline import *  # noqa
 
 if "image_uploaded" not in st.session_state:
     st.session_state.image_uploaded = False
@@ -17,7 +18,8 @@ def colored_text(text, color):
 def pred(generator):
     X, y = generator.next()
     op = "Deep Fake image"
-    classifier = Meso4()
+    # pre-commit hook ruff is upset because it doesn't know where the Meso4 class is coming from
+    classifier = Meso4()  # noqa
     classifier.load("model/df/Meso4_DF.h5")
     pred = classifier.predict(X)
     if pred[0][0] > 0.5:
