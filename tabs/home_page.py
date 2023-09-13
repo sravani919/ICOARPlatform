@@ -13,12 +13,11 @@ def home_content():
     with col1:
         st.header("1. Text Analysis")
         st.markdown(
-            """On this tab, we have 3 functionalities - **Text Classification, Text Annotation and Emotion Analysis**
+            """On this tab, we have 2 functionalities - **Text Classification, Text Annotation**
                     """
         )
         st.subheader("i. Text Classification")
         st.subheader("ii. Text Annotation")
-        st.subheader("iii. Emotion Analysis")
 
     with col2:
         st.header("2. Multimedia Analysis")

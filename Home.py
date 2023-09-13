@@ -35,7 +35,7 @@ elif selected == menu_options[1]:
     data_collection_tab()
 
 elif selected == menu_options[2]:
-    text_sections = ["Text Classification", "Text Annotation", "Validation"]
+    text_sections = ["Text Classification", "Text Annotation"]
     selected_text_section = option_menu(
         None,
         text_sections,
@@ -56,7 +56,19 @@ elif selected == menu_options[2]:
         elif selected_option == 1:
             st.header("Work in progress")
         elif selected_option == 2:
-            st.header("Work in progress")
+            from tabs.validation.validation import validation
+
+            st.subheader("Classification")
+            st.markdown(":bulb: In this tab, you can use a pretrained model to label datasets depdending on the task.")
+
+            multi = """:bulb: Steps -
+                    :one:  Select the dataset that you want to have labeled by using the dropdown.
+                    :two:   Choose a model from our list of recommended ones or find a specific one via huggingface
+                    :three:  Click on the predict button and view or save your results.
+                        """
+            st.markdown(multi)
+            validation()
+
         elif selected_option == 3:
             from tabs.Visualisation.Text_Visualisation import Text_Visualisation_tab
 
@@ -82,19 +94,7 @@ elif selected == menu_options[2]:
         st.markdown(multi)
         validation()
     # My own code
-    elif selected_text_section == text_sections[3]:
-        from tabs.validation.validation import validation
 
-        st.subheader("Validation")
-        st.markdown(":bulb: In this tab, you can use a pretrained model to label datasets depdending on the task.")
-
-        multi = """:bulb: Steps -
-                    :one:  Select the dataset that you want to have labeled by using the dropdown.
-                    :two:   Choose a model from our list of recommended ones or find a specific one via huggingface
-                    :three:  Click on the predict button and view or save your results.
-                        """
-        st.markdown(multi)
-        validation()
 
 elif selected == menu_options[3]:
     image_sections = ["Image Classification", "Meme Classification", "Deepfake Detection"]
