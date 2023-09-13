@@ -11,11 +11,11 @@ hide_streamlit_style = """
             """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
-menu_options = ["Home", "Text Analysis", "Multimedia Analysis"]
+menu_options = ["Home", "Data Collection", "Text Analysis", "Multimedia Analysis"]
 selected = option_menu(
     None,
     menu_options,
-    icons=["house-fill", "chat-left-text", "images"],
+    icons=["house-fill", "box-arrow-in-down", "chat-left-text", "images"],
     menu_icon="cast",
     default_index=0,
     orientation="horizontal",
@@ -26,8 +26,12 @@ selected = option_menu(
 if selected == menu_options[0]:
     st.header("Cyberinfrastructure for Online Abuse Research")
 
-
 elif selected == menu_options[1]:
+    # Data collection
+    from tabs.Data_Collection.data_collection_tab import data_collection_tab
+    data_collection_tab()
+
+elif selected == menu_options[2]:
     text_sections = ["Text Classification", "Text Annotation", "Validation"]
     selected_text_section = option_menu(
         None,
@@ -70,7 +74,7 @@ elif selected == menu_options[1]:
         st.markdown(multi)
         validation()
 
-elif selected == menu_options[2]:
+elif selected == menu_options[3]:
     image_sections = ["Image Classification", "Meme Classification", "Deepfake Detection"]
     selected_image_section = option_menu(
         None,
