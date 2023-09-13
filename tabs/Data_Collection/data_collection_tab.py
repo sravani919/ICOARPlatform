@@ -1,12 +1,12 @@
 import pkgutil
 
+import extra_streamlit_components as stx
 import pandas as pd
 import streamlit as st
+from streamlit_option_menu import option_menu
 
 import data_collection
 from data_collection.utils import download_images
-import extra_streamlit_components as stx
-from streamlit_option_menu import option_menu
 
 if "results" not in st.session_state:
     st.session_state.results = None
@@ -53,15 +53,16 @@ def query_builder(option, container=None):
 
 
 def social_media_selector(social_medias):
-    def update(key): st.session_state.step = 1
+    def update(key):
+        st.session_state.step = 1
+
     try:
         current_index = list(social_medias.keys()).index(st.session_state.social_media_option)
     except ValueError:
         current_index = 0
-    st.session_state.social_media_option = option_menu("Social Media Platform", list(social_medias.keys()),
-                                                       default_index=current_index,
-                                                       on_change=update,
-                                                       key="None")
+    st.session_state.social_media_option = option_menu(
+        "Social Media Platform", list(social_medias.keys()), default_index=current_index, on_change=update, key="None"
+    )
     st.session_state.socialmedia = social_medias[st.session_state.social_media_option]
 
 
@@ -72,11 +73,12 @@ def collection_type_selector():
         )
     except ValueError:
         current_index = 0
-    st.session_state.collector_option = option_menu("Collection type",
-                                                    list(st.session_state.socialmedia.collection_methods.keys()),
-                                                    default_index=current_index)
+    st.session_state.collector_option = option_menu(
+        "Collection type", list(st.session_state.socialmedia.collection_methods.keys()), default_index=current_index
+    )
     st.session_state.collector = st.session_state.socialmedia.collection_methods[
-        st.session_state.collector_option].Collector()
+        st.session_state.collector_option
+    ].Collector()
 
 
 def data_collection_tab():
@@ -101,7 +103,6 @@ def data_collection_tab():
         if st.session_state.step == 0:
             social_media_selector(social_medias)
 
-
         if st.session_state.step == 1:
             collection_type_selector()
 
@@ -115,9 +116,13 @@ def data_collection_tab():
     with main_columns[1]:
         st.subheader("Summary")
         # Displaying a summary of the query in a table format
-        summary = [[st.session_state.socialmedia.name,
-                    st.session_state.collector.__class__.__module__.split(".")[-1].title(),
-                    ""]]
+        summary = [
+            [
+                st.session_state.socialmedia.name,
+                st.session_state.collector.__class__.__module__.split(".")[-1].title(),
+                "",
+            ]
+        ]
         try:
             for key, value in st.session_state.query_values.items():
                 summary[0][2] += f"{key}: {value}, "
@@ -145,9 +150,11 @@ def data_collection_tab():
 
         # If keywords is one of the query options, use it as the default save name
         if "keywords" in st.session_state.query_values.keys():
-            save_name = st.text_input("Save name",
-                                      value=f"{st.session_state.socialmedia.name}-\
-                                      {st.session_state.query_values['keywords']}")
+            save_name = st.text_input(
+                "Save name",
+                value=f"{st.session_state.socialmedia.name}-\
+                                      {st.session_state.query_values['keywords']}",
+            )
         else:
             save_name = st.text_input("Save name", value=f"{st.session_state.socialmedia.name}-")
         do_download_images = st.checkbox("Download images with save")
@@ -164,6 +171,7 @@ def data_collection_tab():
                     image_path = download_images(st.session_state.results, save_name, i)
                     download_images_progress_bar.progress(
                         i / len(st.session_state.results),
-                        text=f"Downloading images (images from {i + 1}/{len(st.session_state.results)} results downloaded)",
+                        text=f"Downloading images (images from {i + 1}/{len(st.session_state.results)} \
+                        results downloaded)",
                     )
                 st.success("Successfully downloaded all the images to '" + image_path + "'")

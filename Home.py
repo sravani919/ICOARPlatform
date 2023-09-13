@@ -29,6 +29,7 @@ if selected == menu_options[0]:
 elif selected == menu_options[1]:
     # Data collection
     from tabs.Data_Collection.data_collection_tab import data_collection_tab
+
     data_collection_tab()
 
 elif selected == menu_options[2]:
