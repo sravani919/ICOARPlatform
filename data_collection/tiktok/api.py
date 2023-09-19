@@ -8,8 +8,16 @@ from data_collection.utils import BaseDataCollector
 
 
 def video_response_parsing(response) -> (str, dict):
+    """
+    Parses the response from the TikTok API
+    :param response: The response from the TikTok API, should be a json object
+    :return: A list of dictionaries containing the formatted video data
+             Will return None as results if an error occurred
+             The search_id is needed to resume a previous search
+    """
     try:
         data = response["data"]
+        has_more = data["has_more"]
     except KeyError:
         st.error(json.dumps(response["error"], indent=4))
         return None, None
@@ -19,7 +27,7 @@ def video_response_parsing(response) -> (str, dict):
     except KeyError:
         search_id = None
 
-    if not data["has_more"]:
+    if not has_more:
         search_id = None  # No more videos to get, the search_id already should be None but just in case
 
     formatted_videos = []
@@ -40,6 +48,7 @@ def video_response_parsing(response) -> (str, dict):
                 "effect_ids": video.get("effect_ids", None),
                 "playlist_id": video.get("playlist_id", None),
                 "voice_to_text": video.get("voice_to_text", None),
+                "video_url": f"https://www.tiktok.com/@{video['username']}/video/{video['id']}",
             }
         )
 
@@ -135,6 +144,10 @@ class TikTokApi:
                 json=data,
             )
             search_id, results = video_response_parsing(r.json())
+
+            if results is None:
+                break  # Error occurred
+
             collected_videos += results
             count_still_needed = max_count - len(collected_videos)
 
@@ -165,6 +178,19 @@ def get_videos(
     count: int = 100,
     hashtags: str = None,
 ):
+    """
+    Uses the TikTok API to get videos
+    Helps to format the query request and check for credentials
+    Designed to make interfacing with the tiktokapi easier.
+    Will look for credentials inside streamlit's secrets.toml file
+    :param keywords: A single string  with comma seperated keywords
+    :param start_date: A datetime.date object
+    :param end_date: A datetime.date object must be after start_date and within 30 days
+    :param locations: Comma seperated country abbreviations
+    :param count: The number of videos to return
+    :param hashtags: A single string with comma seperated hashtags
+    :return:
+    """
     if keywords is None and hashtags is None and locations is None:
         st.error("Please specify at least one of the following: keywords, hashtags, locations")
 
