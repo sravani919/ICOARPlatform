@@ -18,9 +18,13 @@ if "socialmedia" not in st.session_state:
     st.session_state.socialmedia = None
 
 # Option variables so when you go backwards in the stepper bar it remembers the options you selected
-st.session_state.social_media_option = None
+st.session_state.social_media_option = "Facebook"
 st.session_state.collector_option = None
 st.session_state.query_values = {}
+
+
+def reset_query_values():
+    st.session_state.query_values = {}
 
 
 def none_default_text_input(label):
@@ -53,16 +57,12 @@ def query_builder(option, container=None):
 
 
 def social_media_selector(social_medias):
-    def update(key):
-        st.session_state.step = 1
+    print(social_medias.keys())
 
-    try:
-        current_index = list(social_medias.keys()).index(st.session_state.social_media_option)
-    except ValueError:
-        current_index = 0
-    st.session_state.social_media_option = option_menu(
-        "Social Media Platform", list(social_medias.keys()), default_index=current_index, on_change=update, key="None"
-    )
+    st.session_state.social_media_option = st.radio("Social Media Platform", list(social_medias.keys()),
+                                                    on_change=reset_query_values)
+                                                    # index=list(social_medias.keys()).index(
+                                                    #     st.session_state.social_media_option))
     st.session_state.socialmedia = social_medias[st.session_state.social_media_option]
 
 
@@ -73,9 +73,9 @@ def collection_type_selector():
         )
     except ValueError:
         current_index = 0
-    st.session_state.collector_option = option_menu(
-        "Collection type", list(st.session_state.socialmedia.collection_methods.keys()), default_index=current_index
-    )
+    st.session_state.collector_option = st.radio(
+        "Collection type", list(st.session_state.socialmedia.collection_methods.keys()),
+        on_change=reset_query_values)
     st.session_state.collector = st.session_state.socialmedia.collection_methods[
         st.session_state.collector_option
     ].Collector()
@@ -95,25 +95,25 @@ def data_collection_tab():
         social_medias[sm.name] = sm
 
     # Stepper bar
-    steps = ["Select a social media platform", "Select a collection type", "Query options"]
-    st.session_state.step = stx.stepper_bar(steps=steps)
-    main_columns = st.columns(2)
+    # steps = ["Select a social media platform", "Select a collection type", "Query options"]
+    # st.session_state.step = stx.stepper_bar(steps=steps)
+    main_columns = st.columns(3)
 
     with main_columns[0]:
-        if st.session_state.step == 0:
-            social_media_selector(social_medias)
-
-        if st.session_state.step == 1:
-            collection_type_selector()
-
-        if st.session_state.step == 2:
-            query_options = st.session_state.collector.query_options()
-
-            columns = st.columns(2)
-            for query_option in query_options:
-                st.session_state.query_values[query_option] = query_builder(query_option, columns[0])
+        st.subheader("Select a social media platform")
+        social_media_selector(social_medias)
+        # Fancy vertical divider
+        st.markdown("-------------------")
+        collection_type_selector()
 
     with main_columns[1]:
+        st.subheader("Query options")
+        query_options = st.session_state.collector.query_options()
+        columns = st.columns(2)
+        for query_option in query_options:
+            st.session_state.query_values[query_option] = query_builder(query_option, columns[0])
+
+    with main_columns[2]:
         st.subheader("Summary")
         # Displaying a summary of the query in a table format
         summary = [
@@ -138,6 +138,7 @@ def data_collection_tab():
                 st.session_state.results = st.session_state.collector.collect(**st.session_state.query_values)
 
     if st.session_state.results is not None:
+        st.subheader("Results")
         st.write("Found ", len(st.session_state.results), " results")
         df = pd.DataFrame(st.session_state.results)
         tabs = st.tabs(["Results", "Raw Data"])
@@ -152,8 +153,7 @@ def data_collection_tab():
         if "keywords" in st.session_state.query_values.keys():
             save_name = st.text_input(
                 "Save name",
-                value=f"{st.session_state.socialmedia.name}-\
-                                      {st.session_state.query_values['keywords']}",
+                value=f"{st.session_state.socialmedia.name}-{st.session_state.query_values['keywords']}",
             )
         else:
             save_name = st.text_input("Save name", value=f"{st.session_state.socialmedia.name}-")

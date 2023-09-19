@@ -86,7 +86,7 @@ class TikTokApi:
         end_date,
         locations,
         hashtags,
-    ) -> list[dict]:
+    ) -> (list[dict], str):
         """
         Grabs videos from the TikTokApi that match the given parameters.
         :param hashtags: Hashtags that the video must have e.g. ["funny", "comedy"]
@@ -95,7 +95,7 @@ class TikTokApi:
         :param max_count: Maximum number of videos to return
         :param keywords: Keywords that must be in the video description
         :param locations: Locations that the videos must be from e.g. ["US", "CA"]
-        :return: List of dictionaries containing the videos' data
+        :return: List of dictionaries containing the videos' data and the search_id
         """
 
         base_data = {
@@ -154,7 +154,7 @@ class TikTokApi:
             if search_id is None:
                 break
 
-        return collected_videos
+        return collected_videos, search_id
 
 
 def cant_find_keys():
@@ -220,7 +220,8 @@ def get_videos(
         return
 
     ttapi = TikTokApi(client_key, client_secret)
-    return ttapi.video_request(count, keywords, start_date, end_date, locations, hashtags)
+
+    return ttapi.video_request(count, keywords, start_date, end_date, locations, hashtags)[0]
 
 
 class Collector(BaseDataCollector):
