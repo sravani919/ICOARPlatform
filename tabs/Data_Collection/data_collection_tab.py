@@ -1,9 +1,7 @@
 import pkgutil
 
-import extra_streamlit_components as stx
 import pandas as pd
 import streamlit as st
-from streamlit_option_menu import option_menu
 
 import data_collection
 from data_collection.utils import download_images
@@ -57,25 +55,22 @@ def query_builder(option, container=None):
 
 
 def social_media_selector(social_medias):
-    print(social_medias.keys())
-
-    st.session_state.social_media_option = st.radio("Social Media Platform", list(social_medias.keys()),
-                                                    on_change=reset_query_values)
-                                                    # index=list(social_medias.keys()).index(
-                                                    #     st.session_state.social_media_option))
+    st.session_state.social_media_option = st.radio(
+        "Social Media Platform", list(social_medias.keys()), on_change=reset_query_values
+    )
+    # index=list(social_medias.keys()).index(
+    #     st.session_state.social_media_option))
     st.session_state.socialmedia = social_medias[st.session_state.social_media_option]
 
 
 def collection_type_selector():
     try:
-        current_index = list(st.session_state.socialmedia.collection_methods.keys()).index(
-            st.session_state.collector_option
-        )
+        list(st.session_state.socialmedia.collection_methods.keys()).index(st.session_state.collector_option)
     except ValueError:
-        current_index = 0
+        pass
     st.session_state.collector_option = st.radio(
-        "Collection type", list(st.session_state.socialmedia.collection_methods.keys()),
-        on_change=reset_query_values)
+        "Collection type", list(st.session_state.socialmedia.collection_methods.keys()), on_change=reset_query_values
+    )
     st.session_state.collector = st.session_state.socialmedia.collection_methods[
         st.session_state.collector_option
     ].Collector()
