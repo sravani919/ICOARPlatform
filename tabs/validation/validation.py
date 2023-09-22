@@ -174,6 +174,15 @@ def validation():
         st.session_state.disabled = False
 
     elif selected_option == "Search on Huggingface":
+        multi = """:bulb: Steps - :one:  Input your Huggingface API token in the secrets.toml file. If you don't have
+        one, you can get one [here](https://huggingface.co/settings/tokens)
+        \n:two:   Input the name of the model you want to search for. You can also just input a related keyword if you
+        are not sure of which one to use.
+        \n:three:  After that, click on the search button and select the model you want to use from the list that
+        appears. If you want to see more information about your selected model, there will be an expander below with a
+        link to the model's page. These pages usually have a demo on the right side of the page, so that you can test
+        the model before using it."""
+        st.markdown(multi)
         search_text = st.text_input("Enter model name")
         search_button = st.button("Search")
 
@@ -185,7 +194,10 @@ def validation():
             "Select a model",
             st.session_state.model_list,
         )
-
+        if MODEL:
+            with st.expander("Model Details"):
+                model_url = f"https://huggingface.co/{MODEL}"
+                st.write(f"Model URL: [{MODEL}]({model_url})")
     # prevents users from initially clicking predict button without choosing a model
     if st.session_state.disabled:
         st.warning("Please select a model to proceed")
