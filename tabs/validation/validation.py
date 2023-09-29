@@ -43,7 +43,11 @@ def fetch_models_from_hf(search_text):
 
     print("Fetching model list from hugging face...")
     models = hf_api.list_models(filter="text-classification", search=search_text)
+    # sort models by downloads to get the user higher quality models.
+    models.sort(key=lambda model: model.downloads, reverse=True)
+
     model_list = []
+
     for model in models:
         model_list.append(model.modelId)
 
