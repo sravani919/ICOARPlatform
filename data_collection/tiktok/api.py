@@ -255,4 +255,6 @@ class Collector(BaseDataCollector):
 
 if __name__ == "__main__":
     tiktok = TikTokApi(st.secrets.tiktok.client_key, st.secrets.tiktok.client_secret)
-    results, si = tiktok.video_request(count = 200, keywords=["covid", "lockdown"], start_date="20210601", end_date="20210630")
+    results, si = tiktok.video_request(
+        count=200, keywords=["covid", "lockdown"], start_date="20210601", end_date="20210630"
+    )
