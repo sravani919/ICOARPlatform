@@ -50,6 +50,8 @@ def query_builder(option, container=None):
             return none_default_text_input("Hashtags e.g. fun,comedy")
         if option == "video_url":
             return none_default_text_input("Video URL")
+        if option == "search_id":
+            return none_default_text_input("Search ID")
 
     raise ValueError(f"Unknown query option: {option}")
 
@@ -95,21 +97,21 @@ def data_collection_tab():
     main_columns = st.columns(3)
 
     with main_columns[0]:
-        st.subheader("Select a social media platform")
+        st.subheader("1. Select a social media platform")
         social_media_selector(social_medias)
         # Fancy vertical divider
         st.markdown("-------------------")
         collection_type_selector()
 
     with main_columns[1]:
-        st.subheader("Query options")
+        st.subheader("2. Query options")
         query_options = st.session_state.collector.query_options()
         columns = st.columns(2)
         for query_option in query_options:
             st.session_state.query_values[query_option] = query_builder(query_option, columns[0])
 
     with main_columns[2]:
-        st.subheader("Summary")
+        st.subheader("3. Summary")
         # Displaying a summary of the query in a table format
         summary = [
             [
