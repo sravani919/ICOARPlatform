@@ -14,6 +14,7 @@ def add_graph_info(value_counts, data):
 
     # see more information about the selected category, wordcloud, most used words etc.
     if selected_category and selected_category in words_array:
+        cols = st.columns(3)
         df_neutral = data[data["sentiment"] == selected_category]
         all_text = " ".join(df_neutral["text"].tolist())
 
@@ -25,25 +26,31 @@ def add_graph_info(value_counts, data):
         word_freq = Counter(filtered_words)
         top_20_words = word_freq.most_common(20)
 
-        wordcloud = WordCloud(width=800, height=400, background_color="white").generate_from_frequencies(
-            dict(top_20_words)
-        )
+        with cols[0]:
+            st.subheader("Wordcloud")
+            wordcloud = WordCloud(width=800, height=400, background_color="white").generate_from_frequencies(
+                dict(top_20_words)
+            )
 
-        st.image(wordcloud.to_array())
+            st.image(wordcloud.to_array(), use_column_width=True)
 
-        temp_df = pd.DataFrame(top_20_words, columns=["word", "frequency"])
+        with cols[1]:
+            st.subheader("Words Frequency")
+            temp_df = pd.DataFrame(top_20_words, columns=["word", "frequency"])
 
-        fig = px.bar(
-            temp_df, x="word", y="frequency", text="frequency", labels={"word": "Word", "frequency": "Frequency"}
-        )
-        fig.update_traces(hovertemplate="Word: %{x}<br>Frequency: %{y}", hoverinfo="text")
+            fig = px.bar(
+                temp_df, x="word", y="frequency", text="frequency", labels={"word": "Word", "frequency": "Frequency"}
+            )
+            fig.update_traces(hovertemplate="Word: %{x}<br>Frequency: %{y}", hoverinfo="text")
 
-        st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True)
 
-        # user chooses from the 20 most common words and the posts with that word are displayed
-        freq_words_array = [word for word, _ in top_20_words]
-        freq_selected_word = st.selectbox("Select a word:", freq_words_array)
-        if freq_selected_word:
-            filtered_df = df_neutral[df_neutral["text"].str.contains(freq_selected_word)]
-            filtered_df = filtered_df[["text", "sentiment"]]
-            st.dataframe(filtered_df)
+        with cols[2]:
+            st.subheader("Most used words examples")
+            # user chooses from the 20 most common words and the posts with that word are displayed
+            freq_words_array = [word for word, _ in top_20_words]
+            freq_selected_word = st.selectbox("Select a word to show examples:", freq_words_array)
+            if freq_selected_word:
+                filtered_df = df_neutral[df_neutral["text"].str.contains(freq_selected_word)]
+                filtered_df = filtered_df[["text", "sentiment"]]
+                st.dataframe(filtered_df)
