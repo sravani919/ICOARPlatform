@@ -22,11 +22,8 @@ def video_response_parsing(response) -> (str, dict):
         st.error(json.dumps(response["error"], indent=4))
         return None, None
 
-    print("has_more is ", has_more)
-
     try:
         search_id = data["search_id"]
-        print("search id given in the response: ", search_id)
     except KeyError:
         search_id = None
 
@@ -106,8 +103,7 @@ class TikTokApi:
         :return: List of dictionaries containing the videos' data and the search_id
         """
 
-        search_id = None
-        print("TikTokAPI video request called with search id of", search_id)
+        # print("\n\nTikTokAPI video request called with search id of", search_id)
         base_data = {
             "query": {"and": []},
         }
@@ -146,18 +142,28 @@ class TikTokApi:
             # Adding more fields to the data
             data["max_count"] = count_for_this_request
             if search_id is not None:
+                print("Putting search id into data")
                 data["search_id"] = search_id[:]  # To resume a previous search
 
-            print("data in request that is being sent to tiktok:", data)
+            # Save the data json to the log.txt
+
+
+            # print("data in request that is being sent to tiktok:", data)
 
             r = requests.post(
                 f"https://open.tiktokapis.com/v2/research/video/query/?fields={TikTokApi.all_fields}",
                 headers=headers,
                 json=data,
             )
-            print("search id variable value before updating it:", search_id)
+
+            # Save the data and the response to the log.txt
+            with open("log.txt", "w", encoding="utf-8") as f:
+                f.write(f"Request: {data}\n")
+                f.write(f"Response: {json.dumps(r.json(), indent=4)}\n\n")
+
+            # print("search id variable value before updating it:", search_id)
             search_id, results = video_response_parsing(r.json())
-            print("new search id from most recent response:", search_id)
+            # print("after:                                      ", search_id)
 
             if results is None:
                 break  # Error occurred
