@@ -66,6 +66,8 @@ def social_media_selector(social_medias):
 
 
 def collection_type_selector():
+    if "collector_option" not in st.session_state:
+        st.session_state.collector_option = None
     try:
         list(st.session_state.socialmedia.collection_methods.keys()).index(st.session_state.collector_option)
     except ValueError:
@@ -110,24 +112,33 @@ def data_collection_tab():
         for query_option in query_options:
             st.session_state.query_values[query_option] = query_builder(query_option, columns[0])
 
-    with main_columns[2]:
+    with (main_columns[2]):
         st.subheader("3. Summary")
-        # Displaying a summary of the query in a table format
-        summary = [
-            [
-                st.session_state.socialmedia.name,
-                st.session_state.collector.__class__.__module__.split(".")[-1].title(),
-                "",
-            ]
-        ]
-        try:
-            for key, value in st.session_state.query_values.items():
-                summary[0][2] += f"{key}: {value}, "
-        except UnboundLocalError:
-            pass
 
-        summary_pd = pd.DataFrame(summary, columns=["Platform", "Collection Method", "Query values"])
-        st.table(summary_pd)
+        platform = st.session_state.socialmedia.name
+        collection_method = st.session_state.collector.__class__.__module__.split(".")[-1].title()
+
+        # Creating a nice Markdown table to display the summary of the current query
+        summary = (
+f"""
+| Query option | Value |  
+| ------------ | ----- |  
+| :blue[Platform] | :blue[{platform}] |  
+| :blue[Collection method] | :blue[{collection_method}] |  
+"""
+        )
+        for query_option in query_options:
+            if query_option in st.session_state.query_values.keys():
+                summary += f"| {query_option} |"
+                if st.session_state.query_values[query_option] is None:
+                    summary += ":red[None] |"
+                else:
+                    summary += f" {st.session_state.query_values[query_option]} |"
+                summary += "\n"
+        print(summary)
+        st.markdown(summary)
+        st.markdown("-------------------")
+
 
         if st.button("Collect"):
             st.session_state.results = None
