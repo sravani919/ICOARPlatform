@@ -189,19 +189,26 @@ def validation():
         st.markdown(multi)
         search_text = st.text_input("Enter model name")
         search_button = st.button("Search")
-
         if search_button:
             st.session_state.model_list = fetch_models_from_hf(search_text)
             search_button = False
             st.session_state.disabled = False
-        MODEL = st.radio(
-            "Select a model",
-            st.session_state.model_list,
-        )
+        if st.session_state.model_list:
+            MODEL = st.radio(
+                "Top Three Models:",
+                st.session_state.model_list[:3],
+            )
+            # display the rest of the models if the user wants to see more
+            if st.checkbox("Show more"):
+                MODEL = st.radio(
+                    "All Results",
+                    st.session_state.model_list[3:],
+                )
         if MODEL:
             with st.expander("Model Details"):
                 model_url = f"https://huggingface.co/{MODEL}"
                 st.write(f"Model URL: [{MODEL}]({model_url})")
+
     # prevents users from initially clicking predict button without choosing a model
     if st.session_state.disabled:
         st.warning("Please select a model to proceed")
