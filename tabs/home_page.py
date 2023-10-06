@@ -4,7 +4,7 @@ import streamlit as st
 def home_content():
     st.header("Cyberinfrastructure for Online Abuse Research")
     st.markdown(
-        """On this portal, we enable researchers to study and anlyse cyber-bulling.
+        """ On this portal, we enable researchers to study and anlyse cyber-bulling.
         We have various functionalities on the portal. They are dicided into 2 main sub-tasks.
         i.e. **Text and Multi-media analysis**.
                 """
@@ -28,6 +28,7 @@ def home_content():
     with col2:
         st.header("2. Multimedia Analysis")
         st.markdown(
+
             """In this tab you can analyse multi-media data. Various multi-media classification functionalities
 are provided in this tab."""
         )
