@@ -49,7 +49,7 @@ elif selected == menu_options[2]:
     if selected_text_section == text_sections[0]:
         text_stepper_options = ["Classification", "Visualisation"]
 
-        selected_option = stx.stepper_bar(steps=text_stepper_options)
+        selected_option = stx.stepper_bar(steps=text_stepper_options, lock_sequence=False)
 
         if selected_option == 0:
             from tabs.validation.validation import validation
