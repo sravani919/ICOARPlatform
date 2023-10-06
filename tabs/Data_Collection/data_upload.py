@@ -48,8 +48,9 @@ def get_column_for_text():
 
     st.markdown("### Select column for text")
 
-    st.session_state.column_replace = st.selectbox("Select column for text",
-                                                   [None] + list(st.session_state.ldf.columns))
+    st.session_state.column_replace = st.selectbox(
+        "Select column for text", [None] + list(st.session_state.ldf.columns)
+    )
 
     # Dropdown to show preview
     with st.expander("Preview of data"):
@@ -115,7 +116,6 @@ def data_upload_element(get_filepath_instead=False):
 
             # Return the file
             return st.session_state.ldf
-
 
     # If the user selects a file already in the data folder
     elif selected_data != "":

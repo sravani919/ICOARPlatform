@@ -112,21 +112,19 @@ def data_collection_tab():
         for query_option in query_options:
             st.session_state.query_values[query_option] = query_builder(query_option, columns[0])
 
-    with (main_columns[2]):
+    with main_columns[2]:
         st.subheader("3. Summary")
 
         platform = st.session_state.socialmedia.name
         collection_method = st.session_state.collector.__class__.__module__.split(".")[-1].title()
 
         # Creating a nice Markdown table to display the summary of the current query
-        summary = (
-f"""
-| Query option | Value |  
-| ------------ | ----- |  
-| :blue[Platform] | :blue[{platform}] |  
-| :blue[Collection method] | :blue[{collection_method}] |  
+        summary = f"""
+| Query option | Value |
+| ------------ | ----- |
+| :blue[Platform] | :blue[{platform}] |
+| :blue[Collection method] | :blue[{collection_method}] |
 """
-        )
         for query_option in query_options:
             if query_option in st.session_state.query_values.keys():
                 summary += f"| {query_option} |"
@@ -138,7 +136,6 @@ f"""
         print(summary)
         st.markdown(summary)
         st.markdown("-------------------")
-
 
         if st.button("Collect"):
             st.session_state.results = None

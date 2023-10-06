@@ -147,7 +147,6 @@ class TikTokApi:
 
             # Save the data json to the log.txt
 
-
             # print("data in request that is being sent to tiktok:", data)
 
             r = requests.post(
