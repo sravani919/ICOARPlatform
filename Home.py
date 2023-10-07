@@ -76,19 +76,6 @@ elif selected == menu_options[2]:
 
         text_annotation_tab()
 
-    elif selected_text_section == text_sections[2]:
-        from tabs.validation.validation import validation
-
-        st.subheader("Validation")
-        st.markdown(":bulb: In this tab, you can use a pretrained model to label datasets depdending on the task.")
-
-        multi = """:bulb: Steps -
-                :one:  Select the dataset that you want to have labeled by using the dropdown.
-                :two:   Choose a model from our list of recommended ones or find a specific one via huggingface
-                :three:  Click on the predict button and view or save your results.
-                    """
-        st.markdown(multi)
-        validation()
     # My own code
 
 
