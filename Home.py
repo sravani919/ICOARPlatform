@@ -96,6 +96,9 @@ elif selected == menu_options[3]:
 
         selected_option = stx.stepper_bar(steps=image_menu_options)
 
+        if selected_option == 0:
+            pass
+
         if selected_option == 1:
             from tabs.image.bully_classifification import bully_classification
 

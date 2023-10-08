@@ -78,7 +78,7 @@ def extract_comments(video_url, count):
 
 if __name__ == "__main__":
     # For testing purposes
-    video_url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ&ab_channel=RickAstley"
+    video_url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
     comments = extract_comments(video_url, 100)
     print("Extracted " + str(len(comments)) + " comments from " + video_url)
     print(comments)
