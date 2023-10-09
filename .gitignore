@@ -237,3 +237,6 @@ model/
 accounts.db
 
 login_error.html
+
+
+frontend/node_modules/
