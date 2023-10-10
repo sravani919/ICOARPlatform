@@ -26,6 +26,11 @@ def reset_query_values():
 
 
 def none_default_text_input(label):
+    """
+    Creates a text input that returns None if the user inputs nothing
+    :param label: The label of the text input
+    :return: The value of the text input or None if the user inputs nothing
+    """
     v = st.text_input(label)
     if v == "":
         return None
@@ -33,6 +38,12 @@ def none_default_text_input(label):
 
 
 def query_builder(option, container=None):
+    """
+    Creates a query option based on the option and container and inserts it into the container.
+    :param option: The query option to create
+    :param container:  The container to insert the query option into
+    :return:The value of the query option
+    """
     with container:
         if option == "keywords":
             return none_default_text_input("Keywords (Comma separated)")
@@ -133,7 +144,6 @@ def data_collection_tab():
                 else:
                     summary += f" {st.session_state.query_values[query_option]} |"
                 summary += "\n"
-        print(summary)
         st.markdown(summary)
         st.markdown("-------------------")
 
