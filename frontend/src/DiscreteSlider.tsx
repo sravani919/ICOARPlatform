@@ -18,7 +18,7 @@ interface State {
 const steps = [
   {
     label: 'Classification',
-    description: `Classification`,
+    description: ``,
   },
   {
     label: 'Visualisation',
@@ -72,38 +72,23 @@ class DiscreteSlider extends StreamlitComponentBase<State> {
             >
               {step.label}
             </StepLabel>
-            <StepContent>
-              <Typography>{step.description}</Typography>
-              <Box style={{  }}>
-                <div>
-                  <Button
-                    variant="contained"
-                    onClick={this.handleNext}
-                    style={{  }}
-                  >
-                    {index === steps.length - 1 ? 'Finish' : 'Continue'}
-                  </Button>
-                  <Button
-                    disabled={index === 0}
-                    onClick={this.handleBack}
-                    style={{  }}
-                  >
-                    Back
-                  </Button>
-                </div>
-              </Box>
-            </StepContent>
           </Step>
         ))}
       </Stepper>
-      {this.state.activeStep === steps.length && (
-        <Paper square elevation={0} style={{  }}>
-          <Typography>All steps completed - you&apos;re finished</Typography>
-          <Button onClick={this.handleReset} style={{  }}>
-            Reset
-          </Button>
-        </Paper>
-      )}
+      <Box style={{ display: 'flex', flexDirection: 'row' }}>
+        <Button
+          color="inherit"
+          disabled={this.state.activeStep === 0}
+          onClick={this.handleBack}
+          style={{  }}
+        >
+          Back
+        </Button>
+        <Box style={{ flex: '1 1 auto' }} />
+        <Button onClick={this.handleNext} style={{  }} color='primary'>
+          Next
+        </Button>
+      </Box>
     </Box>
     )
   }
