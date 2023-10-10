@@ -46,17 +46,15 @@ elif selected == menu_options[2]:
         orientation="horizontal",
         styles={},
     )
-    print('test')
+
     if selected_text_section == text_sections[0]:
         text_stepper_options = ["Classification", "Visualisation"]
 
-        _discrete_slider = components.declare_component(
-        "discrete_slider",
-        url="http://localhost:3001"
-        )
+        _discrete_slider = components.declare_component("discrete_slider", url="http://localhost:3001")
+        
         activeStep = 0
         options = []
-        activeStep =  _discrete_slider(options=options, key=None, default=0)
+        aactiveStep = _discrete_slider(options=options, key=None, default=0)
 
         selected_option = activeStep
         if selected_option == 0:
