@@ -1,7 +1,7 @@
 import extra_streamlit_components as stx
 import streamlit as st
-from streamlit_option_menu import option_menu
 import streamlit.components.v1 as components
+from streamlit_option_menu import option_menu
 
 st.set_page_config(page_title="ICOAR", layout="wide")
 hide_streamlit_style = """
