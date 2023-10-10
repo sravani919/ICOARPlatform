@@ -51,12 +51,13 @@ elif selected == menu_options[2]:
         text_stepper_options = ["Classification", "Visualisation"]
 
         _discrete_slider = components.declare_component("discrete_slider", url="http://localhost:3001")
-        
+
         activeStep = 0
         options = []
         aactiveStep = _discrete_slider(options=options, key=None, default=0)
 
         selected_option = activeStep
+
         if selected_option == 0:
             from tabs.validation.validation import validation
 
