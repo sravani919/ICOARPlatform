@@ -92,6 +92,8 @@ def collection_type_selector():
 
 
 def data_collection_tab():
+    if "results" not in st.session_state:
+        st.session_state.results = None
     # Grabs all the packages in the data_collection folder
     social_medias_package_names = [
         name for _, name, is_pkg in pkgutil.walk_packages([data_collection.__path__[0]]) if is_pkg
