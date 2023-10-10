@@ -6,8 +6,6 @@ from twscrape import API, AccountsPool, gather
 from data_collection.utils import BaseDataCollector
 
 
-
-
 def get_accounts():
     # Reading from accounts.csv where the info is seperated by colons, not commas
     f = st.secrets.twitter.accounts
