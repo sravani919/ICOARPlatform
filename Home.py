@@ -46,7 +46,7 @@ elif selected == menu_options[2]:
         orientation="horizontal",
         styles={},
     )
-
+    print('test')
     if selected_text_section == text_sections[0]:
         text_stepper_options = ["Classification", "Visualisation"]
 
