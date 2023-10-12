@@ -13,6 +13,7 @@ def video_response_parsing(response) -> (str, dict):
     :param response: The response from the TikTok API, should be a json object
     :return: A list of dictionaries containing the formatted video data
              Will return None as results if an error occurred
+             The cursor is needed to resume a previous search
              The search_id is needed to resume a previous search
     """
     try:
@@ -27,8 +28,14 @@ def video_response_parsing(response) -> (str, dict):
     except KeyError:
         search_id = None
 
+    try:
+        cursor = data["cursor"]
+    except KeyError:
+        cursor = None
+
     if not has_more:
         search_id = None  # No more videos to get, the search_id already should be None but just in case
+        cursor = None
 
     formatted_videos = []
     for video in data["videos"]:
@@ -55,7 +62,7 @@ def video_response_parsing(response) -> (str, dict):
             }
         )
 
-    return search_id, formatted_videos
+    return cursor, search_id, formatted_videos
 
 
 class TikTokApi:
@@ -70,6 +77,10 @@ class TikTokApi:
         self.access_token = self._get_access_token()
 
     def _get_access_token(self):
+        """
+        Gets the temporary access token from the TikTok API using the client key and client secret
+        :return: The access token
+        """
         r = requests.post(
             "https://open.tiktokapis.com/v2/oauth/token/",
             headers={"Content-Type": "application/x-www-form-urlencoded", "Cache-Control": "no-cache"},
@@ -89,6 +100,7 @@ class TikTokApi:
         end_date,
         locations,
         hashtags,
+        cursor=None,
         search_id=None,
     ) -> (list[dict], str):
         """
@@ -99,7 +111,8 @@ class TikTokApi:
         :param max_count: Maximum number of videos to return
         :param keywords: Keywords that must be in the video description
         :param locations: Locations that the videos must be from e.g. ["US", "CA"]
-        :param search_id: The search_id to resume a previous search
+        :param cursor: The cursor to resume from
+        :param search_id: The search id to resume from
         :return: List of dictionaries containing the videos' data and the search_id
         """
 
@@ -141,9 +154,10 @@ class TikTokApi:
 
             # Adding more fields to the data
             data["max_count"] = count_for_this_request
+            if cursor is not None:
+                data["cursor"] = cursor  # To resume a previous search
             if search_id is not None:
-                print("Putting search id into data")
-                data["search_id"] = search_id[:]  # To resume a previous search
+                data["search_id"] = search_id
 
             # Save the data json to the log.txt
 
@@ -161,7 +175,7 @@ class TikTokApi:
                 f.write(f"Response: {json.dumps(r.json(), indent=4)}\n\n")
 
             # print("search id variable value before updating it:", search_id)
-            search_id, results = video_response_parsing(r.json())
+            cursor, search_id, results = video_response_parsing(r.json())
             # print("after:                                      ", search_id)
 
             if results is None:
@@ -169,12 +183,11 @@ class TikTokApi:
 
             collected_videos += results
             count_still_needed = max_count - len(collected_videos)
-            print(count_for_this_request, "SID: ", search_id)
 
-            if search_id is None:
+            if cursor is None:
                 break
 
-        return collected_videos, search_id
+        return collected_videos, {"cursor": cursor, "search_id": search_id}
 
 
 def cant_find_keys():
@@ -197,6 +210,7 @@ def get_videos(
     locations: str = None,
     count: int = 100,
     hashtags: str = None,
+    cursor: int = None,
     search_id: str = None,
 ):
     """
@@ -210,7 +224,8 @@ def get_videos(
     :param locations: Comma seperated country abbreviations
     :param count: The number of videos to return
     :param hashtags: A single string with comma seperated hashtags
-    :param search_id: The search_id to resume a previous search
+    :param cursor: The cursor to resume from
+    :param search_id: The search id to resume from
     :return:
     """
     if keywords is None and hashtags is None and locations is None:
@@ -242,8 +257,11 @@ def get_videos(
         return
 
     ttapi = TikTokApi(client_key, client_secret)
-    results, search_id = ttapi.video_request(count, keywords, start_date, end_date, locations, hashtags, search_id)
-    st.success("Collection complete. Here is the search ID to resume from here: " + str(search_id))
+
+    results, util = ttapi.video_request(count, keywords, start_date, end_date, locations, hashtags, cursor, search_id)
+    st.success("Collection complete. Here is the cursor and search_id to resume from here:\nCursor: "
+               + str(util["cursor"])
+               + "\nSearch ID: " + str(util["search_id"]))
     return results
 
 
@@ -252,7 +270,7 @@ class Collector(BaseDataCollector):
         super().__init__()
 
     def query_options(self):
-        return ["count", "keywords", "start_date", "end_date", "locations", "hashtags", "search_id"]
+        return ["count", "keywords", "start_date", "end_date", "locations", "hashtags", "search_id", "cursor"]
 
     def collect(self, **kwargs):
         return get_videos(**kwargs)
