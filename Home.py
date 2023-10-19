@@ -31,9 +31,22 @@ if selected == menu_options[0]:
 
 elif selected == menu_options[1]:
     # Data collection
-    from tabs.Data_Collection.data_collection_tab import data_collection_tab
-
-    data_collection_tab()
+    sections = ["Collection", "Preprocessing"]
+    selected_section = option_menu(
+        None,
+        sections,
+        icons=["cloud-arrow-up-fill", "file-earmark-text-fill"],
+        menu_icon="cast",
+        default_index=0,
+        orientation="horizontal",
+        styles={},
+    )
+    if selected_section == sections[0]:
+        from tabs.Data_Collection.data_collection_tab import data_collection_tab
+        data_collection_tab()
+    elif selected_section == sections[1]:
+        from tabs.Data_Collection.data_preprocessing_tab import data_preprocessing_tab
+        data_preprocessing_tab()
 
 elif selected == menu_options[2]:
     text_sections = ["Text Classification", "Text Annotation"]
