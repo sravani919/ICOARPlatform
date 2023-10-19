@@ -45,8 +45,10 @@ def query_builder(option, container=None):
     :return:The value of the query option
     """
     with container:
-        if option == "keywords":
-            return none_default_text_input("Keywords (Comma separated)")
+        if option == "keywords" or option == "keywords AND":
+            return none_default_text_input("Keywords AND (Comma separated)")
+        if option == "keywordsOR":
+            return none_default_text_input("Keywords OR (Comma separated)")
         if option == "count":
             return st.number_input("Number of posts", value=100)
         if option == "images":

@@ -43,9 +43,11 @@ elif selected == menu_options[1]:
     )
     if selected_section == sections[0]:
         from tabs.Data_Collection.data_collection_tab import data_collection_tab
+
         data_collection_tab()
     elif selected_section == sections[1]:
         from tabs.Data_Collection.data_preprocessing_tab import data_preprocessing_tab
+
         data_preprocessing_tab()
 
 elif selected == menu_options[2]:

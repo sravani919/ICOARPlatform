@@ -96,6 +96,7 @@ class TikTokApi:
         self,
         max_count: int,
         keywords,
+        keywordsOR,
         start_date,
         end_date,
         locations,
@@ -110,6 +111,7 @@ class TikTokApi:
         :param end_date: Latest creation date of the videos e.g. "20220628" i.e. yyyymmdd
         :param max_count: Maximum number of videos to return
         :param keywords: Keywords that must be in the video description
+        :param keywordsOR: At least one of these keywords must be in the video description
         :param locations: Locations that the videos must be from e.g. ["US", "CA"]
         :param cursor: The cursor to resume from
         :param search_id: The search id to resume from
@@ -118,7 +120,7 @@ class TikTokApi:
 
         # print("\n\nTikTokAPI video request called with search id of", search_id)
         base_data = {
-            "query": {"and": []},
+            "query": {"and": [], "or": []},
         }
 
         headers = {"authorization": f"bearer {self.access_token}"}
@@ -128,6 +130,10 @@ class TikTokApi:
                 base_data["query"]["and"].append(
                     {"operation": "EQ", "field_name": "keyword", "field_values": [keyword]}
                 )
+
+        if keywordsOR is not None:
+            for keyword in keywordsOR:
+                base_data["query"]["or"].append({"operation": "EQ", "field_name": "keyword", "field_values": [keyword]})
 
         if hashtags is not None:
             for hashtag in hashtags:
@@ -205,6 +211,7 @@ def cant_find_keys():
 
 def get_videos(
     keywords: str = None,
+    keywordsOR: str = None,
     start_date: datetime.date = None,
     end_date: datetime.date = None,
     locations: str = None,
@@ -219,6 +226,7 @@ def get_videos(
     Designed to make interfacing with the tiktokapi easier.
     Will look for credentials inside streamlit's secrets.toml file
     :param keywords: A single string  with comma seperated keywords
+    :param keywordsOR: A single string with comma seperated keywords
     :param start_date: A datetime.date object
     :param end_date: A datetime.date object must be after start_date and within 30 days
     :param locations: Comma seperated country abbreviations
@@ -228,7 +236,7 @@ def get_videos(
     :param search_id: The search id to resume from
     :return:
     """
-    if keywords is None and hashtags is None and locations is None:
+    if keywords is None and hashtags is None and locations is None and keywordsOR is None:
         st.error("Please specify at least one of the following: keywords, hashtags, locations")
 
     if type(start_date) == datetime.date:
@@ -238,6 +246,8 @@ def get_videos(
 
     if keywords is not None and keywords != "":
         keywords = keywords.split(",")
+    if keywordsOR is not None and keywordsOR != "":
+        keywordsOR = keywordsOR.split(",")
     if hashtags is not None and hashtags != "":
         hashtags = hashtags.split(",")
     if locations is not None and locations != "":
@@ -258,7 +268,9 @@ def get_videos(
 
     ttapi = TikTokApi(client_key, client_secret)
 
-    results, util = ttapi.video_request(count, keywords, start_date, end_date, locations, hashtags, cursor, search_id)
+    results, util = ttapi.video_request(
+        count, keywords, keywordsOR, start_date, end_date, locations, hashtags, cursor, search_id
+    )
     st.success(
         "Collection complete. Here is the cursor and search_id to resume from here:\nCursor: "
         + str(util["cursor"])
@@ -273,7 +285,17 @@ class Collector(BaseDataCollector):
         super().__init__()
 
     def query_options(self):
-        return ["count", "keywords", "start_date", "end_date", "locations", "hashtags", "search_id", "cursor"]
+        return [
+            "count",
+            "keywords",
+            "keywordsOR",
+            "start_date",
+            "end_date",
+            "locations",
+            "hashtags",
+            "search_id",
+            "cursor",
+        ]
 
     def collect(self, **kwargs):
         return get_videos(**kwargs)
