@@ -1,5 +1,6 @@
 import datetime
 import json
+import time
 
 import requests
 import streamlit as st
@@ -20,8 +21,8 @@ def video_response_parsing(response) -> (str, dict):
         data = response["data"]
         has_more = data["has_more"]
     except KeyError:
-        st.error(json.dumps(response["error"], indent=4))
-        return None, None
+        st.error("No data in response, message from TikTok: " + json.dumps(response["error"], indent=4))
+        return None, None, None
 
     try:
         search_id = data["search_id"]
@@ -153,8 +154,19 @@ class TikTokApi:
 
         collected_videos = []
         progress_bar = st.progress(0)
-        while count_still_needed > 0:
-            progress_bar.progress((max_count - count_still_needed) / max_count, "Collecting...")
+
+        no_data_error_count = 0  # The number of sequential fails to get data
+        start_time = time.time()
+        while count_still_needed > 0 and no_data_error_count < 5:
+            estimated_seconds_left = (time.time() - start_time) / (len(collected_videos) + 1) * count_still_needed
+            # Creating a string with the estimated time left as minutes and seconds
+            estimated_time_left = (
+                f"{int(estimated_seconds_left // 60)} minutes {int(estimated_seconds_left % 60)} seconds"
+            )
+            progress_bar.progress(
+                (max_count - count_still_needed) / max_count,
+                f"Collecting... {estimated_time_left} left | {len(collected_videos)} collected",
+            )
             data = base_data.copy()
             count_for_this_request = 100  # Always ask for 100 videos, we are limited by requests not by videos
 
@@ -165,8 +177,6 @@ class TikTokApi:
             if search_id is not None:
                 data["search_id"] = search_id
 
-            # Save the data json to the log.txt
-
             # print("data in request that is being sent to tiktok:", data)
 
             r = requests.post(
@@ -175,20 +185,19 @@ class TikTokApi:
                 json=data,
             )
 
-            # Save the data and the response to the log.txt
-            with open("log.txt", "w", encoding="utf-8") as f:
-                f.write(f"Request: {data}\n")
-                f.write(f"Response: {json.dumps(r.json(), indent=4)}\n\n")
-
             # print("search id variable value before updating it:", search_id)
-            cursor, search_id, results = video_response_parsing(r.json())
-            # print("after:                                      ", search_id)
-
+            t_cursor, t_search_id, results = video_response_parsing(r.json())
             if results is None:
-                break  # Error occurred
-
-            collected_videos += results
-            count_still_needed = max_count - len(collected_videos)
+                # If we got no data, increment the counter and try again with the same cursor and search_id
+                no_data_error_count += 1
+                print("no data error count:", no_data_error_count)
+            else:
+                # If we got valid data, reset the counter and update the cursor and search_id
+                no_data_error_count = 0
+                cursor = t_cursor
+                search_id = t_search_id
+                collected_videos += results
+                count_still_needed = max_count - len(collected_videos)
 
             if cursor is None:
                 break
