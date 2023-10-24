@@ -238,5 +238,6 @@ accounts.db
 
 login_error.html
 
-
 frontend/node_modules/
+# Sphinx documentation
+docs/_build/
