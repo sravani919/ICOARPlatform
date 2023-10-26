@@ -1,4 +1,4 @@
-import extra_streamlit_components as stx
+# import extra_streamlit_components as stx
 import streamlit as st
 import streamlit.components.v1 as components
 from streamlit_option_menu import option_menu
@@ -17,18 +17,56 @@ def menu():
             "nav-link": {"font-size": "25px", "text-align": "left", "margin": "0px", "--hover-color": "#B9B5B5"},
         },
     )
-    if selected == menu_options[0]:
+
+    # _RELEASE = False
+
+    # if _RELEASE:
+    #     root_dir = os.path.dirname(os.path.abspath(__file__))
+    #     build_dir = os.path.join(root_dir, "frontend/build")
+
+    #     _discrete_slider = components.declare_component(
+    #         "discrete_slider",
+    #         path=build_dir
+    #     )
+    # else:
+    #     _discrete_slider = components.declare_component(
+    #         "discrete_slider",
+    #         url="http://localhost:3000"
+    #     )
+
+    # st.markdown(
+    #             f'''
+    #             <style>
+    #                 .block-container {{
+    #                     padding: {0}rem;
+    #                 }}
+    #                 header[data-testid="stHeader"] {{
+    #                     display: none;
+    #                 }}
+    #                 div[data-testid="stVerticalBlock"] {{
+    #                     gap: {0}rem
+    #                 }}
+    #                 div[data-testid="stMargin"] {{
+    #                     gap: -{26}px
+    #                 }}
+    #             </style>
+    #             <div data-testid="stMargin">helo </div>
+    #             ''',unsafe_allow_html=True)
+    # selected = int(_discrete_slider(default=0))
+    # menu_options = ["Home", "Data Collection", "Text Analysis", "Multimedia Analysis"]
+
+    if selected == 0:
         from tabs.home_page import home_content
 
         home_content()
 
-    elif selected == menu_options[1]:
+    elif selected == 1:
         # Data collection
         from tabs.Data_Collection.data_collection_tab import data_collection_tab
 
         data_collection_tab()
 
-    elif selected == menu_options[2]:
+    elif selected == 2:
         text_sections = ["Text Classification", "Text Annotation"]
         selected_text_section = option_menu(
             None,
@@ -78,7 +116,7 @@ def menu():
 
         # My own code
 
-    elif selected == menu_options[3]:
+    elif selected == 3:
         image_sections = ["Image Classification", "Meme Classification", "Deepfake Detection"]
         selected_image_section = option_menu(
             None,
@@ -91,10 +129,8 @@ def menu():
         )
 
         if selected_image_section == image_sections[0]:
-            image_menu_options = ["Retrieval", "Classification"]
-
-            selected_option = stx.stepper_bar(steps=image_menu_options)
-
+            # selected_option = stx.stepper_bar(steps=image_menu_options)
+            selected_option = 0
             if selected_option == 0:
                 pass
 
