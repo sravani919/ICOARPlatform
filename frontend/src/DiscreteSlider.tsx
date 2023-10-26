@@ -1,11 +1,11 @@
-import { Paper, Slider, styled, Button, StepContent, Stepper, Box, Step, StepLabel, Typography } from "@material-ui/core"
+import {  Button, Stepper, Box, Step, StepLabel, Typography } from "@material-ui/core"
 import {
   Streamlit,
   StreamlitComponentBase,
   withStreamlitConnection,
   ComponentProps
 } from "streamlit-component-lib"
-import React, { ReactNode, useState } from "react"
+import React, { ReactNode } from "react"
 
 interface State {
   /**
@@ -35,9 +35,10 @@ class DiscreteSlider extends StreamlitComponentBase<State> {
 
   public handleNext = () => {
     console.log('Inside handle next - ', this.state.activeStep)
-    const activeStep = this.state.activeStep
+    const temp = this.state.activeStep
+    console.log('Inside handle next - ', temp+1)
+    Streamlit.setComponentValue(this.state.activeStep+1)
     this.setState({ activeStep: this.state.activeStep + 1 })
-    Streamlit.setComponentValue(activeStep+1)
   };
 
   public handleBack = () => {
@@ -52,12 +53,7 @@ class DiscreteSlider extends StreamlitComponentBase<State> {
   };
 
   public render = (): ReactNode => {
-    const vMargin = 7
-    const hMargin = 20
-
-
-    const options = this.props.args["options"]
-
+    console.log('hiii')
     return (
       <Box style={{ width: '100%' }}>
       <Stepper activeStep={this.state.activeStep} >

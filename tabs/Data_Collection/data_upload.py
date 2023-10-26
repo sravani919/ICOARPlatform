@@ -18,9 +18,9 @@ if "managing_new_data" not in st.session_state:
     st.session_state.managing_new_data = False
 
 
-def find_data_files(upload_new_data=False):
+def find_data_files(email, upload_new_data=False):
     # Get the list of files in the data folder
-    data_files = os.listdir("data")
+    data_files = os.listdir(f"data/{email}")
 
     # Keep only the files with the csv extension
     data_files = [filename for filename in data_files if filename.endswith(".csv")]
@@ -59,7 +59,7 @@ def get_column_for_text():
     st.markdown("-------------------")
 
 
-def data_upload_element(get_filepath_instead=False):
+def data_upload_element(email, get_filepath_instead=False):
     """
     Has a drop-down menu to select data already stored in the data folder or upload new data
     :param get_filepath_instead: If True, returns the filepath instead of the data
@@ -72,7 +72,7 @@ def data_upload_element(get_filepath_instead=False):
     if "column_replace" not in st.session_state:
         st.session_state.column_replace = None
 
-    st.session_state.data_files = find_data_files(upload_new_data=True)
+    st.session_state.data_files = find_data_files(email, upload_new_data=True)
 
     # Create the drop-down menu
     selected_data = st.selectbox("Select data", st.session_state.data_files)
@@ -112,7 +112,7 @@ def data_upload_element(get_filepath_instead=False):
             st.session_state.data_files = find_data_files(upload_new_data=True)
 
             if get_filepath_instead:
-                return f"data/{uploaded_file.name}"
+                return f"data/{email}/{uploaded_file.name}"
 
             # Return the file
             return st.session_state.ldf
@@ -120,7 +120,7 @@ def data_upload_element(get_filepath_instead=False):
     # If the user selects a file already in the data folder
     elif selected_data != "":
         # Read the file
-        st.session_state.ldf = pd.read_csv(f"data/{selected_data}.csv")
+        st.session_state.ldf = pd.read_csv(f"data/{email}/{selected_data}.csv")
 
         if get_filepath_instead:
             return f"data/{selected_data}.csv"
