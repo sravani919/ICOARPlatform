@@ -42,7 +42,6 @@ class DiscreteSlider extends StreamlitComponentBase<State> {
   }
   public handleChange = (newValue: number) => {
 
-    console.log('Inside handle change - ', newValue)
     this.setState({ activeStep: newValue })
     Streamlit.setComponentValue(newValue)
   };
@@ -67,12 +66,14 @@ class DiscreteSlider extends StreamlitComponentBase<State> {
           >
             <Tab value="1" label="Data Collection" style={{height: '80px'}}/>
             <Tab value="2" label="Text Analysis" style={{height: '80px'}}/>
-            <Tab value="3" label="Multi-media Analysis" style={{height: '80px'}} />
-            <Tab value="4" label="About" style={{height: '80px'}} />
+            <Tab value="3" label="Text Annotation" style={{height: '80px'}} />
+            <Tab value="4" label="Visualization" style={{height: '80px'}} />
+            <Tab value="5" label="Multi-media Analysis" style={{height: '80px'}} />
+            {/* <Tab value="6" label="About" style={{height: '80px'}} /> */}
           </Tabs>
         </div>
         <div style={{width: '10%', display: 'inline-block', textAlign:'center', color: '#bbbbbb', cursor: 'pointer'}}
-      onClick={() => {document.cookie="some_cookie_name=;"; this.handleChange(5)}}>
+      onClick={() => {document.cookie="some_cookie_name=;"; this.handleChange(7)}}>
           Logout
         </div>
       </div>

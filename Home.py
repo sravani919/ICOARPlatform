@@ -98,41 +98,50 @@ if not _RELEASE:
         data_collection_tab()
 
     elif selected_value == 2:
-        text_sections = ["Text Classification", "Text Annotation"]
-        selected_text_section = option_menu(
+        from tabs.validation.validation import validation
+
+        validation()
+
+    elif selected_value == 3:
+        from tabs.Text_Annotation.Text_annotation import text_annotation_tab
+
+        text_annotation_tab()
+
+    elif selected_value == 4:
+        from tabs.Visualisation.Text_Visualisation import Text_Visualisation_tab
+
+        Text_Visualisation_tab()
+
+    elif selected_value == 5:
+        image_sections = ["Image Classification", "Meme Classification", "Deepfake Detection"]
+        selected_image_section = option_menu(
             None,
-            text_sections,
-            icons=["chat-left-text", "tag-fill", "clipboard-data-fill"],
+            image_sections,
+            icons=["cloud-arrow-up-fill", "images", "file-earmark-image-fill"],
             menu_icon="cast",
             default_index=0,
             orientation="horizontal",
             styles={},
         )
 
-        if selected_text_section == text_sections[0]:
-            _discrete_slider = components.declare_component("discrete_slider", url="http://localhost:3001")
-
-            activeStep = 0
-            options = []
-            _discrete_slider(options=options, key=None, default=0)
-
-            selected_option = activeStep
-
+        if selected_image_section == image_sections[0]:
+            selected_option = 0
             if selected_option == 0:
-                from tabs.validation.validation import validation
+                pass
 
-                validation()
+            if selected_option == 1:
+                from tabs.image.bully_classifification import bully_classification
 
-            elif selected_option == 1:
-                from tabs.Visualisation.Text_Visualisation import Text_Visualisation_tab
+                bully_classification()
 
-                Text_Visualisation_tab()
-        # Code above means add visualization into tab "Visualization"
+        elif selected_image_section == image_sections[1]:
+            from tabs.image.meme_classification import meme_classification
 
-        elif selected_text_section == text_sections[1]:
-            from tabs.Text_Annotation.Text_annotation import text_annotation_tab
+            meme_classification()
 
-            text_annotation_tab()
+        elif selected_image_section == image_sections[2]:
+            from tabs.image.deepfake_detection import df_detection
 
-    elif selected_value == 5:
+            df_detection()
+    elif selected_value == 7:
         st.success("You're logged out sucessfuly. Please refresh the page.")
