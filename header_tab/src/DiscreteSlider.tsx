@@ -1,12 +1,12 @@
-import { Box, Button, Menu, MenuItem, Typography } from "@material-ui/core"
-import {Tabs, Tab, AppBar, Container, Toolbar, IconButton, Tooltip, Avatar } from '@material-ui/core';
+import { Box } from "@material-ui/core"
+import {Tabs, Tab } from '@material-ui/core';
 import {
   Streamlit,
   StreamlitComponentBase,
   withStreamlitConnection,
   ComponentProps
 } from "streamlit-component-lib"
-import React, { ReactNode, useState } from "react"
+import React, { ReactNode } from "react"
 
 interface State {
   /**
@@ -16,24 +16,7 @@ interface State {
   activeStep: number
 }
 
-const steps = [
-  {
-    label: 'Select campaign settings',
-    description: ``,
-  },
-  {
-    label: 'Create an ad group',
-    description:
-      '',
-  },
-  {
-    label: 'Create an ad',
-    description: ``,
-  },
-];
-
-const pages = ['Products', 'Pricing', 'Blog'];
-const settings = ['Profile', 'Account', 'Dashboard', 'Logout'];
+const menu_options = ["Data Collection", "Text Analysis", "Text Annotation", "Visualization", "Multi-media Analysis"]
 
 class DiscreteSlider extends StreamlitComponentBase<State> {
   public constructor(props: ComponentProps) {
@@ -64,12 +47,13 @@ class DiscreteSlider extends StreamlitComponentBase<State> {
             aria-label="secondary tabs example"
             style={{ color: 'white',height: '80px'}}
           >
-            <Tab value="1" label="Data Collection" style={{height: '80px'}}/>
-            <Tab value="2" label="Text Analysis" style={{height: '80px'}}/>
-            <Tab value="3" label="Text Annotation" style={{height: '80px'}} />
-            <Tab value="4" label="Visualization" style={{height: '80px'}} />
-            <Tab value="5" label="Multi-media Analysis" style={{height: '80px'}} />
-            {/* <Tab value="6" label="About" style={{height: '80px'}} /> */}
+            {
+              menu_options.map((option, i) => {
+                const key = i+1;
+                console.log('key - ', key);
+                return <Tab value={key.toString()} label={option} style={{height: '80px'}}/>
+              })
+            }
           </Tabs>
         </div>
         <div style={{width: '10%', display: 'inline-block', textAlign:'center', color: '#bbbbbb', cursor: 'pointer'}}
