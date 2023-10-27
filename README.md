@@ -38,18 +38,18 @@ Integrative Cyberinfrastructure for Online Abuse Research (ICOAR)
 
     ```yaml
     credentials:
-    usernames:
-    atychang:
-      email: allen.ty.chang@gmail.com
-      name: Allen Chang
-      password: $2b$12$I.E9myP3MfihzOSxrpkf8.O5S4xJuQNtxg7gd6Mdlzq6hXUVLEGQ. # hashed value of "password"
+        usernames:
+            atychang:
+              email: allen.ty.chang@gmail.com
+              name: Allen Chang
+              password: $2b$12$I.E9myP3MfihzOSxrpkf8.O5S4xJuQNtxg7gd6Mdlzq6hXUVLEGQ. # hashed value of "password"
     cookie:
-    expiry_days: 30
-    key: some_signature_key
-    name: some_cookie_name
+        expiry_days: 30
+        key: some_signature_key
+        name: some_cookie_name
     preauthorized:
-    emails:
-        - allen.ty.chang@gmail.com
+        emails:
+            - allen.ty.chang@gmail.com
     ```
 
 5. Run the app
