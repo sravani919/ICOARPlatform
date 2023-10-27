@@ -294,5 +294,5 @@ class Collector(BaseDataCollector):
     def query_options(self):
         return ["keywords", "count", "images", "start_date", "end_date"]
 
-    def collect(self, keywords, count, images, start_time, end_time):
-        return grab_tweets(keywords, count, images, start_time, end_time)
+    def collect(self, keywords, count, images, start_date, end_date):
+        return grab_tweets(keywords, count, images, start_date, end_date)

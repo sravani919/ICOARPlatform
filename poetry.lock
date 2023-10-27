@@ -301,6 +301,40 @@ files = [
 ]
 
 [[package]]
+name = "bcrypt"
+version = "4.0.1"
+description = "Modern password hashing for your software and your servers"
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "bcrypt-4.0.1-cp36-abi3-macosx_10_10_universal2.whl", hash = "sha256:b1023030aec778185a6c16cf70f359cbb6e0c289fd564a7cfa29e727a1c38f8f"},
+    {file = "bcrypt-4.0.1-cp36-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.manylinux_2_24_aarch64.whl", hash = "sha256:08d2947c490093a11416df18043c27abe3921558d2c03e2076ccb28a116cb6d0"},
+    {file = "bcrypt-4.0.1-cp36-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:0eaa47d4661c326bfc9d08d16debbc4edf78778e6aaba29c1bc7ce67214d4410"},
+    {file = "bcrypt-4.0.1-cp36-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ae88eca3024bb34bb3430f964beab71226e761f51b912de5133470b649d82344"},
+    {file = "bcrypt-4.0.1-cp36-abi3-manylinux_2_24_x86_64.whl", hash = "sha256:a522427293d77e1c29e303fc282e2d71864579527a04ddcfda6d4f8396c6c36a"},
+    {file = "bcrypt-4.0.1-cp36-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:fbdaec13c5105f0c4e5c52614d04f0bca5f5af007910daa8b6b12095edaa67b3"},
+    {file = "bcrypt-4.0.1-cp36-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:ca3204d00d3cb2dfed07f2d74a25f12fc12f73e606fcaa6975d1f7ae69cacbb2"},
+    {file = "bcrypt-4.0.1-cp36-abi3-musllinux_1_1_aarch64.whl", hash = "sha256:089098effa1bc35dc055366740a067a2fc76987e8ec75349eb9484061c54f535"},
+    {file = "bcrypt-4.0.1-cp36-abi3-musllinux_1_1_x86_64.whl", hash = "sha256:e9a51bbfe7e9802b5f3508687758b564069ba937748ad7b9e890086290d2f79e"},
+    {file = "bcrypt-4.0.1-cp36-abi3-win32.whl", hash = "sha256:2caffdae059e06ac23fce178d31b4a702f2a3264c20bfb5ff541b338194d8fab"},
+    {file = "bcrypt-4.0.1-cp36-abi3-win_amd64.whl", hash = "sha256:8a68f4341daf7522fe8d73874de8906f3a339048ba406be6ddc1b3ccb16fc0d9"},
+    {file = "bcrypt-4.0.1-pp37-pypy37_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:bf4fa8b2ca74381bb5442c089350f09a3f17797829d958fad058d6e44d9eb83c"},
+    {file = "bcrypt-4.0.1-pp37-pypy37_pp73-manylinux_2_24_x86_64.whl", hash = "sha256:67a97e1c405b24f19d08890e7ae0c4f7ce1e56a712a016746c8b2d7732d65d4b"},
+    {file = "bcrypt-4.0.1-pp37-pypy37_pp73-manylinux_2_28_x86_64.whl", hash = "sha256:b3b85202d95dd568efcb35b53936c5e3b3600c7cdcc6115ba461df3a8e89f38d"},
+    {file = "bcrypt-4.0.1-pp38-pypy38_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:cbb03eec97496166b704ed663a53680ab57c5084b2fc98ef23291987b525cb7d"},
+    {file = "bcrypt-4.0.1-pp38-pypy38_pp73-manylinux_2_24_x86_64.whl", hash = "sha256:5ad4d32a28b80c5fa6671ccfb43676e8c1cc232887759d1cd7b6f56ea4355215"},
+    {file = "bcrypt-4.0.1-pp38-pypy38_pp73-manylinux_2_28_x86_64.whl", hash = "sha256:b57adba8a1444faf784394de3436233728a1ecaeb6e07e8c22c8848f179b893c"},
+    {file = "bcrypt-4.0.1-pp39-pypy39_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:705b2cea8a9ed3d55b4491887ceadb0106acf7c6387699fca771af56b1cdeeda"},
+    {file = "bcrypt-4.0.1-pp39-pypy39_pp73-manylinux_2_24_x86_64.whl", hash = "sha256:2b3ac11cf45161628f1f3733263e63194f22664bf4d0c0f3ab34099c02134665"},
+    {file = "bcrypt-4.0.1-pp39-pypy39_pp73-manylinux_2_28_x86_64.whl", hash = "sha256:3100851841186c25f127731b9fa11909ab7b1df6fc4b9f8353f4f1fd952fbf71"},
+    {file = "bcrypt-4.0.1.tar.gz", hash = "sha256:27d375903ac8261cfe4047f6709d16f7d18d39b1ec92aaf72af989552a650ebd"},
+]
+
+[package.extras]
+tests = ["pytest (>=3.2.1,!=3.3.0)"]
+typecheck = ["mypy"]
+
+[[package]]
 name = "beautifulsoup4"
 version = "4.12.2"
 description = "Screen-scraping library"
@@ -963,6 +997,16 @@ files = [
 ]
 
 [[package]]
+name = "dlib"
+version = "19.24.2"
+description = "A toolkit for making real world machine learning and data analysis applications"
+optional = false
+python-versions = "*"
+files = [
+    {file = "dlib-19.24.2.tar.gz", hash = "sha256:2d4f618073bc6b297aa01ce05595a2d32b5b37e69cafd99f796e77346f6dcfb5"},
+]
+
+[[package]]
 name = "easyocr"
 version = "1.7.1"
 description = "End-to-End Multi-Lingual Optical Character Recognition (OCR) Solution"
@@ -1046,6 +1090,48 @@ files = [
 tests = ["asttokens (>=2.1.0)", "coverage", "coverage-enable-subprocess", "ipython", "littleutils", "pytest", "rich"]
 
 [[package]]
+name = "extra-streamlit-components"
+version = "0.1.60"
+description = "An all-in-one place, to find complex or just natively unavailable components on streamlit."
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "extra_streamlit_components-0.1.60-py3-none-any.whl", hash = "sha256:14378edc31bb7d8bfa1525c0e340a43bddcc6d3855e87edca0e3f014b09ffbae"},
+    {file = "extra_streamlit_components-0.1.60.tar.gz", hash = "sha256:9512870c431fd8af6e11282bb5a5293f3a1b48d834152e5c9e9a11ceed738586"},
+]
+
+[package.dependencies]
+streamlit = ">=1.18.0"
+
+[[package]]
+name = "face-recognition"
+version = "1.3.0"
+description = "Recognize faces from Python or from the command line"
+optional = false
+python-versions = "*"
+files = [
+    {file = "face_recognition-1.3.0-py2.py3-none-any.whl", hash = "sha256:c543e91c8cfbf24d19db04e511ebbddcb23894bcee510133729ee78e9f4b5e83"},
+    {file = "face_recognition-1.3.0.tar.gz", hash = "sha256:5e5efdd1686aa566af0d3cc1313b131e4b197657a8ffd03669e6d3fad92705ec"},
+]
+
+[package.dependencies]
+Click = ">=6.0"
+dlib = ">=19.7"
+face-recognition-models = ">=0.3.0"
+numpy = "*"
+Pillow = "*"
+
+[[package]]
+name = "face-recognition-models"
+version = "0.3.0"
+description = "Models used by the face_recognition package."
+optional = false
+python-versions = "*"
+files = [
+    {file = "face_recognition_models-0.3.0.tar.gz", hash = "sha256:b79bd200a88c87c9a9d446c990ae71c5a626d1f3730174e6d570157ff1d896cf"},
+]
+
+[[package]]
 name = "facebook-scraper"
 version = "0.2.59"
 description = "Scrape Facebook public pages without an API key"
@@ -1071,13 +1157,13 @@ resolved_reference = "8a69f6861a44499f1c5db90ed532de0bf43f3773"
 
 [[package]]
 name = "fake-useragent"
-version = "1.1.3"
+version = "1.2.1"
 description = "Up-to-date simple useragent faker with real world database"
 optional = false
 python-versions = "*"
 files = [
-    {file = "fake-useragent-1.1.3.tar.gz", hash = "sha256:1c06f0aa7d6e4894b919b30b9c7ebd72ff497325191057fbb5df3d5db06b93fc"},
-    {file = "fake_useragent-1.1.3-py3-none-any.whl", hash = "sha256:695d3b1bf7d11d04ab0f971fb73b0ca8de98b78bbadfbc8bacbc9a48423f7531"},
+    {file = "fake-useragent-1.2.1.tar.gz", hash = "sha256:b411f903331f695e3840ccadcf011f745a405764e97c588f2b8fde9e400a5446"},
+    {file = "fake_useragent-1.2.1-py3-none-any.whl", hash = "sha256:ad2b5414d19493d0789572f04200d4f656f84d20b205cc805233212957fe385d"},
 ]
 
 [[package]]
@@ -3938,6 +4024,23 @@ files = [
 plugins = ["importlib-metadata"]
 
 [[package]]
+name = "pyjwt"
+version = "2.8.0"
+description = "JSON Web Token implementation in Python"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "PyJWT-2.8.0-py3-none-any.whl", hash = "sha256:59127c392cc44c2da5bb3192169a91f429924e17aff6534d70fdc02ab3e04320"},
+    {file = "PyJWT-2.8.0.tar.gz", hash = "sha256:57e28d156e3d5c10088e0c68abb90bfac3df82b40a71bd0daa20c65ccd5c23de"},
+]
+
+[package.extras]
+crypto = ["cryptography (>=3.4.0)"]
+dev = ["coverage[toml] (==5.0.4)", "cryptography (>=3.4.0)", "pre-commit", "pytest (>=6.0.0,<7.0.0)", "sphinx (>=4.5.0,<5.0.0)", "sphinx-rtd-theme", "zope.interface"]
+docs = ["sphinx (>=4.5.0,<5.0.0)", "sphinx-rtd-theme", "zope.interface"]
+tests = ["coverage[toml] (==5.0.4)", "pytest (>=6.0.0,<7.0.0)"]
+
+[[package]]
 name = "pyparsing"
 version = "3.1.1"
 description = "pyparsing module - Classes and methods to define and execute parsing grammars"
@@ -5328,6 +5431,37 @@ watchdog = {version = ">=2.1.5", markers = "platform_system != \"Darwin\""}
 snowflake = ["snowflake-connector-python (>=2.8.0)", "snowflake-snowpark-python (>=0.9.0)"]
 
 [[package]]
+name = "streamlit-authenticator"
+version = "0.2.3"
+description = "A secure authentication module to validate user credentials in a Streamlit application."
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "streamlit-authenticator-0.2.3.tar.gz", hash = "sha256:7693c5ae9821ae774447d2e75cff15eff9b9f026b25f33b94f6962b9e2fe9dbc"},
+]
+
+[package.dependencies]
+bcrypt = ">=3.1.7"
+extra-streamlit-components = ">=0.1.60"
+PyJWT = ">=2.3.0"
+PyYAML = ">=5.3.1"
+streamlit = ">=1.18.0"
+
+[[package]]
+name = "streamlit-option-menu"
+version = "0.3.6"
+description = "streamlit-option-menu is a simple Streamlit component that allows users to select a single item from a list of options in a menu."
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "streamlit-option-menu-0.3.6.tar.gz", hash = "sha256:4f02faadf4d1d1e9a00c3740a2ebd8a3f105a2cdf63fdc0e34cf01ef7267e9de"},
+    {file = "streamlit_option_menu-0.3.6-py3-none-any.whl", hash = "sha256:d051af217ff1e4513e2cc6f3c79ccd4b34d77390b16c34711032e998d41e9850"},
+]
+
+[package.dependencies]
+streamlit = ">=0.63"
+
+[[package]]
 name = "sympy"
 version = "1.12"
 description = "Computer algebra system (CAS) in Python"
@@ -6040,23 +6174,27 @@ files = [
 
 [[package]]
 name = "twscrape"
-version = "0.4.2"
+version = "0.8.0"
 description = "Twitter GraphQL and Search API implementation with SNScrape data models"
 optional = false
 python-versions = ">=3.10"
-files = [
-    {file = "twscrape-0.4.2-py3-none-any.whl", hash = "sha256:0b6cb0f8c2329359a5eb0833a4a65ad8e85f97960a76b82188789d0491e87b1f"},
-    {file = "twscrape-0.4.2.tar.gz", hash = "sha256:e30cf8e522554e8292419fc38047746a41eb760a21be95af46afaf672c4d3ac3"},
-]
+files = []
+develop = false
 
 [package.dependencies]
 aiosqlite = "0.17.0"
-fake-useragent = "1.1.3"
+fake-useragent = "1.2.1"
 httpx = "0.24.0"
 loguru = "0.7.0"
 
 [package.extras]
 dev = ["pylint (==2.17.3)", "pytest (==7.3.1)", "pytest-asyncio (==0.21.0)", "pytest-cov (==4.0.0)", "pytest-httpx (==0.22.0)", "ruff (==0.0.263)"]
+
+[package.source]
+type = "git"
+url = "https://github.com/vladkens/twscrape.git"
+reference = "HEAD"
+resolved_reference = "e0e7fb75120a4222d25b8058420fb5dd26b8742e"
 
 [[package]]
 name = "typer"
@@ -6713,4 +6851,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.12"
-content-hash = "efe0e93abee382066a050ab9b5c447845d859b08b98b8199d2b292273803d561"
+content-hash = "68ace81089514d5b51e1f8588da8c6069504b370f3f32cb7a9a09ba58a4ee603"

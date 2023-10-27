@@ -8,8 +8,16 @@ from data_collection.utils import BaseDataCollector
 
 
 def video_response_parsing(response) -> (str, dict):
+    """
+    Parses the response from the TikTok API
+    :param response: The response from the TikTok API, should be a json object
+    :return: A list of dictionaries containing the formatted video data
+             Will return None as results if an error occurred
+             The search_id is needed to resume a previous search
+    """
     try:
         data = response["data"]
+        has_more = data["has_more"]
     except KeyError:
         st.error(json.dumps(response["error"], indent=4))
         return None, None
@@ -19,16 +27,19 @@ def video_response_parsing(response) -> (str, dict):
     except KeyError:
         search_id = None
 
-    if not data["has_more"]:
+    if not has_more:
         search_id = None  # No more videos to get, the search_id already should be None but just in case
 
     formatted_videos = []
     for video in data["videos"]:
+        # Calculating the date from the time stamp which is in seconds
+        create_date = datetime.datetime.fromtimestamp(video["create_time"]).strftime("%Y%m%d")
         formatted_videos.append(
             {
                 "id": video["id"],
                 "text": video["video_description"],
                 "create_time": video["create_time"],
+                "create_date": create_date,
                 "region_code": video["region_code"],
                 "username": video["username"],
                 "like_count": video.get("like_count", None),
@@ -40,6 +51,7 @@ def video_response_parsing(response) -> (str, dict):
                 "effect_ids": video.get("effect_ids", None),
                 "playlist_id": video.get("playlist_id", None),
                 "voice_to_text": video.get("voice_to_text", None),
+                "video_url": f"https://www.tiktok.com/@{video['username']}/video/{video['id']}",
             }
         )
 
@@ -77,7 +89,8 @@ class TikTokApi:
         end_date,
         locations,
         hashtags,
-    ) -> list[dict]:
+        search_id=None,
+    ) -> (list[dict], str):
         """
         Grabs videos from the TikTokApi that match the given parameters.
         :param hashtags: Hashtags that the video must have e.g. ["funny", "comedy"]
@@ -86,9 +99,11 @@ class TikTokApi:
         :param max_count: Maximum number of videos to return
         :param keywords: Keywords that must be in the video description
         :param locations: Locations that the videos must be from e.g. ["US", "CA"]
-        :return: List of dictionaries containing the videos' data
+        :param search_id: The search_id to resume a previous search
+        :return: List of dictionaries containing the videos' data and the search_id
         """
 
+        # print("\n\nTikTokAPI video request called with search id of", search_id)
         base_data = {
             "query": {"and": []},
         }
@@ -116,32 +131,50 @@ class TikTokApi:
         base_data["end_date"] = end_date
 
         count_still_needed = max_count
-        search_id = None
 
         collected_videos = []
-
+        progress_bar = st.progress(0)
         while count_still_needed > 0:
+            progress_bar.progress((max_count - count_still_needed) / max_count, "Collecting...")
             data = base_data.copy()
-            count_for_this_request = min(count_still_needed, 100)
+            count_for_this_request = 100  # Always ask for 100 videos, we are limited by requests not by videos
 
             # Adding more fields to the data
             data["max_count"] = count_for_this_request
             if search_id is not None:
-                data["search_id"] = search_id  # To resume a previous search
+                print("Putting search id into data")
+                data["search_id"] = search_id[:]  # To resume a previous search
+
+            # Save the data json to the log.txt
+
+            # print("data in request that is being sent to tiktok:", data)
 
             r = requests.post(
                 f"https://open.tiktokapis.com/v2/research/video/query/?fields={TikTokApi.all_fields}",
                 headers=headers,
                 json=data,
             )
+
+            # Save the data and the response to the log.txt
+            with open("log.txt", "w", encoding="utf-8") as f:
+                f.write(f"Request: {data}\n")
+                f.write(f"Response: {json.dumps(r.json(), indent=4)}\n\n")
+
+            # print("search id variable value before updating it:", search_id)
             search_id, results = video_response_parsing(r.json())
+            # print("after:                                      ", search_id)
+
+            if results is None:
+                break  # Error occurred
+
             collected_videos += results
             count_still_needed = max_count - len(collected_videos)
+            print(count_for_this_request, "SID: ", search_id)
 
             if search_id is None:
                 break
 
-        return collected_videos
+        return collected_videos, search_id
 
 
 def cant_find_keys():
@@ -164,7 +197,22 @@ def get_videos(
     locations: str = None,
     count: int = 100,
     hashtags: str = None,
+    search_id: str = None,
 ):
+    """
+    Uses the TikTok API to get videos
+    Helps to format the query request and check for credentials
+    Designed to make interfacing with the tiktokapi easier.
+    Will look for credentials inside streamlit's secrets.toml file
+    :param keywords: A single string  with comma seperated keywords
+    :param start_date: A datetime.date object
+    :param end_date: A datetime.date object must be after start_date and within 30 days
+    :param locations: Comma seperated country abbreviations
+    :param count: The number of videos to return
+    :param hashtags: A single string with comma seperated hashtags
+    :param search_id: The search_id to resume a previous search
+    :return:
+    """
     if keywords is None and hashtags is None and locations is None:
         st.error("Please specify at least one of the following: keywords, hashtags, locations")
 
@@ -194,7 +242,9 @@ def get_videos(
         return
 
     ttapi = TikTokApi(client_key, client_secret)
-    return ttapi.video_request(count, keywords, start_date, end_date, locations, hashtags)
+    results, search_id = ttapi.video_request(count, keywords, start_date, end_date, locations, hashtags, search_id)
+    st.success("Collection complete. Here is the search ID to resume from here: " + str(search_id))
+    return results
 
 
 class Collector(BaseDataCollector):
@@ -202,7 +252,14 @@ class Collector(BaseDataCollector):
         super().__init__()
 
     def query_options(self):
-        return ["count", "keywords", "start_date", "end_date", "locations", "hashtags"]
+        return ["count", "keywords", "start_date", "end_date", "locations", "hashtags", "search_id"]
 
     def collect(self, **kwargs):
         return get_videos(**kwargs)
+
+
+if __name__ == "__main__":
+    tiktok = TikTokApi(st.secrets.tiktok.client_key, st.secrets.tiktok.client_secret)
+    results, si = tiktok.video_request(
+        count=200, keywords=["covid", "lockdown"], start_date="20210601", end_date="20210630"
+    )

@@ -228,6 +228,7 @@ Temporary Items
 data/
 predicted/
 models/
+model/
 
 ### Intellij ###
 .idea
@@ -235,5 +236,10 @@ models/
 ### twscrape ###
 accounts.db
 
+login_error.html
+
+frontend/node_modules/
 # Sphinx documentation
 docs/_build/
+
+*/node_modules/

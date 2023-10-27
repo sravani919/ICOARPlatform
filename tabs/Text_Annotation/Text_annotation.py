@@ -22,5 +22,7 @@ class TextClassificationPage(BasePage):
         return {"input": st.text_area(label="Please enter your text.", value="", height=300)}
 
 
-page = TextClassificationPage(title="Text Annotation")
-page.render()
+# Create a subtab for "Text Annotation"
+def text_annotation_tab():
+    page = TextClassificationPage(st.subheader("Annotate Your own data"))
+    page.render()

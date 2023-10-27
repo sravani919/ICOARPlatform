@@ -3,9 +3,9 @@ from pathlib import Path
 from typing import Optional
 
 import streamlit as st
+from langchain.base_language import BaseLanguageModel
 from langchain.llms import OpenAI
 from langchain.prompts.few_shot import FewShotPromptTemplate
-from langchain.schema import BaseLanguageModel
 
 
 def display_download_button():
@@ -26,7 +26,7 @@ def usage():
 
 
 def task_instruction_editor(prompt: FewShotPromptTemplate) -> FewShotPromptTemplate:
-    st.header("Edit Labeling Instructions")
+    # st.header("Edit Labeling Instructions")
     with st.expander("See instruction", expanded=True):
         prompt.prefix = st.text_area(label="Enter task instruction", value=prompt.prefix, height=200)
     return prompt

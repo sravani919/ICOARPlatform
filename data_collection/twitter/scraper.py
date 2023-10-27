@@ -14,7 +14,6 @@ def get_accounts():
     for account in f.split(","):
         values = [v.strip() for v in account.split(":")]
         accounts.append(values)
-
     return accounts
 
 
@@ -110,5 +109,5 @@ class Collector(BaseDataCollector):
     def query_options(self):
         return ["count", "keywords", "images", "start_date", "end_date"]
 
-    def collect(self, keywords, count, images, start, end):
-        return a_grab_tweets(keywords, count, images, start, end)
+    def collect(self, keywords, count, images, start_date, end_date):
+        return grab_tweets(keywords, count, images, start_date, end_date)

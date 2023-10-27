@@ -13,6 +13,9 @@ from langchain.prompts.few_shot import FewShotPromptTemplate
 from gpt.components import display_download_button, openai_model_form, task_instruction_editor
 from gpt.utils import escape_markdown
 
+if "predict" not in st.session_state:
+    st.session_state.predict = False
+
 
 class BasePage(ABC):
     example_path: str = ""
@@ -46,31 +49,60 @@ class BasePage(ABC):
         return examples
 
     def render(self) -> None:
-        st.title(self.title)
-        st.divider()
-        st.header("Annotate sample data")
+        # st.title(self.title)
+        # st.divider()
+        # st.header("Annotate your own data")
+        st.markdown(
+            """In this section, you have the opportunity to utilize ChatGPT to annotate text according to your
+                    custom labels. You have the option to label a CSV file using the provided ChatGPT interface. Below
+                    is a demo of how it works:
+                    """
+        )
+        st.markdown("In this example, we are using sentiment labels on a text:")
+        st.markdown(
+            """**1. Input Text:** Enter or paste the text you want to annotate into the provided text box along with
+                    desired labels. This text may include sentences, paragraphs, or any content based on your custom
+                    labels.Along with the text, specify the labels you want to apply."""
+        )
+
         columns = self.columns
         examples = self.make_examples(columns)
         examples = self.annotate(examples)
 
+        st.markdown(
+            """**2. Edit the prompt (Optional):** You can modify the prompt that instruct ChatGPT. The choice of
+                    prompt greatly influences the generated responsesand the quality of the annotation. Ensure that your
+                    edits are clear and relevant to the task."""
+        )
+
         prompt = self.make_prompt(examples)
         prompt = task_instruction_editor(prompt)
 
-        st.header("Test")
+        st.markdown(
+            """**3. Test with a Single Example (Optional):** Before labeling your entire dataset, it's a good practice
+            to test ChatGPT performance with a single example to see if the predictions are accurate and align with your
+            instructions."""
+        )
         # col1, col2 = st.columns([3, 1])
 
         inputs = self.prepare_inputs(columns)
+
         with st.sidebar:
             llm = openai_model_form()
         # with col1:
         #     inputs = self.prepare_inputs(columns)
-        #
+
         # with col2:
         #     llm = openai_model_form()
 
         with st.expander("See your full prompt"):
             st.markdown(f"```\n{prompt.format(**inputs)}\n```")
 
+        st.markdown(
+            """**4. Parameter Usage:** The parameters you specify means you can make adjustments to how ChatGPT
+            generates responses to better suit your task. For meanings of sliders see
+            [this link](https://community.openai.com/t/cheat-sheet-mastering-temperature-and-top-p-in-chatgpt-api-a-few-tips-and-tricks-on-controlling-the-creativity-deterministic-output-of-prompt-responses/172683)."""
+        )
         if llm is None:
             st.error("Enter your API key.")
 
@@ -81,14 +113,19 @@ class BasePage(ABC):
             chain.save("config.yaml")
             display_download_button()
 
-        # usage()
+        #  usage()
 
         # section for chatgpt labeling a dataset created by icoar
-        st.header("Label Your Data")
+        st.markdown(
+            """**5. Upload the File:** Once you are satisfied with the test results, you can proceed to label your
+            entire dataset. Click the "Select a File" button to upload the file you want to label. Please ensure that
+            your CSV file is properly formatted the labels you provided in Step 1 should match the labels in your CSV
+            file for accurate annotation."""
+        )
 
-        st.text("This will use the parameters you input in the test section.")
+        st.markdown("**Note:** This will use the parameters you put in the test section.")
 
-        option = st.selectbox("Select a file", [file for file in glob.glob("./data/*.csv")])
+        option = st.selectbox("Select a file", [file for file in glob.glob("./data/*.csv")], key="unique_key_1")
 
         if llm is None:
             st.error("Enter your API key.")
