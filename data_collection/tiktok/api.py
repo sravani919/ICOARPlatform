@@ -4,6 +4,7 @@ import time
 
 import requests
 import streamlit as st
+import logging
 
 from data_collection.utils import BaseDataCollector
 
@@ -22,6 +23,8 @@ def video_response_parsing(response) -> (str, dict):
         has_more = data["has_more"]
     except KeyError:
         st.error("No data in response, message from TikTok: " + json.dumps(response["error"], indent=4))
+        logging.error("No data in response, message from TikTok: " + json.dumps(response["error"], indent=4))
+
         return None, None, None
 
     try:
@@ -42,14 +45,15 @@ def video_response_parsing(response) -> (str, dict):
     for video in data["videos"]:
         # Calculating the date from the time stamp which is in seconds
         create_date = datetime.datetime.fromtimestamp(video["create_time"]).strftime("%Y%m%d")
+        username = video.get("username", None)
         formatted_videos.append(
             {
-                "id": video["id"],
-                "text": video["video_description"],
+                "id": video.get("id", None),
+                "text": video.get("video_description", None),
                 "create_time": video["create_time"],
-                "create_date": create_date,
-                "region_code": video["region_code"],
-                "username": video["username"],
+                "create_date": video.get("create_date", create_date),
+                "region_code": video.get("region_code", None),
+                "username": username,
                 "like_count": video.get("like_count", None),
                 "comment_count": video.get("comment_count", None),
                 "share_count": video.get("share_count", None),
@@ -59,7 +63,7 @@ def video_response_parsing(response) -> (str, dict):
                 "effect_ids": video.get("effect_ids", None),
                 "playlist_id": video.get("playlist_id", None),
                 "voice_to_text": video.get("voice_to_text", None),
-                "video_url": f"https://www.tiktok.com/@{video['username']}/video/{video['id']}",
+                "video_url": f"https://www.tiktok.com/@{username}/video/{video['id']}",
             }
         )
 
@@ -167,6 +171,12 @@ class TikTokApi:
                 (max_count - count_still_needed) / max_count,
                 f"Collecting... {estimated_time_left} left | {len(collected_videos)} collected",
             )
+
+            # Also displaying the progress bar in the terminal with tqdm
+            print(
+                f"Collecting... {estimated_time_left} left | {len(collected_videos)} collected"
+            )
+
             data = base_data.copy()
             count_for_this_request = 100  # Always ask for 100 videos, we are limited by requests not by videos
 
@@ -186,7 +196,16 @@ class TikTokApi:
             )
 
             # print("search id variable value before updating it:", search_id)
-            t_cursor, t_search_id, results = video_response_parsing(r.json())
+            results = None
+            try:
+                t_cursor, t_search_id, results = video_response_parsing(r.json())
+            except json.decoder.JSONDecodeError:
+                st.error("Error decoding json from TikTok API")
+                logging.error("Error decoding json from TikTok API")
+            except KeyError:
+                st.error("Error parsing response from TikTok API")
+                logging.error("Error parsing response from TikTok API")
+
             if results is None:
                 # If we got no data, increment the counter and try again with the same cursor and search_id
                 no_data_error_count += 1

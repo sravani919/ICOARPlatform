@@ -240,3 +240,5 @@ login_error.html
 
 
 frontend/node_modules/
+/experiments/offensive_keywords.csv
+/experiments/
