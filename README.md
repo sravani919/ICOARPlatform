@@ -65,6 +65,13 @@ Integrative Cyberinfrastructure for Online Abuse Research (ICOAR)
 
 7. Create folder /data/images/image in ICOAR project directory.
 
+8. Generate a build for the react component. </br>
+    Open a new terminal and run the below commands
+   ```shell
+   cd header_tab
+   npm install
+   npm run build
+    ```
 
 ## Contributing
 
