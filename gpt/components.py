@@ -3,9 +3,9 @@ from pathlib import Path
 from typing import Optional
 
 import streamlit as st
+from langchain.base_language import BaseLanguageModel
 from langchain.llms import OpenAI
 from langchain.prompts.few_shot import FewShotPromptTemplate
-from langchain.schema import BaseLanguageModel
 
 
 def display_download_button():
