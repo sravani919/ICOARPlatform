@@ -18,9 +18,9 @@ if "managing_new_data" not in st.session_state:
     st.session_state.managing_new_data = False
 
 
-def find_data_files(upload_new_data=False):
+def find_data_files(email, upload_new_data=False):
     # Get the list of files in the data folder
-    data_files = os.listdir("data")
+    data_files = os.listdir(f"data/{email}")
 
     # Keep only the files with the csv extension
     data_files = [filename for filename in data_files if filename.endswith(".csv")]
@@ -59,9 +59,10 @@ def get_column_for_text():
     st.markdown("-------------------")
 
 
-def data_upload_element(get_filepath_instead=False):
+def data_upload_element(email, get_filepath_instead=False):
     """
     Has a drop-down menu to select data already stored in the data folder or upload new data
+    :param email: The email of the user, used to know which data folder to use
     :param get_filepath_instead: If True, returns the filepath instead of the data
     :return: The data selected in a pandas dataframe
     """
@@ -72,7 +73,10 @@ def data_upload_element(get_filepath_instead=False):
     if "column_replace" not in st.session_state:
         st.session_state.column_replace = None
 
-    st.session_state.data_files = find_data_files(upload_new_data=True)
+    if "ldf" not in st.session_state:
+        st.session_state.ldf = None  # Loaded data frame
+
+    st.session_state.data_files = find_data_files(email, upload_new_data=True)
 
     # Create the drop-down menu
     selected_data = st.selectbox("Select data", st.session_state.data_files)
@@ -98,29 +102,31 @@ def data_upload_element(get_filepath_instead=False):
 
         upload_button = st.button("Confirm upload")
 
-        if "text" not in st.session_state.ldf.columns:
-            if st.session_state.column_replace is not None:
-                rename_column()
-            else:
-                st.warning("No column labeled 'text' found in the data, please select the column to use for text")
-                get_column_for_text()
+        # ldf is the loaded data frame
+        if st.session_state.ldf is not None:
+            if "text" not in st.session_state.ldf.columns:
+                if st.session_state.column_replace is not None:
+                    rename_column()
+                else:
+                    st.warning("No column labeled 'text' found in the data, please select the column to use for text")
+                    get_column_for_text()
 
-        if upload_button and "text" in st.session_state.ldf.columns:
-            # Save the file
-            st.session_state.ldf.to_csv(f"data/{uploaded_file.name}", index=False)
-            st.session_state.managing_new_data = False  # Finished managing the new data
-            st.session_state.data_files = find_data_files(upload_new_data=True)
+            if upload_button and "text" in st.session_state.ldf.columns:
+                # Save the file
+                st.session_state.ldf.to_csv(f"data/{email}/{uploaded_file.name}", index=False)
+                st.session_state.managing_new_data = False  # Finished managing the new data
+                st.session_state.data_files = find_data_files(email, upload_new_data=True)
 
-            if get_filepath_instead:
-                return f"data/{uploaded_file.name}"
+                if get_filepath_instead:
+                    return f"data/{email}/{uploaded_file.name}"
 
-            # Return the file
-            return st.session_state.ldf
+                # Return the file
+                return st.session_state.ldf
 
     # If the user selects a file already in the data folder
     elif selected_data != "":
         # Read the file
-        st.session_state.ldf = pd.read_csv(f"data/{selected_data}.csv")
+        st.session_state.ldf = pd.read_csv(f"data/{email}/{selected_data}.csv")
 
         if get_filepath_instead:
             return f"data/{selected_data}.csv"

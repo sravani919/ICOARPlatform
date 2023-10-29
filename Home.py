@@ -1,9 +1,16 @@
-import extra_streamlit_components as stx
+import os
+
 import streamlit as st
 import streamlit.components.v1 as components
+import streamlit_authenticator as stauth
+import yaml
 from streamlit_option_menu import option_menu
+from yaml.loader import SafeLoader
 
-st.set_page_config(page_title="ICOAR", layout="wide")
+st.set_page_config(
+    page_title="ICOAR",
+    layout="wide",
+)
 hide_streamlit_style = """
             <style>
             #MainMenu {visibility: hidden;}
@@ -12,24 +19,79 @@ hide_streamlit_style = """
             """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
-menu_options = ["Home", "Data Collection", "Text Analysis", "Multimedia Analysis"]
-selected = option_menu(
-    None,
-    menu_options,
-    icons=["house-fill", "box-arrow-in-down", "chat-left-text", "images"],
-    menu_icon="cast",
-    default_index=0,
-    orientation="horizontal",
-    styles={
-        "nav-link": {"font-size": "25px", "text-align": "left", "margin": "0px", "--hover-color": "#B9B5B5"},
-    },
+production = True
+
+if production:
+    root_dir = os.path.dirname(os.path.abspath(__file__))
+    build_dir = os.path.join(root_dir, "header_tab/build")
+
+    _discrete_slider = components.declare_component("discrete_slider", path=build_dir)
+else:
+    _discrete_slider = components.declare_component("discrete_slider", url="http://localhost:3000")
+
+
+def discrete_slider():
+    return _discrete_slider(default=0, logged_in=False)
+
+
+st.markdown(
+    f"""
+            <style>
+                .block-container {{
+                    padding: {0}rem;
+                }}
+                header[data-testid="stHeader"] {{
+                    display: none;
+                }}
+                div[data-testid="stVerticalBlock"] {{
+                    gap: {0}rem
+                }}
+                div[data-testid="stForm"]  {{
+                    margin-left: {5}%;
+                    margin-right: {5}%;
+                    margin-top: {1.5}%;
+                }}
+                div[data-testid="stFormSubmitButton"]  {{
+                    margin-top: {1.5}%;
+                }}
+                .stAlert {{
+                    margin-left: {5}%;
+                    margin-right: {5}%;
+                    margin-top: {1.5}%;
+                }}
+                div[data-testid="stHorizontalBlock"] {{
+                    margin-left: {7.5}%;
+                    margin-right: {7.5}%;
+                    margin-top: {2.5}%;
+                }}
+            </style>
+            """,
+    unsafe_allow_html=True,
 )
-if selected == menu_options[0]:
-    from tabs.home_page import home_content
+selected_value = int(discrete_slider())
 
-    home_content()
+if selected_value == 0:
+    with open(".streamlit/authenticator.yaml") as file:
+        config = yaml.load(file, Loader=SafeLoader)
 
-elif selected == menu_options[1]:
+    authenticator = stauth.Authenticate(
+        config["credentials"],
+        config["cookie"]["name"],
+        config["cookie"]["key"],
+        config["cookie"]["expiry_days"],
+        config["preauthorized"],
+    )
+
+    authenticator.login("Login", "main")
+
+    if st.session_state["authentication_status"]:
+        st.success("You're logged in successfully. Use the menu bar to access the features.")
+    elif st.session_state["authentication_status"] is False:
+        st.error("Username/password is incorrect")
+    elif st.session_state["authentication_status"] is None:
+        st.warning("Please enter your username and password")
+
+elif selected_value == 1:
     # Data collection
     sections = ["Collection", "Preprocessing"]
     selected_section = option_menu(
@@ -50,58 +112,22 @@ elif selected == menu_options[1]:
 
         data_preprocessing_tab()
 
-elif selected == menu_options[2]:
-    text_sections = ["Text Classification", "Text Annotation"]
-    selected_text_section = option_menu(
-        None,
-        text_sections,
-        icons=["chat-left-text", "tag-fill", "clipboard-data-fill"],
-        menu_icon="cast",
-        default_index=0,
-        orientation="horizontal",
-        styles={},
-    )
+elif selected_value == 2:
+    from tabs.validation.validation import validation
 
-    if selected_text_section == text_sections[0]:
-        text_stepper_options = ["Classification", "Visualisation"]
+    validation()
 
-        _discrete_slider = components.declare_component("discrete_slider", url="http://localhost:3001")
+elif selected_value == 3:
+    from tabs.Text_Annotation.Text_annotation import text_annotation_tab
 
-        activeStep = 0
-        options = []
-        aactiveStep = _discrete_slider(options=options, key=None, default=0)
+    text_annotation_tab()
 
-        selected_option = activeStep
+elif selected_value == 4:
+    from tabs.Visualisation.Text_Visualisation import Text_Visualisation_tab
 
-        if selected_option == 0:
-            from tabs.validation.validation import validation
+    Text_Visualisation_tab()
 
-            st.subheader("Classification")
-            st.markdown(":bulb: In this tab, you can use a pretrained model to label datasets depdending on the task.")
-
-            multi = """:bulb: Steps -
-                    :one:  Select the dataset that you want to have labeled by using the dropdown.
-                    :two:   Choose a model from our list of recommended ones or find a specific one via huggingface
-                    :three:  Click on the predict button and view or save your results.
-                        """
-            st.markdown(multi)
-            validation()
-
-        elif selected_option == 1:
-            from tabs.Visualisation.Text_Visualisation import Text_Visualisation_tab
-
-            Text_Visualisation_tab()
-    # Code above means add visualization into tab "Visualization"
-
-    elif selected_text_section == text_sections[1]:
-        from tabs.Text_Annotation.Text_annotation import text_annotation_tab
-
-        text_annotation_tab()
-
-    # My own code
-
-
-elif selected == menu_options[3]:
+elif selected_value == 5:
     image_sections = ["Image Classification", "Meme Classification", "Deepfake Detection"]
     selected_image_section = option_menu(
         None,
@@ -114,10 +140,7 @@ elif selected == menu_options[3]:
     )
 
     if selected_image_section == image_sections[0]:
-        image_menu_options = ["Retrieval", "Classification"]
-
-        selected_option = stx.stepper_bar(steps=image_menu_options)
-
+        selected_option = 0
         if selected_option == 0:
             pass
 
@@ -135,3 +158,5 @@ elif selected == menu_options[3]:
         from tabs.image.deepfake_detection import df_detection
 
         df_detection()
+elif selected_value == 7:
+    st.success("You're logged out successfully. Please refresh the page.")

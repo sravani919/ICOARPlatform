@@ -1,10 +1,10 @@
 import datetime
 import json
+import logging
 import time
 
 import requests
 import streamlit as st
-import logging
 
 from data_collection.utils import BaseDataCollector
 
@@ -173,9 +173,7 @@ class TikTokApi:
             )
 
             # Also displaying the progress bar in the terminal with tqdm
-            print(
-                f"Collecting... {estimated_time_left} left | {len(collected_videos)} collected"
-            )
+            print(f"Collecting... {estimated_time_left} left | {len(collected_videos)} collected")
 
             data = base_data.copy()
             count_for_this_request = 100  # Always ask for 100 videos, we are limited by requests not by videos

@@ -91,7 +91,8 @@ def predict(text, model, tokenizer):
 def validation():
     initialize_state()
     # FILE = st.selectbox("Select a file", [file for file in glob.glob("./data/*.csv")])
-    FILE = data_upload.data_upload_element(get_filepath_instead=True)
+    email = "pranav-1"
+    FILE = data_upload.data_upload_element(email, get_filepath_instead=True)
     freq = [0] * 28
     MODEL = ""
     MODELS = {}
