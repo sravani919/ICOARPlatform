@@ -7,6 +7,8 @@ import yaml
 from streamlit_option_menu import option_menu
 from yaml.loader import SafeLoader
 
+from tabs.login import login_error
+
 st.set_page_config(
     page_title="ICOAR",
     layout="wide",
@@ -92,71 +94,85 @@ if selected_value == 0:
         st.warning("Please enter your username and password")
 
 elif selected_value == 1:
-    # Data collection
-    sections = ["Collection", "Preprocessing"]
-    selected_section = option_menu(
-        None,
-        sections,
-        icons=["cloud-arrow-up-fill", "file-earmark-text-fill"],
-        menu_icon="cast",
-        default_index=0,
-        orientation="horizontal",
-        styles={},
-    )
-    if selected_section == sections[0]:
-        from tabs.Data_Collection.data_collection_tab import data_collection_tab
+    if not st.session_state["authentication_status"]:
+        login_error()
+    else:
+        sections = ["Collection", "Preprocessing"]
+        selected_section = option_menu(
+            None,
+            sections,
+            icons=["cloud-arrow-up-fill", "file-earmark-text-fill"],
+            menu_icon="cast",
+            default_index=0,
+            orientation="horizontal",
+            styles={},
+        )
+        if selected_section == sections[0]:
+            from tabs.Data_Collection.data_collection_tab import data_collection_tab
 
-        data_collection_tab()
-    elif selected_section == sections[1]:
-        from tabs.Data_Collection.data_preprocessing_tab import data_preprocessing_tab
+            data_collection_tab()
+        elif selected_section == sections[1]:
+            from tabs.Data_Collection.data_preprocessing_tab import data_preprocessing_tab
 
-        data_preprocessing_tab()
+            data_preprocessing_tab()
 
 elif selected_value == 2:
-    from tabs.validation.validation import validation
+    if not st.session_state["authentication_status"]:
+        login_error()
+    else:
+        from tabs.validation.validation import validation
 
-    validation()
+        validation()
 
 elif selected_value == 3:
-    from tabs.Text_Annotation.Text_annotation import text_annotation_tab
+    if not st.session_state["authentication_status"]:
+        login_error()
+    else:
+        from tabs.Text_Annotation.Text_annotation import text_annotation_tab
 
-    text_annotation_tab()
+        text_annotation_tab()
 
 elif selected_value == 4:
-    from tabs.Visualisation.Text_Visualisation import Text_Visualisation_tab
+    if not st.session_state["authentication_status"]:
+        login_error()
+    else:
+        from tabs.Visualisation.Text_Visualisation import Text_Visualisation_tab
 
-    Text_Visualisation_tab()
+        Text_Visualisation_tab()
 
 elif selected_value == 5:
-    image_sections = ["Image Classification", "Meme Classification", "Deepfake Detection"]
-    selected_image_section = option_menu(
-        None,
-        image_sections,
-        icons=["cloud-arrow-up-fill", "images", "file-earmark-image-fill"],
-        menu_icon="cast",
-        default_index=0,
-        orientation="horizontal",
-        styles={},
-    )
+    if not st.session_state["authentication_status"]:
+        login_error()
+    else:
+        image_sections = ["Image Classification", "Meme Classification", "Deepfake Detection"]
+        selected_image_section = option_menu(
+            None,
+            image_sections,
+            icons=["cloud-arrow-up-fill", "images", "file-earmark-image-fill"],
+            menu_icon="cast",
+            default_index=0,
+            orientation="horizontal",
+            styles={},
+        )
 
-    if selected_image_section == image_sections[0]:
-        selected_option = 0
-        if selected_option == 0:
-            pass
+        if selected_image_section == image_sections[0]:
+            selected_option = 0
+            if selected_option == 0:
+                pass
 
-        if selected_option == 1:
-            from tabs.image.bully_classifification import bully_classification
+            if selected_option == 1:
+                from tabs.image.bully_classifification import bully_classification
 
-            bully_classification()
+                bully_classification()
 
-    elif selected_image_section == image_sections[1]:
-        from tabs.image.meme_classification import meme_classification
+        elif selected_image_section == image_sections[1]:
+            from tabs.image.meme_classification import meme_classification
 
-        meme_classification()
+            meme_classification()
 
-    elif selected_image_section == image_sections[2]:
-        from tabs.image.deepfake_detection import df_detection
+        elif selected_image_section == image_sections[2]:
+            from tabs.image.deepfake_detection import df_detection
 
-        df_detection()
+            df_detection()
 elif selected_value == 7:
     st.success("You're logged out successfully. Please refresh the page.")

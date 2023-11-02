@@ -1,10 +1,4 @@
-def verify_email(email):
-    import os
+def login_error():
+    import streamlit as st
 
-    path = "./data/"
-    print("in verify email")
-    if os.path.exists(os.path.join(path, email)):
-        print("User exists")
-    else:
-        os.mkdir(path + email)
-        print("dir created", path + email)
+    st.error("Please login on the home page to view this tab")
