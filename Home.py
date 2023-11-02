@@ -85,16 +85,32 @@ if selected_value == 0:
     authenticator.login("Login", "main")
 
     if st.session_state["authentication_status"]:
-        st.success("You're logged in sucessfuly. Use the menu bar to access the features.")
+        st.success("You're logged in successfully. Use the menu bar to access the features.")
     elif st.session_state["authentication_status"] is False:
         st.error("Username/password is incorrect")
     elif st.session_state["authentication_status"] is None:
         st.warning("Please enter your username and password")
 
 elif selected_value == 1:
-    from tabs.Data_Collection.data_collection_tab import data_collection_tab
+    # Data collection
+    sections = ["Collection", "Preprocessing"]
+    selected_section = option_menu(
+        None,
+        sections,
+        icons=["cloud-arrow-up-fill", "file-earmark-text-fill"],
+        menu_icon="cast",
+        default_index=0,
+        orientation="horizontal",
+        styles={},
+    )
+    if selected_section == sections[0]:
+        from tabs.Data_Collection.data_collection_tab import data_collection_tab
 
-    data_collection_tab()
+        data_collection_tab()
+    elif selected_section == sections[1]:
+        from tabs.Data_Collection.data_preprocessing_tab import data_preprocessing_tab
+
+        data_preprocessing_tab()
 
 elif selected_value == 2:
     from tabs.validation.validation import validation
@@ -143,4 +159,4 @@ elif selected_value == 5:
 
         df_detection()
 elif selected_value == 7:
-    st.success("You're logged out sucessfuly. Please refresh the page.")
+    st.success("You're logged out successfully. Please refresh the page.")

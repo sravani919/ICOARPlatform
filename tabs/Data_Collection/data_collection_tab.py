@@ -45,8 +45,10 @@ def query_builder(option, container=None):
     :return:The value of the query option
     """
     with container:
-        if option == "keywords":
-            return none_default_text_input("Keywords (Comma separated)")
+        if option == "keywords" or option == "keywords AND":
+            return none_default_text_input("Keywords AND (Comma separated)")
+        if option == "keywordsOR":
+            return none_default_text_input("Keywords OR (Comma separated)")
         if option == "count":
             return st.number_input("Number of posts", value=100)
         if option == "images":
@@ -63,6 +65,8 @@ def query_builder(option, container=None):
             return none_default_text_input("Video URL")
         if option == "search_id":
             return none_default_text_input("Search ID")
+        if option == "cursor":
+            return none_default_text_input("Cursor")
 
     raise ValueError(f"Unknown query option: {option}")
 
@@ -94,6 +98,8 @@ def collection_type_selector():
 def data_collection_tab():
     if "results" not in st.session_state:
         st.session_state.results = None
+    if "query_values" not in st.session_state:
+        st.session_state.query_values = {}
     # Grabs all the packages in the data_collection folder
     social_medias_package_names = [
         name for _, name, is_pkg in pkgutil.walk_packages([data_collection.__path__[0]]) if is_pkg
