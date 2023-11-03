@@ -7,7 +7,7 @@ import yaml
 from streamlit_option_menu import option_menu
 from yaml.loader import SafeLoader
 
-from tabs.login import login_error
+from tabs.login import login_error, login_success
 
 st.set_page_config(
     page_title="ICOAR",
@@ -87,7 +87,7 @@ if selected_value == 0:
     authenticator.login("Login", "main")
 
     if st.session_state["authentication_status"]:
-        st.success("You're logged in successfully. Use the menu bar to access the features.")
+        login_success()
     elif st.session_state["authentication_status"] is False:
         st.error("Username/password is incorrect")
     elif st.session_state["authentication_status"] is None:
@@ -97,50 +97,49 @@ elif selected_value == 1:
     if not st.session_state["authentication_status"]:
         login_error()
     else:
-        sections = ["Collection", "Preprocessing"]
-        selected_section = option_menu(
-            None,
-            sections,
-            icons=["cloud-arrow-up-fill", "file-earmark-text-fill"],
-            menu_icon="cast",
-            default_index=0,
-            orientation="horizontal",
-            styles={},
-        )
-        if selected_section == sections[0]:
-            from tabs.Data_Collection.data_collection_tab import data_collection_tab
+        from tabs.Data_Collection.data_collection_tab import data_collection_tab
 
-            data_collection_tab()
-        elif selected_section == sections[1]:
-            from tabs.Data_Collection.data_preprocessing_tab import data_preprocessing_tab
-
-            data_preprocessing_tab()
+        data_collection_tab()
 
 elif selected_value == 2:
     if not st.session_state["authentication_status"]:
         login_error()
     else:
-        from tabs.validation.validation import validation
+        from tabs.Data_Collection.data_preprocessing_tab import data_preprocessing_tab
 
-        validation()
+        data_preprocessing_tab()
 
 elif selected_value == 3:
     if not st.session_state["authentication_status"]:
         login_error()
     else:
-        from tabs.Text_Annotation.Text_annotation import text_annotation_tab
+        from tabs.validation.validation import validation
 
-        text_annotation_tab()
+        cols = st.columns(1)
+        with cols[0]:
+            validation()
 
 elif selected_value == 4:
     if not st.session_state["authentication_status"]:
         login_error()
     else:
-        from tabs.Visualisation.Text_Visualisation import Text_Visualisation_tab
+        from tabs.Text_Annotation.Text_annotation import text_annotation_tab
 
-        Text_Visualisation_tab()
+        cols = st.columns(1)
+        with cols[0]:
+            text_annotation_tab()
 
 elif selected_value == 5:
+    if not st.session_state["authentication_status"]:
+        login_error()
+    else:
+        from tabs.Visualisation.Text_Visualisation import Text_Visualisation_tab
+
+    cols = st.columns(1)
+    with cols[0]:
+        Text_Visualisation_tab()
+
+elif selected_value == 6:
     if not st.session_state["authentication_status"]:
         login_error()
     else:
@@ -174,5 +173,5 @@ elif selected_value == 5:
             from tabs.image.deepfake_detection import df_detection
 
             df_detection()
-elif selected_value == 7:
+elif selected_value == 8:
     st.success("You're logged out successfully. Please refresh the page.")

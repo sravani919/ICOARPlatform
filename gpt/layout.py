@@ -13,9 +13,6 @@ from langchain.prompts.few_shot import FewShotPromptTemplate
 from gpt.components import display_download_button, openai_model_form, task_instruction_editor
 from gpt.utils import escape_markdown
 
-if "predict" not in st.session_state:
-    st.session_state.predict = False
-
 
 class BasePage(ABC):
     example_path: str = ""
@@ -49,9 +46,26 @@ class BasePage(ABC):
         return examples
 
     def render(self) -> None:
-        # st.title(self.title)
-        # st.divider()
-        # st.header("Annotate your own data")
+        if "llm" not in st.session_state:
+            st.session_state.llm = None
+
+        if "predict" not in st.session_state:
+            st.session_state.predict = False
+        st.markdown(
+            f"""
+                    <style>
+                        div[data-testid="stButton"] {{
+                            margin-top: {8}px;
+                            margin-bottom: {6}px;
+                        }}
+                        div[data-testid="stMarkdownContainer"] {{
+                            margin-top: {2}px;
+                            margin-bottom: {2}px;
+                        }}
+                    </style>
+                    """,
+            unsafe_allow_html=True,
+        )
         st.markdown(
             """In this section, you have the opportunity to utilize ChatGPT to annotate text according to your
                     custom labels. You have the option to label a CSV file using the provided ChatGPT interface. Below
@@ -87,8 +101,8 @@ class BasePage(ABC):
 
         inputs = self.prepare_inputs(columns)
 
-        with st.sidebar:
-            llm = openai_model_form()
+        # with st.sidebar:
+        #     llm = openai_model_form()
         # with col1:
         #     inputs = self.prepare_inputs(columns)
 
@@ -103,11 +117,12 @@ class BasePage(ABC):
             generates responses to better suit your task. For meanings of sliders see
             [this link](https://community.openai.com/t/cheat-sheet-mastering-temperature-and-top-p-in-chatgpt-api-a-few-tips-and-tricks-on-controlling-the-creativity-deterministic-output-of-prompt-responses/172683)."""
         )
-        if llm is None:
-            st.error("Enter your API key.")
 
-        if st.button("Predict", disabled=llm is None):
-            chain = LLMChain(llm=llm, prompt=prompt)  # type:ignore
+        with st.expander("Add API keys and hyper-parameters"):
+            st.session_state.llm = openai_model_form()
+
+        if st.button("Predict", disabled=st.session_state.llm is None):
+            chain = LLMChain(llm=st.session_state.llm, prompt=prompt)  # type:ignore
             response = chain.run(**inputs)
             st.markdown(escape_markdown(response).replace("\n", "  \n"))
             chain.save("config.yaml")
@@ -125,12 +140,15 @@ class BasePage(ABC):
 
         st.markdown("**Note:** This will use the parameters you put in the test section.")
 
-        option = st.selectbox("Select a file", [file for file in glob.glob("./data/*.csv")], key="unique_key_1")
-
-        if llm is None:
+        if st.session_state.llm is None:
             st.error("Enter your API key.")
 
-        if st.button("Predict Labels", disabled=llm is None):
+        option = st.selectbox("Select a file", [file for file in glob.glob("./data/*.csv")], key="unique_key_1")
+
+        # if llm is None:
+        #     st.error("Enter your API key.")
+
+        if st.button("Predict Labels", disabled=st.session_state.llm is None):
             st.session_state.predict = True
             st.session_state.filename_pred = option
             df = pd.read_csv(option)
@@ -138,7 +156,7 @@ class BasePage(ABC):
             total_rows = df.shape[0]
             progress_bar = st.empty()
 
-            chain = LLMChain(llm=llm, prompt=prompt)
+            chain = LLMChain(llm=st.session_state.llm, prompt=prompt)
 
             for index, row in df.iterrows():
                 retries = 5
