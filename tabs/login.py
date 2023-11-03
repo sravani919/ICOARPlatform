@@ -5,8 +5,6 @@ def login_error():
 
 
 def login_success():
-    import os
-
     import streamlit as st
     import streamlit.components.v1 as components
 
@@ -33,8 +31,7 @@ def login_success():
     production = True
     with cols[1]:
         if production:
-            root_dir = os.path.dirname(os.path.abspath(__file__))
-            build_dir = os.path.join(root_dir, "citations/build")
+            build_dir = "./citations/build"
 
             citations = components.declare_component("citations", path=build_dir)
         else:
@@ -43,8 +40,7 @@ def login_success():
 
     with cols[0]:
         if production:
-            root_dir = os.path.dirname(os.path.abspath(__file__))
-            build_dir = os.path.join(root_dir, "corousel/build")
+            build_dir = "./corousel/build"
             corousel = components.declare_component("corousel", path=build_dir)
         else:
             corousel = components.declare_component("corousel", url="http://localhost:3000")
