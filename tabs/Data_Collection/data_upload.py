@@ -129,7 +129,7 @@ def data_upload_element(email, get_filepath_instead=False):
         st.session_state.ldf = pd.read_csv(f"data/{email}/{selected_data}.csv")
 
         if get_filepath_instead:
-            return f"data/{selected_data}.csv"
+            return f"data/{email}/{selected_data}.csv"
 
         # Return the data
         return st.session_state.ldf

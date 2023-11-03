@@ -5,6 +5,9 @@ import pandas as pd
 import preprocessor as p
 import requests
 import spacy
+from better_profanity import profanity
+
+# from profanity_filter import ProfanityFilter
 
 
 def download_fasttext_model():
@@ -38,6 +41,7 @@ options = [
     "Remove empty texts",
     "Remove punctuation",
     "Remove extra spaces",
+    "Remove Profanity",
 ]
 
 
@@ -65,6 +69,8 @@ def preprocess(filename, given_options):
         df["text"] = df.apply(strip_punctuation, axis=1)
     if given_options[8]:  # Removes extra spaces
         df["text"] = df.apply(remove_extra_spaces, axis=1)
+    if given_options[9]:
+        df["text"] = df.apply(remove_profanity, axis=1)
 
     # Shift rows the fill gaps in the index from the removed rows
     df.reset_index(drop=True, inplace=True)
@@ -129,3 +135,9 @@ def remove_extra_spaces(row):
 @none_avoidance
 def remove_url_hashtags_mentions(row):
     return p.clean(row["text"])
+
+
+@none_avoidance
+def remove_profanity(row):
+    # pf = ProfanityFilter()
+    return profanity.censor(row["text"])
