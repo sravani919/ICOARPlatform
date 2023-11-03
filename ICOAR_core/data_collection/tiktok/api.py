@@ -6,7 +6,7 @@ import time
 import requests
 import streamlit as st
 
-from data_collection.utils import BaseDataCollector
+from ..utils import BaseDataCollector
 
 
 def video_response_parsing(response) -> (str, dict):

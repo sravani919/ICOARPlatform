@@ -6,7 +6,7 @@ Scrapes from Facebook using the facebook-scraper package
 import streamlit as st
 from facebook_scraper import get_posts_by_search
 
-from data_collection.utils import BaseDataCollector, mike, save_data
+from ..utils import BaseDataCollector, mike, save_data
 
 credentials = (mike["gmail_username"], mike["facebook_password"])
 
@@ -80,4 +80,10 @@ class Collector(BaseDataCollector):
         return ["count", "keywords"]
 
     def collect(self, keywords, count):
+        """
+        Collects posts from Facebook via a facebook-scraper
+        :param keywords: A list of keywords to search for
+        :param count: The number of posts to collect
+        :return: A list of post dictionaries
+        """
         return grab_posts(keywords, count)

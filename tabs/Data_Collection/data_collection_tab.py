@@ -3,8 +3,8 @@ import pkgutil
 import pandas as pd
 import streamlit as st
 
-import data_collection
-from data_collection.utils import download_images
+from ICOAR_core import data_collection
+from ICOAR_core.data_collection.utils import download_images
 
 if "results" not in st.session_state:
     st.session_state.results = None

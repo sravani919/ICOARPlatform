@@ -3,7 +3,7 @@ from datetime import datetime
 import praw
 import streamlit as st
 
-from data_collection.utils import BaseDataCollector, download_images
+from ..utils import BaseDataCollector, download_images
 
 
 def init_connection():

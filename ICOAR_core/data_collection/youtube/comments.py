@@ -7,7 +7,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
-from data_collection.utils import BaseDataCollector
+from ..utils import BaseDataCollector
 
 st_status = st.empty()
 

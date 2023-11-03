@@ -240,8 +240,6 @@ login_error.html
 
 frontend/node_modules/
 
-/experiments/
-
 # Sphinx documentation
 docs/_build/
 

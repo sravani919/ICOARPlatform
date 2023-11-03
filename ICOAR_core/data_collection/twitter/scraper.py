@@ -3,7 +3,7 @@ import asyncio
 import streamlit as st
 from twscrape import API, AccountsPool, gather
 
-from data_collection.utils import BaseDataCollector
+from ..utils import BaseDataCollector
 
 
 def get_accounts():
