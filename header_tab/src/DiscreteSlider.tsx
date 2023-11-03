@@ -16,7 +16,7 @@ interface State {
   activeStep: number
 }
 
-const menu_options = ["Data Collection", "Text Analysis", "Text Annotation", "Visualization", "Multi-media Analysis"]
+const menu_options = ["Data Collection", "Pre-processing", "Text Analysis", "Text Annotation", "Visualization", "Multi-media Analysis"]
 
 class DiscreteSlider extends StreamlitComponentBase<State> {
   public constructor(props: ComponentProps) {
@@ -57,7 +57,7 @@ class DiscreteSlider extends StreamlitComponentBase<State> {
           </Tabs>
         </div>
         <div style={{width: '10%', display: 'inline-block', textAlign:'center', color: '#bbbbbb', cursor: 'pointer'}}
-      onClick={() => {document.cookie="some_cookie_name=;"; this.handleChange(7)}}>
+      onClick={() => {document.cookie="some_cookie_name=;"; this.handleChange(8)}}>
           Logout
         </div>
       </div>

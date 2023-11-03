@@ -44,17 +44,20 @@ def openai_model_form() -> Optional[BaseLanguageModel]:
     )
     api_key = st.text_input("OpenAI API key", value=os.environ.get("OPENAI_API_KEY", ""), type="password")
     model_name = st.selectbox("Model", AVAILABLE_MODELS, index=2)
-    temperature = st.slider(
-        "Temperature",
-        min_value=0.0,
-        max_value=1.0,
-        value=0.7,
-        step=0.01,
-        help="For meanings of sliders see https"
-        "://community.openai.com/t/cheat-sheet-mastering-temperature-and-top-p-in-chatgpt-api-a-few-tips-and-tricks-on"
-        "-controlling-the-creativity-deterministic-output-of-prompt-responses/172683",
-    )
-    top_p = st.slider("Top-p", min_value=0.0, max_value=1.0, value=1.0, step=0.01)
+    cols = st.columns(2)
+    with cols[0]:
+        temperature = st.slider(
+            "Temperature",
+            min_value=0.0,
+            max_value=1.0,
+            value=0.7,
+            step=0.01,
+            help="For meanings of sliders see https"
+            "://community.openai.com/t/cheat-sheet-mastering-temperature-and-top-p-in-chatgpt-api-a-few-tips-and-tricks-on"
+            "-controlling-the-creativity-deterministic-output-of-prompt-responses/172683",
+        )
+    with cols[1]:
+        top_p = st.slider("Top-p", min_value=0.0, max_value=1.0, value=1.0, step=0.01)
     if not api_key:
         return None
     return OpenAI(model_name=model_name, temperature=temperature, top_p=top_p, openai_api_key=api_key)  # type:ignore
