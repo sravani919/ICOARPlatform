@@ -72,7 +72,16 @@ Integrative Cyberinfrastructure for Online Abuse Research (ICOAR)
    npm install
    npm run build
     ```
-
+   ```shell
+   cd citations
+   npm install
+   npm run build
+    ```
+      ```shell
+   cd corousel
+   npm install
+   npm run build
+    ```
 ## Contributing
 
 1. Install development and testing dependencies
