@@ -58,7 +58,7 @@ class DiscreteSlider extends StreamlitComponentBase<State> {
         </div>
         <div style={{width: '10%', display: 'inline-block', textAlign:'center', color: '#bbbbbb', cursor: 'pointer'}}
       onClick={() => {document.cookie="some_cookie_name=;"; this.handleChange(8)}}>
-          Logout
+          Account
         </div>
       </div>
     </Box>

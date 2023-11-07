@@ -7,7 +7,16 @@ import yaml
 from streamlit_option_menu import option_menu
 from yaml.loader import SafeLoader
 
-from tabs.login import login_error, login_success
+from tabs.login import login_error
+
+if "authenticator" not in st.session_state:
+    st.session_state.authenticator = None
+if "user_login" not in st.session_state:
+    st.session_state.user_login = True
+if "user_registration" not in st.session_state:
+    st.session_state.user_registration = False
+if "user_registration_complete" not in st.session_state:
+    st.session_state.user_registration_complete = False
 
 st.set_page_config(
     page_title="ICOAR",
@@ -64,7 +73,7 @@ st.markdown(
                 div[data-testid="stHorizontalBlock"] {{
                     margin-left: {7.5}%;
                     margin-right: {7.5}%;
-                    margin-top: {2.5}%;
+                    margin-top: {1}%;
                 }}
             </style>
             """,
@@ -73,10 +82,11 @@ st.markdown(
 selected_value = int(discrete_slider())
 
 if selected_value == 0:
+    from tabs.login import login
+
     with open(".streamlit/authenticator.yaml") as file:
         config = yaml.load(file, Loader=SafeLoader)
-
-    authenticator = stauth.Authenticate(
+    st.session_state.authenticator = stauth.Authenticate(
         config["credentials"],
         config["cookie"]["name"],
         config["cookie"]["key"],
@@ -84,14 +94,7 @@ if selected_value == 0:
         config["preauthorized"],
     )
 
-    authenticator.login("Login", "main")
-
-    if st.session_state["authentication_status"]:
-        login_success()
-    elif st.session_state["authentication_status"] is False:
-        st.error("Username/password is incorrect")
-    elif st.session_state["authentication_status"] is None:
-        st.warning("Please enter your username and password")
+    login(st.session_state.authenticator, config)
 
 elif selected_value == 1:
     if not st.session_state["authentication_status"]:
@@ -174,4 +177,13 @@ elif selected_value == 6:
 
             df_detection()
 elif selected_value == 8:
-    st.success("You're logged out successfully. Please refresh the page.")
+    if "authentication_status" not in st.session_state or not st.session_state["authentication_status"]:
+        st.warning("You're logged out. Please sign in to access the features")
+    else:
+        cols = st.columns(1)
+
+        with cols[0]:
+            st.subheader("Account Details")
+            st.markdown("**Name**: " + st.session_state["name"])
+            st.markdown("**Username**: " + st.session_state["username"])
+            st.session_state.authenticator.logout("Logout", "main", key="unique_key")
