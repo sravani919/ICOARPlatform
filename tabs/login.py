@@ -57,6 +57,13 @@ def user_registration(authenticator, config):
         st.error(e)
 
 
+def create_dir(directory):
+    import os
+
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+
 def login(authenticator, config):
     if not st.session_state["authentication_status"]:
         cols = st.columns(3)
@@ -73,6 +80,7 @@ def login(authenticator, config):
 
         if st.session_state.user_login:
             user_login(authenticator, config)
+            create_dir(f"""./data/{st.session_state["username"]}""")
         elif st.session_state.user_registration:
             user_registration(authenticator, config)
 
