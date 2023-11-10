@@ -17,8 +17,8 @@ from visualization import add_graph_info
 def Text_Visualisation_tab():
     if "filename_pred" not in st.session_state:
         st.session_state.filename_pred = ""
-
-    option = st.selectbox("Select a file", [file for file in glob.glob("./predicted/*.csv")])
+    username = st.session_state["username"]
+    option = st.selectbox("Select a file", [file for file in glob.glob(f"""./predicted/{username}/*.csv""")])
 
     if st.button("Load"):
         st.session_state.filename_pred = option

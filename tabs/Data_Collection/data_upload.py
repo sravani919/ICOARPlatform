@@ -101,7 +101,7 @@ def data_upload_element(email, get_filepath_instead=False):
             st.session_state.managing_new_data = True
 
         upload_button = st.button("Confirm upload")
-
+        st.markdown("-------------------")
         # ldf is the loaded data frame
         if st.session_state.ldf is not None:
             if "text" not in st.session_state.ldf.columns:
@@ -127,6 +127,7 @@ def data_upload_element(email, get_filepath_instead=False):
     elif selected_data != "":
         # Read the file
         st.session_state.ldf = pd.read_csv(f"data/{email}/{selected_data}.csv")
+        st.markdown("-------------------")
 
         if get_filepath_instead:
             return f"data/{email}/{selected_data}.csv"
@@ -136,4 +137,5 @@ def data_upload_element(email, get_filepath_instead=False):
 
     # If the user selects no file
     else:
+        st.markdown("-------------------")
         return None

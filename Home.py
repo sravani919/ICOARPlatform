@@ -4,7 +4,6 @@ import streamlit as st
 import streamlit.components.v1 as components
 import streamlit_authenticator as stauth
 import yaml
-from streamlit_option_menu import option_menu
 from yaml.loader import SafeLoader
 
 from tabs.login import login_error
@@ -108,9 +107,11 @@ elif selected_value == 2:
     if not st.session_state["authentication_status"]:
         login_error()
     else:
-        from tabs.Data_Collection.data_preprocessing_tab import data_preprocessing_tab
+        cols = st.columns(1)
+        with cols[0]:
+            from tabs.Data_Collection.data_preprocessing_tab import data_preprocessing_tab
 
-        data_preprocessing_tab()
+            data_preprocessing_tab()
 
 elif selected_value == 3:
     if not st.session_state["authentication_status"]:
@@ -146,36 +147,25 @@ elif selected_value == 6:
     if not st.session_state["authentication_status"]:
         login_error()
     else:
-        image_sections = ["Image Classification", "Meme Classification", "Deepfake Detection"]
-        selected_image_section = option_menu(
-            None,
-            image_sections,
-            icons=["cloud-arrow-up-fill", "images", "file-earmark-image-fill"],
-            menu_icon="cast",
-            default_index=0,
-            orientation="horizontal",
-            styles={},
-        )
-
-        if selected_image_section == image_sections[0]:
-            selected_option = 0
-            if selected_option == 0:
-                pass
-
-            if selected_option == 1:
+        cols = st.columns(1)
+        with cols[0]:
+            image_sections = ["Image Analysis", "Meme Analysis", "Deepfake Detection"]
+            selected_image_section = selected_data = st.selectbox("Select type of multi-media analysis", image_sections)
+            st.subheader(selected_image_section)
+            if selected_image_section == image_sections[0]:
                 from tabs.image.bully_classifification import bully_classification
 
                 bully_classification()
 
-        elif selected_image_section == image_sections[1]:
-            from tabs.image.meme_classification import meme_classification
+            elif selected_image_section == image_sections[1]:
+                from tabs.image.meme_classification import meme_classification
 
-            meme_classification()
+                meme_classification()
 
-        elif selected_image_section == image_sections[2]:
-            from tabs.image.deepfake_detection import df_detection
+            elif selected_image_section == image_sections[2]:
+                from tabs.image.deepfake_detection import df_detection
 
-            df_detection()
+                df_detection()
 elif selected_value == 8:
     if "authentication_status" not in st.session_state or not st.session_state["authentication_status"]:
         st.warning("You're logged out. Please sign in to access the features")

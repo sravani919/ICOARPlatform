@@ -161,40 +161,43 @@ def data_collection_tab():
                 st.session_state.results = st.session_state.collector.collect(**st.session_state.query_values)
 
     if st.session_state.results is not None:
-        st.subheader("Results")
-        st.write("Found ", len(st.session_state.results), " results")
-        df = pd.DataFrame(st.session_state.results)
-        tabs = st.tabs(["Results", "Raw Data"])
-        with tabs[0]:
-            # Convert results to a dataframe
-            st.dataframe(df)
+        cols = st.columns(1)
+        with cols[0]:
+            st.subheader("Results")
+            st.write("Found ", len(st.session_state.results), " results")
+            df = pd.DataFrame(st.session_state.results)
+            tabs = st.tabs(["Results", "Raw Data"])
+            with tabs[0]:
+                # Convert results to a dataframe
+                st.dataframe(df)
 
-        with tabs[1]:
-            st.write(st.session_state.results)
+            with tabs[1]:
+                st.write(st.session_state.results)
 
-        # If keywords is one of the query options, use it as the default save name
-        if "keywords" in st.session_state.query_values.keys():
-            save_name = st.text_input(
-                "Save name",
-                value=f"{st.session_state.socialmedia.name}-{st.session_state.query_values['keywords']}",
-            )
-        else:
-            save_name = st.text_input("Save name", value=f"{st.session_state.socialmedia.name}-")
-        do_download_images = st.checkbox("Download images with save")
-        if do_download_images and "image_urls" not in df.columns:
-            st.error("Cannot download images because the results do not have an 'image_urls' column")
-        if st.button("Save"):
-            data_collection.utils.save_data(st.session_state.results, save_name)
-            st.success(f"Saved as data/{save_name}.csv")
+            # If keywords is one of the query options, use it as the default save name
+            if "keywords" in st.session_state.query_values.keys():
+                save_name = st.text_input(
+                    "Save name",
+                    value=f"{st.session_state.socialmedia.name}-{st.session_state.query_values['keywords']}",
+                )
+            else:
+                save_name = st.text_input("Save name", value=f"{st.session_state.socialmedia.name}-")
+            do_download_images = st.checkbox("Download images with save")
+            if do_download_images and "image_urls" not in df.columns:
+                st.error("Cannot download images because the results do not have an 'image_urls' column")
+            if st.button("Save"):
+                data_collection.utils.save_data(st.session_state.results, save_name)
+                username = st.session_state["username"]
+                st.success(f"Saved as data/{username}/{save_name}.csv")
 
-            if do_download_images:
-                download_images_progress_bar = st.progress(0)
-                image_path = ""
-                for i in range(len(st.session_state.results)):
-                    image_path = download_images(st.session_state.results, save_name, i)
-                    download_images_progress_bar.progress(
-                        i / len(st.session_state.results),
-                        text=f"Downloading images (images from {i + 1}/{len(st.session_state.results)} \
-                        results downloaded)",
-                    )
-                st.success("Successfully downloaded all the images to '" + image_path + "'")
+                if do_download_images:
+                    download_images_progress_bar = st.progress(0)
+                    image_path = ""
+                    for i in range(len(st.session_state.results)):
+                        image_path = download_images(st.session_state.results, save_name, i)
+                        download_images_progress_bar.progress(
+                            i / len(st.session_state.results),
+                            text=f"Downloading images (images from {i + 1}/{len(st.session_state.results)} \
+                            results downloaded)",
+                        )
+                    st.success("Successfully downloaded all the images to '" + image_path + "'")

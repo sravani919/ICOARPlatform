@@ -5,7 +5,6 @@ import pandas as pd
 import streamlit as st
 import torch
 from huggingface_hub import HfApi
-from streamlit_option_menu import option_menu
 from transformers import (
     AutoModelForSequenceClassification,
     AutoModelForTokenClassification,
@@ -32,6 +31,8 @@ def initialize_state():
         st.session_state.freq = []
     if "disabled" not in st.session_state:
         st.session_state.disabled = True
+    if "selected_option" not in st.session_state:
+        st.session_state.selected_option = "Recommended Models"
 
 
 def fetch_models_from_hf(search_text):
@@ -67,9 +68,12 @@ def predictCovidModel(text, model, tokenizer):
 
 
 def save_file(df, filename):
+    username = st.session_state["username"]
     if not os.path.exists("predicted"):
         os.makedirs("predicted")
-    file_path = f"predicted/{filename}.csv"
+    if not os.path.exists(f"""predicted/{username}"""):
+        os.makedirs(f"""predicted/{username}""")
+    file_path = f"predicted/{username}/{filename}.csv"
     df.to_csv(file_path, index=False)
     return file_path
 
@@ -91,7 +95,7 @@ def predict(text, model, tokenizer):
 def validation():
     initialize_state()
     # FILE = st.selectbox("Select a file", [file for file in glob.glob("./data/*.csv")])
-    email = "pranav-1"
+    email = st.session_state["username"]
     FILE = data_upload.data_upload_element(email, get_filepath_instead=True)
     freq = [0] * 28
     MODEL = ""
@@ -127,96 +131,102 @@ def validation():
         "neutral",
     ]
 
-    text_menu_options = ["Recommended Models", "Search on Huggingface"]
+    # selected_option = option_menu(
+    #     None,
+    #     text_menu_options,
+    #     icons=["house", "cloud-upload", "list-task", "gear"],
+    #     menu_icon="cast",
+    #     default_index=0,
+    #     orientation="horizontal",
+    #     styles={"nav-link-selected": {"background-color": "red"}},
+    # )
+    cols = st.columns(2)
 
-    selected_option = option_menu(
-        None,
-        text_menu_options,
-        icons=["house", "cloud-upload", "list-task", "gear"],
-        menu_icon="cast",
-        default_index=0,
-        orientation="horizontal",
-        styles={"nav-link-selected": {"background-color": "red"}},
-    )
+    with cols[0]:
+        st.session_state.selected_option = st.radio(
+            "Select classification model type", ["Recommended Models", "Search on Huggingface"]
+        )
+    with cols[1]:
+        if st.session_state.selected_option == "Recommended Models":
+            MODELS = {
+                "Covid offensive tweets Detection": {"model": "covid-twitter-bert"},
+                "Sentiment Analysis": {
+                    "tokenizer": AutoTokenizer,
+                    "model": "cardiffnlp/twitter-roberta-base-sentiment",
+                    "id2label": {0: "Negative", 1: "Neutral", 2: "Positive"},
+                },
+                "Toxic Content Detection": {
+                    "tokenizer": AutoTokenizer,
+                    "model": "s-nlp/roberta_toxicity_classifier",
+                },
+                "Hate Speech Detection": {
+                    "tokenizer": AutoTokenizer,
+                    "model": "cardiffnlp/twitter-roberta-base-hate-latest",
+                },
+                "Cyberbully Detection": {
+                    "tokenizer": AutoTokenizer,
+                    "model": "sreeniketh/cyberbullying_sentiment_dsce_2023",
+                },
+                "Named Entity Recognition": {
+                    "tokenizer": AutoTokenizer,
+                    "model": "dslim/bert-base-NER",
+                },
+                "Parts of Speech": {
+                    "tokenizer": AutoTokenizer,
+                    "model": "QCRI/bert-base-multilingual-cased-pos-english",
+                },
+                "Emotion Analysis": {
+                    "tokenizer": AutoTokenizer,
+                    "model": "arpanghoshal/EmoRoBERTa",
+                },
+            }
 
-    if selected_option == "Recommended Models":
-        MODELS = {
-            "Covid offensive tweets Detection": {"model": "covid-twitter-bert"},
-            "Sentiment Analysis": {
-                "tokenizer": AutoTokenizer,
-                "model": "cardiffnlp/twitter-roberta-base-sentiment",
-                "id2label": {0: "Negative", 1: "Neutral", 2: "Positive"},
-            },
-            "Toxic Content Detection": {
-                "tokenizer": AutoTokenizer,
-                "model": "s-nlp/roberta_toxicity_classifier",
-            },
-            "Hate Speech Detection": {
-                "tokenizer": AutoTokenizer,
-                "model": "cardiffnlp/twitter-roberta-base-hate-latest",
-            },
-            "Cyberbully Detection": {
-                "tokenizer": AutoTokenizer,
-                "model": "sreeniketh/cyberbullying_sentiment_dsce_2023",
-            },
-            "Named Entity Recognition": {
-                "tokenizer": AutoTokenizer,
-                "model": "dslim/bert-base-NER",
-            },
-            "Parts of Speech": {
-                "tokenizer": AutoTokenizer,
-                "model": "QCRI/bert-base-multilingual-cased-pos-english",
-            },
-            "Emotion Analysis": {
-                "tokenizer": AutoTokenizer,
-                "model": "arpanghoshal/EmoRoBERTa",
-            },
-        }
+            selected_model_name = st.selectbox("Select a model", list(MODELS.keys()))
 
-        selected_model_name = st.selectbox("Select a model", list(MODELS.keys()))
-
-        MODELS = MODELS[selected_model_name]
-        MODEL = MODELS["model"]
-        st.session_state.disabled = False
-
-    elif selected_option == "Search on Huggingface":
-        multi = """:bulb: Steps - :one:  Input your Huggingface API token in the secrets.toml file. If you don't have
-        one, you can get one [here](https://huggingface.co/settings/tokens)
-        \n:two:   Input the name of the model you want to search for. You can also just input a related keyword if you
-        are not sure of which one to use.
-        \n:three:  After that, click on the search button and select the model you want to use from the list that
-        appears. If you want to see more information about your selected model, there will be an expander below with a
-        link to the model's page. These pages usually have a demo on the right side of the page, so that you can test
-        the model before using it."""
-        st.markdown(multi)
-        search_text = st.text_input("Enter model name")
-        search_button = st.button("Search")
-        if search_button:
-            st.session_state.model_list = fetch_models_from_hf(search_text)
-            search_button = False
+            MODELS = MODELS[selected_model_name]
+            MODEL = MODELS["model"]
             st.session_state.disabled = False
-        if st.session_state.model_list:
-            MODEL = st.radio(
-                "Top Three Models:",
-                st.session_state.model_list[:3],
-            )
-            # display the rest of the models if the user wants to see more
-            if st.checkbox("Show more"):
+
+        elif st.session_state.selected_option == "Search on Huggingface":
+            multi = """:bulb: **Steps** -
+            \n 1. Input your Huggingface API token in the secrets.toml file. If you don't have
+            one, you can get one [here](https://huggingface.co/settings/tokens)
+            \n2. Input the name of the model you want to search for. You can also just input a related keyword if you
+            are not sure of which one to use.
+            \n3. After that, click on the search button and select the model you want to use from the list that
+            appears. If you want to see more information about your selected model, there will be an expander below
+            with a link to the model's page. These pages usually have a demo on the right side of the page, so that
+            you can test the model before using it."""
+            st.markdown(multi)
+            search_text = st.text_input("Enter model name")
+            search_button = st.button("Search")
+            if search_button:
+                st.session_state.model_list = fetch_models_from_hf(search_text)
+                search_button = False
+                st.session_state.disabled = False
+            if st.session_state.model_list:
                 MODEL = st.radio(
-                    "All Results",
-                    st.session_state.model_list[3:],
+                    "Top Three Models:",
+                    st.session_state.model_list[:3],
                 )
-        if MODEL:
-            with st.expander("Model Details"):
-                model_url = f"https://huggingface.co/{MODEL}"
-                st.write(f"Model URL: [{MODEL}]({model_url})")
+                # display the rest of the models if the user wants to see more
+                if st.checkbox("Show more"):
+                    MODEL = st.radio(
+                        "All Results",
+                        st.session_state.model_list[3:],
+                    )
+            if MODEL:
+                with st.expander("Model Details"):
+                    model_url = f"https://huggingface.co/{MODEL}"
+                    st.write(f"Model URL: [{MODEL}]({model_url})")
 
     # prevents users from initially clicking predict button without choosing a model
     if st.session_state.disabled:
         st.warning("Please select a model to proceed")
         return
-
-    if st.button("Predict"):
+    predict_button = st.button("Predict")
+    st.markdown("-------------------")
+    if predict_button:
         placeholder = st.empty()
         st.session_state.predict = True
         df = pd.read_csv(FILE)

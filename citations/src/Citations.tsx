@@ -25,13 +25,13 @@ class Citations extends StreamlitComponentBase {
       }}
     >
       <Paper style={{ width: '40%', height: '100%', marginLeft: '5%', marginRight: '10%', backgroundColor: '#efefef' }} elevation={3}>
-        <h3 style={{marginTop: '7%', marginLeft: '7%'}}>Citations</h3>
+        <h3 style={{marginTop: '7%', marginLeft: '7%'}}>Helpful Links</h3>
         <ul style={{marginRight: '3.5%'}}>
           <li>
-          <a href=''>Using LLM's to mitigate the sread of hate speech</a>
+          <a href='https://github.com/pranavsilimkhan/ICOAR-tutorials/tree/main/sample_projects'>Sample projects using ICOAR</a>
         </li>
         <li>
-          <a href=''>Using LICOAR tool for identiful sprea dof hate on social media</a>
+          <a href='https://github.com/pranavsilimkhan/ICOAR-tutorials/tree/main/tab_description'>Capabilities and detailed tutorials</a>
         </li>
         </ul>
         </Paper>
