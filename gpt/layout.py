@@ -182,10 +182,12 @@ class BasePage(ABC):
         if st.session_state.predict:
             filename = st.text_input("Enter file name to save predicted data")
             save = st.button("Save File")
+            username = st.session_state["username"]
             if save:
                 if not os.path.exists("predicted"):
                     os.makedirs("predicted")
-                file_path = f"predicted/{filename}.csv"
+                    os.makedirs(f"""predicted/{username}""")
+                file_path = f"predicted/{username}/{filename}.csv"
                 st.session_state.output.to_csv(file_path, index=False)
 
                 st.session_state.predict = False

@@ -4,10 +4,18 @@ import streamlit as st
 import streamlit.components.v1 as components
 import streamlit_authenticator as stauth
 import yaml
-from streamlit_option_menu import option_menu
 from yaml.loader import SafeLoader
 
-from tabs.login import login_error, login_success
+from tabs.login import login_error
+
+if "authenticator" not in st.session_state:
+    st.session_state.authenticator = None
+if "user_login" not in st.session_state:
+    st.session_state.user_login = True
+if "user_registration" not in st.session_state:
+    st.session_state.user_registration = False
+if "user_registration_complete" not in st.session_state:
+    st.session_state.user_registration_complete = False
 
 st.set_page_config(
     page_title="ICOAR",
@@ -64,7 +72,7 @@ st.markdown(
                 div[data-testid="stHorizontalBlock"] {{
                     margin-left: {7.5}%;
                     margin-right: {7.5}%;
-                    margin-top: {2.5}%;
+                    margin-top: {1}%;
                 }}
             </style>
             """,
@@ -73,10 +81,11 @@ st.markdown(
 selected_value = int(discrete_slider())
 
 if selected_value == 0:
+    from tabs.login import login
+
     with open(".streamlit/authenticator.yaml") as file:
         config = yaml.load(file, Loader=SafeLoader)
-
-    authenticator = stauth.Authenticate(
+    st.session_state.authenticator = stauth.Authenticate(
         config["credentials"],
         config["cookie"]["name"],
         config["cookie"]["key"],
@@ -84,14 +93,7 @@ if selected_value == 0:
         config["preauthorized"],
     )
 
-    authenticator.login("Login", "main")
-
-    if st.session_state["authentication_status"]:
-        login_success()
-    elif st.session_state["authentication_status"] is False:
-        st.error("Username/password is incorrect")
-    elif st.session_state["authentication_status"] is None:
-        st.warning("Please enter your username and password")
+    login(st.session_state.authenticator, config)
 
 elif selected_value == 1:
     if not st.session_state["authentication_status"]:
@@ -105,9 +107,11 @@ elif selected_value == 2:
     if not st.session_state["authentication_status"]:
         login_error()
     else:
-        from tabs.Data_Collection.data_preprocessing_tab import data_preprocessing_tab
+        cols = st.columns(1)
+        with cols[0]:
+            from tabs.Data_Collection.data_preprocessing_tab import data_preprocessing_tab
 
-        data_preprocessing_tab()
+            data_preprocessing_tab()
 
 elif selected_value == 3:
     if not st.session_state["authentication_status"]:
@@ -143,35 +147,33 @@ elif selected_value == 6:
     if not st.session_state["authentication_status"]:
         login_error()
     else:
-        image_sections = ["Image Classification", "Meme Classification", "Deepfake Detection"]
-        selected_image_section = option_menu(
-            None,
-            image_sections,
-            icons=["cloud-arrow-up-fill", "images", "file-earmark-image-fill"],
-            menu_icon="cast",
-            default_index=0,
-            orientation="horizontal",
-            styles={},
-        )
-
-        if selected_image_section == image_sections[0]:
-            selected_option = 0
-            if selected_option == 0:
-                pass
-
-            if selected_option == 1:
+        cols = st.columns(1)
+        with cols[0]:
+            image_sections = ["Image Analysis", "Meme Analysis", "Deepfake Detection"]
+            selected_image_section = selected_data = st.selectbox("Select type of multi-media analysis", image_sections)
+            st.subheader(selected_image_section)
+            if selected_image_section == image_sections[0]:
                 from tabs.image.bully_classifification import bully_classification
 
                 bully_classification()
 
-        elif selected_image_section == image_sections[1]:
-            from tabs.image.meme_classification import meme_classification
+            elif selected_image_section == image_sections[1]:
+                from tabs.image.meme_classification import meme_classification
 
-            meme_classification()
+                meme_classification()
 
-        elif selected_image_section == image_sections[2]:
-            from tabs.image.deepfake_detection import df_detection
+            elif selected_image_section == image_sections[2]:
+                from tabs.image.deepfake_detection import df_detection
 
-            df_detection()
+                df_detection()
 elif selected_value == 8:
-    st.success("You're logged out successfully. Please refresh the page.")
+    if "authentication_status" not in st.session_state or not st.session_state["authentication_status"]:
+        st.warning("You're logged out. Please sign in to access the features")
+    else:
+        cols = st.columns(1)
+
+        with cols[0]:
+            st.subheader("Account Details")
+            st.markdown("**Name**: " + st.session_state["name"])
+            st.markdown("**Username**: " + st.session_state["username"])
+            st.session_state.authenticator.logout("Logout", "main", key="unique_key")
