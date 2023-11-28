@@ -2,7 +2,7 @@ from datetime import datetime
 
 import praw
 
-from ..utils import BaseDataCollector, download_images, ProgressUpdate
+from ..utils import BaseDataCollector, ProgressUpdate, download_images
 
 
 def init_connection():
@@ -75,4 +75,3 @@ class Collector(BaseDataCollector):
 
     def collect_generator(self, count, keywords, images):
         yield from grab_posts(keywords, count, images)
-

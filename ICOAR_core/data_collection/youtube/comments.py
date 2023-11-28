@@ -43,8 +43,9 @@ def extract_comments(video_url, count):
                 yield ProgressUpdate(attempt / 10, f"Error loading video webpage: {e}, retrying...")
 
         if not driver_good:
-            yield ProgressUpdate(1, "Could not load video webpage after 10 tries."
-                                    " Check internet connection and video URL.")
+            yield ProgressUpdate(
+                1, "Could not load video webpage after 10 tries." " Check internet connection and video URL."
+            )
             return list(dataset)
 
         time.sleep(5)

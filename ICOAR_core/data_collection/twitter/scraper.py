@@ -1,10 +1,9 @@
 import asyncio
-import toml
-from queue import Queue
 
+import toml
 from twscrape import API, AccountsPool, gather
 
-from ..utils import BaseDataCollector, ProgressUpdate
+from ..utils import BaseDataCollector
 
 
 def get_accounts():

@@ -4,7 +4,7 @@ import pandas as pd
 import streamlit as st
 
 from ICOAR_core import data_collection
-from ICOAR_core.data_collection.utils import download_images, ProgressUpdate
+from ICOAR_core.data_collection.utils import ProgressUpdate, download_images
 
 if "results" not in st.session_state:
     st.session_state.results = None
@@ -170,7 +170,6 @@ def data_collection_tab():
                 else:
                     st.session_state.results = data
                     break
-
 
     if st.session_state.results is not None:
         cols = st.columns(1)

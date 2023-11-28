@@ -4,7 +4,7 @@ Scrapes from Facebook using the facebook-scraper package
 """
 from facebook_scraper import get_posts_by_search
 
-from ..utils import BaseDataCollector, mike, save_data, ProgressUpdate
+from ..utils import BaseDataCollector, ProgressUpdate, mike, save_data
 
 credentials = (mike["gmail_username"], mike["facebook_password"])
 
@@ -51,7 +51,9 @@ def grab_posts(query, max_results):
 
     for post in get_posts_by_search(query, credentials=credentials, options=options, pages=10):
         posts.append(post)
-        yield ProgressUpdate(len(posts) / max_results, f"Scraping Facebook ({len(posts)}/{max_results} results scraped)")
+        yield ProgressUpdate(
+            len(posts) / max_results, f"Scraping Facebook ({len(posts)}/{max_results} results scraped)"
+        )
         if len(posts) >= max_results:
             break
     posts = format_posts(posts)

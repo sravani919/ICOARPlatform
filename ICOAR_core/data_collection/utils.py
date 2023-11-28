@@ -132,6 +132,7 @@ class ProgressUpdate:
     These should be yielded by collect_generator when it hasn't finished yet
     These should be used to update a progress bar
     """
+
     def __init__(self, progress: float, text: str):
         """
         :param progress: A float between 0 and 1 representing the current progress

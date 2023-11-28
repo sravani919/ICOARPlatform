@@ -2,9 +2,9 @@ import datetime
 import json
 import logging
 import time
-import toml
 
 import requests
+import toml
 
 from ..utils import BaseDataCollector, ProgressUpdate
 
@@ -263,7 +263,6 @@ def get_videos(
     :return:
     """
 
-
     """
     Preprocessing the query options, so they can be passed to the TikTok API
     """
@@ -303,9 +302,7 @@ def get_videos(
 
     ttapi = TikTokApi(client_key, client_secret)
 
-    gen = ttapi.video_request(
-        count, keywords, keywordsOR, start_date, end_date, locations, hashtags, cursor, search_id
-    )
+    gen = ttapi.video_request(count, keywords, keywordsOR, start_date, end_date, locations, hashtags, cursor, search_id)
 
     for r in gen:
         # If this is a progress update, yield it
@@ -317,10 +314,10 @@ def get_videos(
             break
 
     # Sending a progress update with the final cursor and search_id
-    yield ProgressUpdate(1, f"Collection complete. Final cursor: {util['cursor']}\n"
-                            f"Final search_id: {util['search_id']}")
-    logging.info(f"Collection complete. Final cursor: {util['cursor']}\n"
-                 f"Final search_id: {util['search_id']}")
+    yield ProgressUpdate(
+        1, f"Collection complete. Final cursor: {util['cursor']}\n" f"Final search_id: {util['search_id']}"
+    )
+    logging.info(f"Collection complete. Final cursor: {util['cursor']}\n" f"Final search_id: {util['search_id']}")
     yield results
 
 
