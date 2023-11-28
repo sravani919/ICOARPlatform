@@ -295,4 +295,5 @@ class Collector(BaseDataCollector):
         return ["keywords", "count", "images", "start_date", "end_date"]
 
     def collect(self, keywords, count, images, start_date, end_date):
-        return grab_tweets(keywords, count, images, start_date, end_date)
+        raise NotImplementedError
+        # return grab_tweets(keywords, count, images, start_date, end_date)

@@ -1,9 +1,8 @@
 from datetime import datetime
 
 import praw
-import streamlit as st
 
-from ..utils import BaseDataCollector, download_images
+from ..utils import BaseDataCollector, download_images, ProgressUpdate
 
 
 def init_connection():
@@ -49,7 +48,6 @@ def fetch_data(reddit, keywords, max_results, collect_images, only_images):
     return data
 
 
-@st.cache_data
 def grab_posts(keywords, tweet_count, must_have_images):
     reddit = init_connection()
 
@@ -59,12 +57,13 @@ def grab_posts(keywords, tweet_count, must_have_images):
 
     if collect_images:
         for i, post in enumerate(posts):
+            yield ProgressUpdate(i / len(posts), f"Downloading images ({i + 1}/{len(posts)} images downloaded)")
             download_images(posts, "images", i)
 
     # df = pd.DataFrame(posts)
     # # st.dataframe(df)
 
-    return posts
+    yield posts
 
 
 class Collector(BaseDataCollector):
@@ -74,5 +73,6 @@ class Collector(BaseDataCollector):
     def query_options(self):
         return ["count", "keywords", "images"]
 
-    def collect(self, count, keywords, images):
-        return grab_posts(keywords, count, images)
+    def collect_generator(self, count, keywords, images):
+        yield from grab_posts(keywords, count, images)
+

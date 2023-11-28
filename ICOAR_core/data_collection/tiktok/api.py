@@ -2,11 +2,11 @@ import datetime
 import json
 import logging
 import time
+import toml
 
 import requests
-import streamlit as st
 
-from ..utils import BaseDataCollector
+from ..utils import BaseDataCollector, ProgressUpdate
 
 
 def video_response_parsing(response) -> (str, dict):
@@ -22,7 +22,6 @@ def video_response_parsing(response) -> (str, dict):
         data = response["data"]
         has_more = data["has_more"]
     except KeyError:
-        st.error("No data in response, message from TikTok: " + json.dumps(response["error"], indent=4))
         logging.error("No data in response, message from TikTok: " + json.dumps(response["error"], indent=4))
 
         return None, None, None
@@ -111,6 +110,7 @@ class TikTokApi:
     ) -> (list[dict], str):
         """
         Grabs videos from the TikTokApi that match the given parameters.
+        Generator: Will yield progress updates and then the final results
         :param hashtags: Hashtags that the video must have e.g. ["funny", "comedy"]
         :param start_date: Earliest creation date of the videos e.g. "20220615" i.e. yyyymmdd
         :param end_date: Latest creation date of the videos e.g. "20220628" i.e. yyyymmdd
@@ -130,34 +130,39 @@ class TikTokApi:
 
         headers = {"authorization": f"bearer {self.access_token}"}
 
+        # Adding the required keywords to the query
         if keywords is not None:
             for keyword in keywords:
                 base_data["query"]["and"].append(
                     {"operation": "EQ", "field_name": "keyword", "field_values": [keyword]}
                 )
 
+        # At least one of the keywords must be in the video description
+        # Adding them to the request
         if keywordsOR is not None:
             for keyword in keywordsOR:
                 base_data["query"]["or"].append({"operation": "EQ", "field_name": "keyword", "field_values": [keyword]})
 
+        # Adding the required hashtags to the query
         if hashtags is not None:
             for hashtag in hashtags:
                 base_data["query"]["and"].append(
                     {"operation": "EQ", "field_name": "hashtag_name", "field_values": [hashtag]}
                 )
 
+        # Adding the required locations to the query
         if locations is not None:
             base_data["query"]["and"].append(
                 {"operation": "IN", "field_name": "region_code", "field_values": locations}
             )
 
+        # Setting the date range
         base_data["start_date"] = start_date
         base_data["end_date"] = end_date
 
         count_still_needed = max_count
 
         collected_videos = []
-        progress_bar = st.progress(0)
 
         no_data_error_count = 0  # The number of sequential fails to get data
         start_time = time.time()
@@ -167,13 +172,10 @@ class TikTokApi:
             estimated_time_left = (
                 f"{int(estimated_seconds_left // 60)} minutes {int(estimated_seconds_left % 60)} seconds"
             )
-            progress_bar.progress(
+            yield ProgressUpdate(
                 (max_count - count_still_needed) / max_count,
                 f"Collecting... {estimated_time_left} left | {len(collected_videos)} collected",
             )
-
-            # Also displaying the progress bar in the terminal with tqdm
-            print(f"Collecting... {estimated_time_left} left | {len(collected_videos)} collected")
 
             data = base_data.copy()
             count_for_this_request = 100  # Always ask for 100 videos, we are limited by requests not by videos
@@ -198,16 +200,16 @@ class TikTokApi:
             try:
                 t_cursor, t_search_id, results = video_response_parsing(r.json())
             except json.decoder.JSONDecodeError:
-                st.error("Error decoding json from TikTok API")
+                yield ProgressUpdate(0, "Error decoding json from TikTok API")
                 logging.error("Error decoding json from TikTok API")
             except KeyError:
-                st.error("Error parsing response from TikTok API")
+                yield ProgressUpdate(0, "Error parsing response from TikTok API")
                 logging.error("Error parsing response from TikTok API")
 
             if results is None:
                 # If we got no data, increment the counter and try again with the same cursor and search_id
                 no_data_error_count += 1
-                print("no data error count:", no_data_error_count)
+                logging.warning(f"No data in response from TikTok API -- {no_data_error_count} / 5")
             else:
                 # If we got valid data, reset the counter and update the cursor and search_id
                 no_data_error_count = 0
@@ -219,20 +221,18 @@ class TikTokApi:
             if cursor is None:
                 break
 
-        return collected_videos, {"cursor": cursor, "search_id": search_id}
+        yield collected_videos, {"cursor": cursor, "search_id": search_id}
 
 
 def cant_find_keys():
-    with st.container():
-        st.error("Could not find TikTok API credentials. Please add them to your secrets.toml file.")
-        st.markdown(
-            """
-        Example TikTok secrets.toml
+    return """
+Could not find TikTok API credentials. Please add them to your secrets.toml file.
+Example TikTok secrets.toml:
 
-            [tiktok]
-            client_key = 'KEY'
-            client_secret = 'SECRET'"""
-        )
+[tiktok]
+client_key = 'KEY'
+client_secret = 'SECRET'
+"""
 
 
 def get_videos(
@@ -262,14 +262,22 @@ def get_videos(
     :param search_id: The search id to resume from
     :return:
     """
-    if keywords is None and hashtags is None and locations is None and keywordsOR is None:
-        st.error("Please specify at least one of the following: keywords, hashtags, locations")
 
+
+    """
+    Preprocessing the query options, so they can be passed to the TikTok API
+    """
+
+    if keywords is None and hashtags is None and locations is None and keywordsOR is None:
+        yield ProgressUpdate(0, "No keywords, hashtags, or locations specified")
+
+    # Converting the dates to the format the TikTok API expects
     if type(start_date) == datetime.date:
         start_date = start_date.strftime("%Y%m%d")
     if type(end_date) == datetime.date:
         end_date = end_date.strftime("%Y%m%d")
 
+    # Converting the comma seperated strings to lists
     if keywords is not None and keywords != "":
         keywords = keywords.split(",")
     if keywordsOR is not None and keywordsOR != "":
@@ -286,24 +294,34 @@ def get_videos(
         end_date = today.strftime("%Y%m%d")
 
     try:
-        client_key = st.secrets.tiktok.client_key
-        client_secret = st.secrets.tiktok.client_secret
+        secrets = toml.load(".streamlit/secrets.toml")
+        client_key = secrets["tiktok"]["client_key"]
+        client_secret = secrets["tiktok"]["client_secret"]
     except AttributeError:
         cant_find_keys()
         return
 
     ttapi = TikTokApi(client_key, client_secret)
 
-    results, util = ttapi.video_request(
+    gen = ttapi.video_request(
         count, keywords, keywordsOR, start_date, end_date, locations, hashtags, cursor, search_id
     )
-    st.success(
-        "Collection complete. Here is the cursor and search_id to resume from here:\nCursor: "
-        + str(util["cursor"])
-        + "\nSearch ID: "
-        + str(util["search_id"])
-    )
-    return results
+
+    for r in gen:
+        # If this is a progress update, yield it
+        if isinstance(r, ProgressUpdate):
+            yield r
+        else:
+            # If this is the final results, yield it later
+            results, util = r
+            break
+
+    # Sending a progress update with the final cursor and search_id
+    yield ProgressUpdate(1, f"Collection complete. Final cursor: {util['cursor']}\n"
+                            f"Final search_id: {util['search_id']}")
+    logging.info(f"Collection complete. Final cursor: {util['cursor']}\n"
+                 f"Final search_id: {util['search_id']}")
+    yield results
 
 
 class Collector(BaseDataCollector):
@@ -323,12 +341,5 @@ class Collector(BaseDataCollector):
             "cursor",
         ]
 
-    def collect(self, **kwargs):
-        return get_videos(**kwargs)
-
-
-if __name__ == "__main__":
-    tiktok = TikTokApi(st.secrets.tiktok.client_key, st.secrets.tiktok.client_secret)
-    results, si = tiktok.video_request(
-        count=200, keywords=["covid", "lockdown"], start_date="20210601", end_date="20210630"
-    )
+    def collect_generator(self, *args, **kwargs):
+        yield from get_videos(*args, **kwargs)

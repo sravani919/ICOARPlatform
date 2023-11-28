@@ -108,3 +108,34 @@ class BaseDataCollector:
         being a singe result.
         """
         raise NotImplementedError
+
+    def collect_generator(self, *args, **kwargs):
+        """
+        Should take in the query options
+        Will yield progress updates
+        The final yield should be a list of dictionaries with each dictionary being a singe result.
+
+        The progress yields will be of type ProgressUpdate which contains a float between 0 and 1 representing the
+        progress and a string describing the progress
+
+        @yields ProgressUpdate IFF not done
+        @yields list[dict] IFF done
+        """
+        raise NotImplementedError
+
+
+class ProgressUpdate:
+    """
+    A class representing a progress update
+    Used to tell if a yield is a progress update or the final data
+
+    These should be yielded by collect_generator when it hasn't finished yet
+    These should be used to update a progress bar
+    """
+    def __init__(self, progress: float, text: str):
+        """
+        :param progress: A float between 0 and 1 representing the current progress
+        :param text: A string describing the current progress
+        """
+        self.progress = progress
+        self.text = text

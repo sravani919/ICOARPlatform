@@ -1,15 +1,12 @@
 import time
 
-import streamlit as st
 from selenium.webdriver import Chrome
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
-from ..utils import BaseDataCollector
-
-st_status = st.empty()
+from ..utils import BaseDataCollector, ProgressUpdate
 
 
 def format_comments(data):
@@ -32,21 +29,22 @@ def format_comments(data):
 def extract_comments(video_url, count):
     dataset = set()
     with Chrome() as driver:
-        st_status.text("Loading video webpage...")
+        yield ProgressUpdate(0, "Starting YouTube scraper")
         wait = WebDriverWait(driver, 15)
 
         driver_good = False
         for attempt in range(10):
-            st_status.text(f"Loading video webpage... attempt {attempt + 1}")
+            yield ProgressUpdate(attempt / 10, f"Loading video webpage... attempt {attempt + 1}")
             try:
                 driver.get(video_url)
                 driver_good = True
                 break
             except Exception as e:
-                st.error(f"Error loading video webpage: {e}, retrying...")
+                yield ProgressUpdate(attempt / 10, f"Error loading video webpage: {e}, retrying...")
 
         if not driver_good:
-            st_status.error("Could not load video webpage after 10 tries. Check internet connection and video URL.")
+            yield ProgressUpdate(1, "Could not load video webpage after 10 tries."
+                                    " Check internet connection and video URL.")
             return list(dataset)
 
         time.sleep(5)
@@ -67,13 +65,14 @@ def extract_comments(video_url, count):
             usernames = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "#comment #author-text")))
             for comment, username in zip(comments, usernames):
                 dataset.add((username.text, comment.text))
-                st_status.progress(len(dataset) / count, f"Loading comments: {len(dataset)} / {count}")
+                yield ProgressUpdate(len(dataset) / count, f"Loading comments: {len(dataset)} / {count}")
 
                 # If we have enough comments, stop scrolling
                 if len(dataset) >= count:
-                    st_status.text("Formatting comments...")
+                    yield ProgressUpdate(1, "Formatting comments...")
                     formatted = format_comments(list(dataset))
-                    return formatted
+                    yield formatted
+                    break
 
 
 if __name__ == "__main__":
@@ -98,5 +97,5 @@ class Collector(BaseDataCollector):
     def query_options(self):
         return ["video_url", "count"]
 
-    def collect(self, video_url, count):
-        return extract_comments(video_url, count)
+    def collect_generator(self, video_url, count):
+        yield from extract_comments(video_url, count)

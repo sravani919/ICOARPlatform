@@ -1,14 +1,16 @@
 import asyncio
+import toml
+from queue import Queue
 
-import streamlit as st
 from twscrape import API, AccountsPool, gather
 
-from ..utils import BaseDataCollector
+from ..utils import BaseDataCollector, ProgressUpdate
 
 
 def get_accounts():
     # Reading from accounts.csv where the info is seperated by colons, not commas
-    f = st.secrets.twitter.accounts
+    secrets = toml.load(".streamlit/secrets.toml")
+    f = secrets["twitter"]["accounts"]
 
     accounts = []
     for account in f.split(","):
@@ -64,20 +66,14 @@ def format_tweets(tweets):
     return formatted_tweets
 
 
-def grab_tweets(keywords, tweet_count, must_have_images, start, end):
-    return asyncio.run(a_grab_tweets(keywords, tweet_count, must_have_images, start, end))
-
-
 async def a_grab_tweets(keywords, tweet_count, must_have_images, start, end):
-    status_text = st.empty()
-
     # Setting up the accounts pool
     pool = AccountsPool()
     for account in get_accounts():
         await pool.add_account(*account)
 
     # Logging in to all new accounts
-    status_text.text("Logging in to all new accounts...")
+    # yield ProgressUpdate(0, "Logging in to Twitter accounts...")
     await pool.login_all()
 
     # Creating an API object
@@ -93,13 +89,19 @@ async def a_grab_tweets(keywords, tweet_count, must_have_images, start, end):
     if must_have_images:
         query += " filter:images"
 
-    status_text.text("Searching for tweets...")
+    # yield ProgressUpdate(0, "Searching for tweets...")
     generator = api.search(query, limit=tweet_count)
     tweets = await gather(generator)
-    status_text.text("Done searching for tweets!")
+    # yield ProgressUpdate(1, "Formatting tweets...")
 
     formatted_tweets = format_tweets(tweets)
+    # yield formatted_tweets
     return formatted_tweets
+
+
+def grab_posts(keywords, count, images, start_date, end_date):
+    result = asyncio.run(a_grab_tweets(keywords, count, images, start_date, end_date))
+    return result
 
 
 class Collector(BaseDataCollector):
@@ -109,5 +111,5 @@ class Collector(BaseDataCollector):
     def query_options(self):
         return ["count", "keywords", "images", "start_date", "end_date"]
 
-    def collect(self, keywords, count, images, start_date, end_date):
-        return grab_tweets(keywords, count, images, start_date, end_date)
+    def collect_generator(self, keywords, count, images, start_date, end_date):
+        yield grab_posts(keywords, count, images, start_date, end_date)

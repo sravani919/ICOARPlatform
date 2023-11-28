@@ -2,11 +2,9 @@
 Scrapes from Facebook using the facebook-scraper package
 
 """
-
-import streamlit as st
 from facebook_scraper import get_posts_by_search
 
-from ..utils import BaseDataCollector, mike, save_data
+from ..utils import BaseDataCollector, mike, save_data, ProgressUpdate
 
 credentials = (mike["gmail_username"], mike["facebook_password"])
 
@@ -49,17 +47,15 @@ def format_posts(posts):
 
 def grab_posts(query, max_results):
     posts = []
-    with st.spinner("Collecting Facebook posts"):
-        progress = st.text("Setting up scraper")
-        for post in get_posts_by_search(query, credentials=credentials, options=options, pages=10):
-            posts.append(post)
-            progress.progress(len(posts) / max_results, f"{len(posts)} / {max_results} Facebook posts collected")
-            if len(posts) >= max_results:
-                break
+    yield ProgressUpdate(0, "Starting Facebook scrape")
 
-    progress.empty()
+    for post in get_posts_by_search(query, credentials=credentials, options=options, pages=10):
+        posts.append(post)
+        yield ProgressUpdate(len(posts) / max_results, f"Scraping Facebook ({len(posts)}/{max_results} results scraped)")
+        if len(posts) >= max_results:
+            break
     posts = format_posts(posts)
-    return posts
+    yield posts
 
 
 if __name__ == "__main__":
@@ -79,11 +75,5 @@ class Collector(BaseDataCollector):
     def query_options(self):
         return ["count", "keywords"]
 
-    def collect(self, keywords, count):
-        """
-        Collects posts from Facebook via a facebook-scraper
-        :param keywords: A list of keywords to search for
-        :param count: The number of posts to collect
-        :return: A list of post dictionaries
-        """
-        return grab_posts(keywords, count)
+    def collect_generator(self, keywords, count):
+        yield from grab_posts(keywords, count)

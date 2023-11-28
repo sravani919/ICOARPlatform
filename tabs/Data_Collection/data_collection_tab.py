@@ -4,7 +4,7 @@ import pandas as pd
 import streamlit as st
 
 from ICOAR_core import data_collection
-from ICOAR_core.data_collection.utils import download_images
+from ICOAR_core.data_collection.utils import download_images, ProgressUpdate
 
 if "results" not in st.session_state:
     st.session_state.results = None
@@ -156,9 +156,21 @@ def data_collection_tab():
         st.markdown("-------------------")
 
         if st.button("Collect"):
+            # The last yield contains the data
+            # Every other yield contains a tuple with a float between 0 and 1 representing the progress and a string
+            # describing the progress
+            # Updating a progress bar with each yield until the last one
+            # The last yield should be the data
             st.session_state.results = None
-            with st.spinner("Collecting data..."):
-                st.session_state.results = st.session_state.collector.collect(**st.session_state.query_values)
+            gen = st.session_state.collector.collect_generator(**st.session_state.query_values)
+            progress_bar = st.progress(0)
+            for i, data in enumerate(gen):
+                if isinstance(data, ProgressUpdate):
+                    progress_bar.progress(data.progress, text=data.text)
+                else:
+                    st.session_state.results = data
+                    break
+
 
     if st.session_state.results is not None:
         cols = st.columns(1)
