@@ -23,12 +23,13 @@ Integrative Cyberinfrastructure for Online Abuse Research (ICOAR)
     ```shell
     poetry shell
     ```
-(Note - You might face issues while installing some packages (ex. better_profanity) via poetry. In such cases you can comment out the corresponding package name in pyproject.toml file and install it manually using pip (ex. pip install better_profanity))
+    (Note - You might face issues while installing some packages (ex. better_profanity) via poetry. In such cases you can comment out the corresponding package name in pyproject.toml file and install it manually using pip (ex. pip install better_profanity))
 
-4. Install custom packages
-```pip install streamlit_authenticator```
+4. Install custom packages.
 
-4. Create configuration files for the project in the `.streamlit` directory.
+    ```pip install streamlit_authenticator```
+
+5. Create configuration files for the project in the `.streamlit` directory.
 
     - `.streamlit/secrets.toml`
 
@@ -56,20 +57,20 @@ Integrative Cyberinfrastructure for Online Abuse Research (ICOAR)
             - allen.ty.chang@gmail.com
     ```
 
-5. Run the app
+6. Run the app
 
     ```shell
     streamlit run Home.py
     ```
 
-6. Create folder /model in ICOAR project directory. </br>
+7. Create folder /model in ICOAR project directory. </br>
    Download the image classification model from - https://drive.google.com/drive/folders/1q0bxYKrcQgEgg0Ps2N_WxgTApQK997g9 </br>
    Copy the model in the above directory.
 
 
-7. Create folder /data/images/image in ICOAR project directory.
+8. Create folder /data/images/image in ICOAR project directory.
 
-8. Download Node.js - https://nodejs.org/en/download/
+9. Download Node.js - https://nodejs.org/en/download/
     Generate a build for the react component. </br>
     Open a new terminal and run the below commands
    ```shell
