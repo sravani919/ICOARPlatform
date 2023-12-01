@@ -23,8 +23,7 @@ Integrative Cyberinfrastructure for Online Abuse Research (ICOAR)
     ```shell
     poetry shell
     ```
-    (Note - You might face issues while installing some packages (ex. better_profanity) via poetry. In such cases you can comment out the corresponding package name in         
-     pyproject.toml file and install it manually using pip (ex. pip install better_profanity))
+    (Note - You might face issues while installing some packages (ex. better_profanity) via poetry. In such cases you can comment out the corresponding package name in pyproject.toml file and install it manually using pip (ex. pip install better_profanity))
 
 4. Install custom packages.
 
