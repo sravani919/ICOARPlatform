@@ -38,7 +38,7 @@ Integrative Cyberinfrastructure for Online Abuse Research (ICOAR)
     twitter = "<your-twitter-api-token>"
     reddit = "<your-reddit-api-token>"
     ```
-
+    For the contents of the secrets.toml file, please contact Pranav (psilimk@g.clemson.edu) or Mo (mshujaa@g.clemson.edu)
     - `.streamlit/authenticator.yaml`
 
     ```yaml
