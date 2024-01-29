@@ -166,6 +166,10 @@ elif selected_value == 6:
                 from tabs.image.deepfake_detection import df_detection
 
                 df_detection()
+elif selected_value == 7:
+    from tabs.Prompt_Engineering import generate_prompt
+
+    generate_prompt()
 elif selected_value == 8:
     if "authentication_status" not in st.session_state or not st.session_state["authentication_status"]:
         st.warning("You're logged out. Please sign in to access the features")
