@@ -10,12 +10,14 @@ def data_preprocessing_tab():
         st.session_state.preprocessing_status = False
     if "filename" not in st.session_state:
         st.session_state.filename = None
+    if "processed_df" not in st.session_state:
+        st.session_state.processed_df = None
     option_count = len(options)
     df_name = data_upload_element(st.session_state.username, get_filepath_instead=True)
     if df_name is not None:
         st.session_state.filename = df_name
         df = pd.read_csv(df_name)
-        st.session_state.processed_df = None
+        # st.session_state.processed_df = None
 
         st.dataframe(df)
         columns = st.columns(3)
