@@ -9,7 +9,7 @@ from ICOAR_core.data_collection.tiktok.api import TikTokApi
 if __name__ == "__main__":
     # loading all of the or keywords from offensive_keywords.csv
     try:
-        offensive_keywords = pd.read_csv("offensive_keywords.csv")
+        offensive_keywords = pd.read_csv("keyword/offensive_keywords.csv")
     except FileNotFoundError as e:
         print("offensive_keywords.csv file can be added with the keywords you want to search for")
         raise e
