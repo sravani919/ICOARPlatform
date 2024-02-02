@@ -67,14 +67,14 @@ def query_builder(option, container=None):
             return none_default_text_input("Search ID")
         if option == "cursor":
             return none_default_text_input("Cursor")
-        if option == "kaggle_json_file":
-            # Returns the json contents of the file
-            uploaded_file = st.file_uploader("Kaggle API certification file", type="json")
-            if uploaded_file is not None:
-                return uploaded_file.read().decode("utf-8")
-            return None
         if option == "kaggle_dataset":
-            return none_default_text_input("Kaggle dataset [owner]/[dataset]")
+            # Prompt to visit kaggle.com/datasets and get the dataset owner and dataset name
+            st.markdown("Visit [kaggle.com/datasets](https://www.kaggle.com/datasets)")
+            st.markdown("---------------")
+            return none_default_text_input("Kaggle dataset url")
+        if option == "delete_temp_data":
+            # Check box if the user wants to delete unsaved preview data
+            return st.checkbox("Delete unsaved preview data afterwards")
 
     raise ValueError(f"Unknown query option: {option}")
 
