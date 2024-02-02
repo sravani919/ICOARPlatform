@@ -67,13 +67,21 @@ def query_builder(option, container=None):
             return none_default_text_input("Search ID")
         if option == "cursor":
             return none_default_text_input("Cursor")
+        if option == "kaggle_json_file":
+            # Returns the json contents of the file
+            uploaded_file = st.file_uploader("Kaggle API certification file", type="json")
+            if uploaded_file is not None:
+                return uploaded_file.read().decode("utf-8")
+            return None
+        if option == "kaggle_dataset":
+            return none_default_text_input("Kaggle dataset [owner]/[dataset]")
 
     raise ValueError(f"Unknown query option: {option}")
 
 
 def social_media_selector(social_medias):
     st.session_state.social_media_option = st.radio(
-        "Social Media Platform", list(social_medias.keys()), on_change=reset_query_values
+        "Platform", list(social_medias.keys()), on_change=reset_query_values
     )
     # index=list(social_medias.keys()).index(
     #     st.session_state.social_media_option))
@@ -118,7 +126,7 @@ def data_collection_tab():
     main_columns = st.columns(3)
 
     with main_columns[0]:
-        st.subheader("1. Select a social media platform")
+        st.subheader("1. Select a platform")
         social_media_selector(social_medias)
         # Fancy vertical divider
         st.markdown("-------------------")
