@@ -5,6 +5,7 @@ import streamlit as st
 
 from ICOAR_core import data_collection
 from ICOAR_core.data_collection.utils import ProgressUpdate, download_images
+
 from .query_builder import query_builder
 
 if "results" not in st.session_state:
