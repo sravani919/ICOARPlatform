@@ -1,3 +1,6 @@
+import pandas as pd
+from datasets import load_dataset
+
 from ..utils import BaseDataCollector
 
 
@@ -5,16 +8,8 @@ class Collector(BaseDataCollector):
     def __init__(self):
         super().__init__()
 
-    @property
     def query_options(self):
-        return NotImplementedError
-
-    def collect(self, *args, **kwargs):
-        """
-        Should take in the query options and return a list of dictionaries with each dictionary
-        being a singe result.
-        """
-        raise NotImplementedError
+        return ["huggingface_dataset"]
 
     def collect_generator(self, *args, **kwargs):
         """
@@ -28,4 +23,17 @@ class Collector(BaseDataCollector):
         @yields ProgressUpdate IFF not done
         @yields list[dict] IFF done
         """
-        raise NotImplementedError
+
+        hf_dataset_url = kwargs.get("huggingface_dataset")
+        kwargs.get("delete_temp_data")
+
+        hf_dataset = hf_dataset_url.split("huggingface.co/datasets/")[1]
+
+        dataset = load_dataset(hf_dataset)
+
+        df = pd.DataFrame(dataset["train"])
+
+        # Convert df to list of dictionaries
+        out = df.to_dict(orient="records")
+
+        yield out

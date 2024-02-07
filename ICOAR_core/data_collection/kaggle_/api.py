@@ -45,7 +45,6 @@ class Collector(BaseDataCollector):
         delete_temp_data = kwargs.get("delete_temp_data")
 
         kaggle_dataset = kaggle_dataset_url.split("kaggle.com/datasets/")[1]
-        print("Kaggle dataset parsed: ", kaggle_dataset, "\n")
 
         try:
             # Loading secrets.toml to get Kaggle API credentials

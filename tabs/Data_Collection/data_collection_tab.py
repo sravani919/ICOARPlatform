@@ -5,6 +5,7 @@ import streamlit as st
 
 from ICOAR_core import data_collection
 from ICOAR_core.data_collection.utils import ProgressUpdate, download_images
+from .query_builder import query_builder
 
 if "results" not in st.session_state:
     st.session_state.results = None
@@ -23,60 +24,6 @@ st.session_state.query_values = {}
 
 def reset_query_values():
     st.session_state.query_values = {}
-
-
-def none_default_text_input(label):
-    """
-    Creates a text input that returns None if the user inputs nothing
-    :param label: The label of the text input
-    :return: The value of the text input or None if the user inputs nothing
-    """
-    v = st.text_input(label)
-    if v == "":
-        return None
-    return v
-
-
-def query_builder(option, container=None):
-    """
-    Creates a query option based on the option and container and inserts it into the container.
-    :param option: The query option to create
-    :param container:  The container to insert the query option into
-    :return:The value of the query option
-    """
-    with container:
-        if option == "keywords" or option == "keywords AND":
-            return none_default_text_input("Keywords AND (Comma separated)")
-        if option == "keywordsOR":
-            return none_default_text_input("Keywords OR (Comma separated)")
-        if option == "count":
-            return st.number_input("Number of posts", value=100)
-        if option == "images":
-            return st.checkbox("Must have images")
-        if option == "start_date":
-            return st.date_input("Start date")
-        if option == "end_date":
-            return st.date_input("End date")
-        if option == "locations":
-            return none_default_text_input("Locations e.g. US,MX")
-        if option == "hashtags":
-            return none_default_text_input("Hashtags e.g. fun,comedy")
-        if option == "video_url":
-            return none_default_text_input("Video URL")
-        if option == "search_id":
-            return none_default_text_input("Search ID")
-        if option == "cursor":
-            return none_default_text_input("Cursor")
-        if option == "kaggle_dataset":
-            # Prompt to visit kaggle.com/datasets and get the dataset owner and dataset name
-            st.markdown("Visit [kaggle.com/datasets](https://www.kaggle.com/datasets)")
-            st.markdown("---------------")
-            return none_default_text_input("Kaggle dataset url")
-        if option == "delete_temp_data":
-            # Check box if the user wants to delete unsaved preview data
-            return st.checkbox("Delete unsaved preview data afterwards")
-
-    raise ValueError(f"Unknown query option: {option}")
 
 
 def social_media_selector(social_medias):
