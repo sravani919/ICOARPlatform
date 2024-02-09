@@ -55,6 +55,7 @@ class BasePage(ABC):
         with open(image_path, "rb") as image_file:
             return base64.b64encode(image_file.read()).decode("utf-8")
 
+    # formats files with their labels for easy use with GPT API
     def prepare_images(self, images_list, folder_path):
         image_messages = []
         for _, row in images_list.iterrows():
@@ -124,8 +125,8 @@ class BasePage(ABC):
 
         st.markdown(
             """**3. Edit the prompt (Optional):** You can modify the prompt that instruct ChatGPT. The choice of
-                    prompt greatly influences the generated responsesand the quality of the annotation. Ensure that your
-                    edits are clear and relevant to the task."""
+                    prompt greatly influences the generated responses and the quality of the annotation. Ensure that
+                    your edits are clear and relevant to the task."""
         )
 
         prompt = self.make_prompt(examples)
@@ -258,8 +259,6 @@ class BasePage(ABC):
             and label those images. The program is looking specifically in the data folder of the project.
             The demo has some preset images that are already labeled."""
         )
-        # insert example images, also give users options to choose a folder here
-
         data_directory = "./data/"
 
         current_file_directory = os.path.dirname(os.path.abspath(__file__))
@@ -322,16 +321,15 @@ class BasePage(ABC):
             st.error("Enter your API key in secrets.toml under [openai].")
             return
 
-        # do a section where you predict one image
         st.markdown(
             """**4. Test with a Single Example (Optional):** Before labeling your entire dataset, it's a good practice
             to test ChatGPT performance with a single example to see if the predictions are accurate and align with your
             instructions."""
         )
-        # allow the user to choose an image to predict, first selecting a folder and then an image
+        # allow the user to choose a single image to predict, first selecting a folder and then an image
         selected_folder_path2 = st.selectbox("Select a folder that contains images", subdirectories, key="unique_key_2")
 
-        # Get the full path for the selected folder
+        # Get the full path for the selected folder for the demo image
         option2 = selected_folder_path2
         if option2 == relative_demo_path:
             current_file_directory = os.path.dirname(os.path.abspath(__file__))
