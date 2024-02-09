@@ -8,7 +8,7 @@ from langchain.prompts.prompt import PromptTemplate
 def make_classification_prompt(examples: List[dict]) -> FewShotPromptTemplate:
     unique_labels = set([example["label"] for example in examples])
 
-    task_instruction = "Classify the text into one of the following labels:\n"
+    task_instruction = "Classify the text as a form of cyberbullying with the following labels, \n"
     # Sorting to make label order deterministic
     for label in sorted(unique_labels):
         task_instruction += f"- {label}\n"
