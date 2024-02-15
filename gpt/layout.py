@@ -15,12 +15,9 @@ from langchain.prompts.few_shot import FewShotPromptTemplate
 from streamlit import secrets
 
 from gpt.components import display_download_button, openai_model_form, task_instruction_editor
-from gpt.utils import escape_markdown
-from tabs.Data_Collection.data_upload import data_upload_element
 from gpt.image_labeling import image_labeling
-from gpt.utils import key_directions
-
-
+from gpt.utils import escape_markdown, key_directions
+from tabs.Data_Collection.data_upload import data_upload_element
 
 
 class BasePage(ABC):
