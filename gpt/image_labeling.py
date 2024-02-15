@@ -1,97 +1,34 @@
 import base64
 import os
-import shutil
-import time
 
-import pandas as pd
 import requests
 import streamlit as st
-from PIL import Image
-from streamlit import secrets
 
+from gpt.image_sample_set import SampleSet, get_image_paths
 from gpt.utils import key_directions
 
 
-class SampleSet:
-    """
-    A class to represent a sample set of images and their labels
-    Includes a list of image paths and a list of corresponding labels
-
-    Can be saved and loaded to a folder
-    """
-
-    def __init__(self):
-        self.image_paths = None
-        self.labels = None
-
-    def load(self, folder_path):
-        """
-        Loads the sample set from a folder
-        The folder should have all images and then a csv file with a column "Image Path" and a column "Label"
-        :param folder_path: Path to the folder
-        """
-
-        # Load the csv file
-        csv_file = os.path.join(folder_path, "labels.csv")
-        labels_df = pd.read_csv(csv_file)
-
-        self.image_paths = labels_df["Image Path"].tolist()
-        self.labels = labels_df["Label"].tolist()
-
-    def save(self, folder_path):
-        """
-        Saves the sample set to a folder
-        Saves the images and a csv file with the image paths and labels
-        The folder should have all images and then a csv file with a column "Image Path" and a column "Label"
-        :param folder_path: Path to the folder
-        """
-
-        # Copy the images to here, and use their new paths in the csv file
-        new_paths = []
-        for i, image_path in enumerate(self.image_paths):
-            base_name = os.path.basename(image_path)
-            new_path = os.path.join(folder_path, base_name)
-            new_paths.append(new_path)
-            # Copy the image using shutil.copyfile(image_path, new_path)
-            shutil.copyfile(image_path, new_path)
-
-        # Write the csv file
-        labels_df = pd.DataFrame({"Image Path": new_paths, "Label": self.labels})
-        csv_file = os.path.join(folder_path, "labels.csv")
-        labels_df.to_csv(csv_file, index=False)
-
-    def add_image(self, image_path, label):
-        """
-        Adds an image to the sample set
-        :param image_path: Path to the image
-        :param label: Label for the image
-        """
-        self.image_paths.append(image_path)
-        self.labels.append(label)
-
-    def __len__(self):
-        return len(self.image_paths)
-
-    def __getitem__(self, index):
-        return self.image_paths[index], self.labels[index]
-
-
 def encode_image(image_path):
+    """
+    Encodes an image to base64
+    :param image_path: Path to the image
+    :return: The base64 encoded image
+    """
     with open(image_path, "rb") as image_file:
         return base64.b64encode(image_file.read()).decode("utf-8")
 
 
 # formats files with their labels for easy use with GPT API
-def prepare_sample_images(images_list):
+def prepare_sample_images(sample_set):
     """
     Formats the sample images and their labels for use with the GPT API
     :param images_list: A DataFrame containing the images paths and their labels with columns "Image Path" and "Label"
     :return: A list of messages in the form of dictionaries that can be used with the GPT API
     """
     image_messages = []
-    for _, row in images_list.iterrows():
-        image_path = row["Image Path"]
-        label = row["Label"]
+    for i in range(len(sample_set.image_paths)):
+        image_path = sample_set.image_paths[i]
+        label = sample_set.labels[i]
 
         base64_image = encode_image(image_path)
 
@@ -126,10 +63,11 @@ def labels_to_prompt(labels: list[str]) -> str:
     :return: A prompt for the GPT API
     """
 
-    prompt = "Label the following image with either\n\n"
+    prompt = "Label the following image with one of the following:\n\n"
     for i, label in enumerate(labels):
         prompt += f"{i + 1}. {label}\n"
     prompt += "\nYou must give only the number corresponding to the label that best fits the image."
+    prompt += "\nOnly give the number. For example: 1"
     return prompt
 
 
@@ -147,7 +85,10 @@ def choice_label(api_key, inference_image_paths, labels, sample_set) -> list[str
 
     # Generate a prompt for labeling images
 
-    prepared_sample_images = prepare_sample_images(sample_set)
+    if sample_set is not None:
+        prepared_sample_images = prepare_sample_images(sample_set)
+    else:
+        prepared_sample_images = []
     label_prompt = labels_to_prompt(labels)
 
     results = []
@@ -170,19 +111,16 @@ def choice_label(api_key, inference_image_paths, labels, sample_set) -> list[str
                             "text": "Use the above examples of images and their labels to answer the following prompt:",
                         },
                         {"type": "text", "text": label_prompt},
-                        {"type": "text", "text": "Here is the image to label based on the prompt:"},
                         {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}},
                     ],
                 }
             ],
             "max_tokens": 50,
         }
-        print("Payload: ", payload)
         response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
         data = response.json()
         content_value = data["choices"][0]["message"]["content"]
         results.append(content_value)
-
     return results
 
 
@@ -206,223 +144,81 @@ def image_labeling(api_key):
     )
     st.markdown(
         """In this section, you have the opportunity to utilize ChatGPT to annotate images according to your
-        custom labels. In the preset example below, we are labeling an image based on  whether it is
+        custom labels. In the preset example below, we are labeling an image based on whether it is
         cyberbullying or not."""
     )
 
     key_directions()
 
-    st.markdown(
-        """**2. Input Image(s):** Choose the folder that contains the images you want to use as a sample,
-        and label those images. The program is looking specifically in the data folder of the project.
-        The demo has some preset images that are already labeled."""
-    )
-    data_directory = "./data/"
+    st.markdown("""1. Select the labels you want ChatGPT to use while labeling your images.""")
 
-    current_file_directory = os.path.dirname(os.path.abspath(__file__))
+    row_input = st.columns(4)
+    # username input at column 1
+    with row_input[0]:
+        number_of_labels = st.number_input("Number of labels", min_value=1, max_value=10, value=2)
 
-    # Construct the path to the demo directory
-    default_folder = os.path.join(current_file_directory, "examples/demo")
-    relative_demo_path = os.path.relpath(default_folder, current_file_directory)
-    # Initialize an empty list to store subdirectories with full paths
-    subdirectories = [relative_demo_path]
+    labels = ["Cyberbullying", "Noncyberbullying"]
 
-    # Iterate over the list of directories
-    for d in os.listdir(data_directory):
-        full_path = os.path.join(data_directory, d)
+    # Keeping the labels list size equal to number_of_labels
+    if len(labels) > number_of_labels:
+        labels = labels[:number_of_labels]
+    elif len(labels) < number_of_labels:
+        for i in range(number_of_labels - len(labels)):
+            labels.append(f"Label {len(labels) + 1}")
 
-        # Check if the item is a directory
-        if os.path.isdir(full_path):
-            # Append the full path to the subdirectories list
-            subdirectories.append(full_path)
+    with st.container(border=True):
+        columns = st.columns(2)
+        for i in range(number_of_labels):
+            with columns[i % 2]:
+                labels[i] = st.text_input("", value=labels[i], placeholder="Label {}".format(i + 1))
 
-    # Allow the user to choose a folder with demo
-    selected_folder_path = st.selectbox("Select a folder that contains images", subdirectories, key="unique_key_1")
+    image_directories = ["gpt/examples/demo"]
+    st.info("CWD: " + os.getcwd())
 
-    # Get the full path for the selected folder
-    option = selected_folder_path
-    if option == relative_demo_path:
-        option = default_folder
+    # Iterate through the data/username
+    my_data_directory = os.path.join("data/" + st.session_state["username"])
+    for root, dirs, files in os.walk(my_data_directory):
+        for name in dirs:
+            image_directories.append(os.path.join(root, name))
 
-    images_list = [
-        image for image in os.listdir(option) if image.lower().endswith((".png", ".jpg", ".jpeg", ".gif", ".bmp"))
-    ]
+    st.info("Image Directories: " + str(image_directories))
 
-    # Create a DataFrame to store labels for each image
-    image_labels_df = pd.DataFrame(columns=["Image Name", "Label"])
-    image_labels_df["Image Name"] = images_list
+    """
+    Get a sample set
+    """
+    if st.checkbox("Use a sample set to improve accuracy"):
+        sample_set = SampleSet()
+        # Dropdown to select any folder that has images in it
+        st.subheader("Building a Sample Set")
+        selected_folder = st.selectbox("Choose a folder with images", image_directories, key="sample_set")
 
-    if option == default_folder:
-        image_labels_df.loc[image_labels_df["Image Name"].isin(["CB 1.png", "CB 2.png"]), "Label"] = "1"
-        image_labels_df.loc[image_labels_df["Image Name"].isin(["NCB 1.png", "NCB 2.png"]), "Label"] = "0"
+        # If the selected folder does not have a labels.csv file, then it needs to be created
+        if not os.path.isfile(os.path.join(selected_folder, "labels.csv")):
+            sample_set.build(selected_folder, labels)
+        else:
+            sample_set.load(selected_folder)
+    else:  # If the user does not want to use a sample set
+        sample_set = None
 
-    # Use st.data_editor to allow users to label images in a table-like interface
-    edited_labels = st.data_editor(key="labeling_editor", data=image_labels_df, num_rows="dynamic", width=1000)
+    """
+    Get the set of images to label / perform inference on
+    """
 
-    st.markdown(
-        """**3. Edit the prompt (Optional):** You can modify the prompt that instructs ChatGPT. The choice of
-        prompt greatly influences the generated responses and the quality of the annotation. Ensure that your
-        edits are clear and relevant to the task."""
-    )
+    st.subheader("Select the images to label")
+    print(image_directories)
+    selected_folder = st.selectbox("Choose a folder with images", image_directories, key="inference_set")
+    image_paths = get_image_paths(selected_folder)
 
-    # Add a text area for prompt editing
-    st.subheader("Edit Prompt:")
-    prompt = st.text_area(
-        "Customize your prompt:",
-        value="Q: Label this image as cyberbullying based on the sample"
-        " provided, answering 0 for 'No' and 1 for 'Yes' Give "
-        "only the number.",
-        height=100,
-    )
-
-    if "openai" not in secrets:
-        st.error("Enter your API key in secrets.toml under [openai].")
-        return
-
-    st.markdown(
-        """**4. Test with a Single Example (Optional):** Before labeling your entire dataset, it's a good practice
-        to test ChatGPT performance with a single example to see if the predictions are accurate and align with your
-        instructions."""
-    )
-    # allow the user to choose a single image to predict, first selecting a folder and then an image
-    selected_folder_path2 = st.selectbox("Select a folder that contains images", subdirectories, key="unique_key_2")
-
-    # Get the full path for the selected folder for the demo image
-    option2 = selected_folder_path2
-    if option2 == relative_demo_path:
-        current_file_directory = os.path.dirname(os.path.abspath(__file__))
-        option2 = os.path.join(current_file_directory, "examples/demo_test")
-
-    image_files = [f for f in os.listdir(option2) if os.path.isfile(os.path.join(option2, f))]
-
-    image_test_name = st.selectbox("Select an image to predict", image_files)
-
-    image_test_path = os.path.join(option2, image_test_name)
-
-    image = Image.open(image_test_path)
-    image = image.resize((200, 200))
-    st.image(image, caption="Image to predict")
-
-    base64_image = encode_image(image_test_path)
-
-    if st.button("Predict Label", disabled="openai" not in secrets):
-        prepared_images = prepare_sample_images(edited_labels, option)
-        # Call GPT Vision API for image labeling
-        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
-        payload = {
-            "model": "gpt-4-vision-preview",
-            "messages": [
-                {
-                    "role": "user",
-                    "content": [
-                        *prepared_images,
-                        {
-                            "type": "text",
-                            "text": "Use these images and their labels to answer the following prompt:",
-                        },
-                        {"type": "text", "text": prompt},
-                        {"type": "text", "text": "Here is the image to label based on the prompt:"},
-                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}},
-                    ],
-                }
-            ],
-            "max_tokens": 50,
-        }
-        response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
-        data = response.json()
-        content_value = data["choices"][0]["message"]["content"]
-        st.markdown(f"**Predicted Label:** {content_value}")
-
-    st.markdown(
-        """**4. Test with a Multiple Images:** Select a folder of images to label and then
-        click the button to predict the labels for all the images in the folder."""
-    )
-
-    label_subdirectories = [x for x in subdirectories if x != relative_demo_path]
-    label_folder_path = st.selectbox(
-        "Select a folder that contains images", label_subdirectories, key="unique_" "key_3"
-    )
-
-    # Get the full path for the selected folder
-    option_label = label_folder_path
-
-    if st.button("Predict Labels", disabled="openai" not in secrets):
+    # Performing inference
+    if st.button("Predict Labels"):
         st.session_state.predict = True
-        st.session_state.filename_pred = option
-
-        prepared_images = prepare_sample_images(edited_labels, option)
-        image_files = [f for f in os.listdir(option_label) if os.path.isfile(os.path.join(option_label, f))]
-        # Create a DataFrame with the names of the files
-        df = pd.DataFrame({"Image Name": image_files})
-
-        total_rows = df.shape[0]
-        progress_bar = st.empty()
-
-        for index, row in df.iterrows():
-            image_name = row["Image Name"]  # Replace with the column containing image paths
-            image_path = os.path.join(option_label, image_name)
-
-            if not os.path.isfile(image_path) or not image_name.lower().endswith(
-                (".png", ".jpg", ".jpeg", ".gif", ".bmp")
-            ):
-                continue
-
-            base64_image = encode_image(image_path)
-
-            # Call GPT Vision API for image labeling
-            headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
-            payload = {
-                "model": "gpt-4-vision-preview",
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": [
-                            *prepared_images,
-                            {
-                                "type": "text",
-                                "text": "Use these images and their labels to answer the following prompt:",
-                            },
-                            {"type": "text", "text": prompt},
-                            {"type": "text", "text": "Here is the image to label based on the prompt:"},
-                            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}},
-                        ],
-                    }
-                ],
-                "max_tokens": 50,
-            }
-            try:
-                time.sleep(10)
-                response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
-                response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
-                data = response.json()
-                content_value = data["choices"][0]["message"]["content"]
-
-                # Update DataFrame with predicted label
-                df.loc[index, "predicted_label"] = content_value
-                progress = (index + 1) / total_rows
-                progress_bar.progress(progress, text=f"Predicting image labels: {progress * 100:.2f}% complete")
-            except requests.exceptions.RequestException as e:
-                st.error(
-                    f"An error occurred while predicting the label for image {image_name}: {e}. Please retry "
-                    f"the prediction."
-                )
-
-        st.dataframe(df)
-        progress_bar.empty()
-
-        st.session_state.output = df
+        st.session_state.filename_pred = selected_folder
+        results = choice_label(api_key, image_paths, labels, sample_set)
+        st.session_state.output = results
         st.success("Prediction completed", icon="✅")
 
-    if st.session_state.predict:
-        filename = st.text_input("Enter file name to save predicted data")
-        save = st.button("Save File")
-        username = st.session_state["username"]
-        if save:
-            if not os.path.exists("predicted"):
-                os.makedirs("predicted")
-            os.makedirs(f"""predicted/{username}""")
-            file_path = f"predicted/{username}/{filename}.csv"
-            st.session_state.output.to_csv(file_path, index=False)
-
-            st.session_state.predict = False
-            st.success("Saved to '" + file_path + "'")
+        # Display the results, showing the image and the label
+        st.markdown("### Results")
+        for i, result in enumerate(results):
+            st.image(image_paths[i], width=200)
+            st.write(f"Label: {result}")
