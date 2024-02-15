@@ -37,8 +37,6 @@ def openai_model_form() -> Optional[BaseLanguageModel]:
     AVAILABLE_MODELS = (
         "gpt-3.5-turbo",
         "gpt-3.5-turbo-0301",
-        "text-davinci-002",
-        "code-davinci-002",
         "gpt-4",
     )
     api_key = next(iter(secrets["openai"].values()))

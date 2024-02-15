@@ -52,6 +52,10 @@ def get_column_for_text():
         "Select column for text", [None] + list(st.session_state.ldf.columns)
     )
 
+    data_preview()
+
+
+def data_preview():
     # Dropdown to show preview
     with st.expander("Preview of data"):
         st.dataframe(st.session_state.ldf.head())
