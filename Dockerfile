@@ -31,7 +31,9 @@ WORKDIR /app
 RUN poetry config virtualenvs.create false \
     && poetry install --only main --no-interaction --no-ansi
 
-RUN mkdir /app/model
+RUN mkdir -p /app/model
+
+RUN mkdir -p /app/models
 
 RUN pip install gdown
 
