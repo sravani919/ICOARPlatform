@@ -11,9 +11,6 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-RUN poetry config virtualenvs.create false \
-    && poetry install --only main --no-interaction --no-ansi
-
 WORKDIR /app/citations
 
 RUN npm install --legacy-peer-deps \
@@ -30,6 +27,9 @@ RUN npm install --legacy-peer-deps \
     && npm run build
 
 WORKDIR /app
+
+RUN poetry config virtualenvs.create false \
+    && poetry install --only main --no-interaction --no-ansi
 
 RUN mkdir /app/model
 
