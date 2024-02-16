@@ -1,6 +1,7 @@
 import base64
 import os
 
+import pandas as pd
 import requests
 import streamlit as st
 
@@ -22,7 +23,7 @@ def encode_image(image_path):
 def prepare_sample_images(sample_set):
     """
     Formats the sample images and their labels for use with the GPT API
-    :param images_list: A DataFrame containing the images paths and their labels with columns "Image Path" and "Label"
+    :param sample_set: A DataFrame containing the images paths and their labels with columns "Image Path" and "Label"
     :return: A list of messages in the form of dictionaries that can be used with the GPT API
     """
     image_messages = []
@@ -47,7 +48,7 @@ def prepare_sample_images(sample_set):
     return image_messages
 
 
-def labels_to_prompt(labels: list[str]) -> str:
+def labels_to_prompt(labels: list[str], context: str = "") -> str:
     """
     Converts the labels to a prompt for the GPT API
 
@@ -60,6 +61,7 @@ def labels_to_prompt(labels: list[str]) -> str:
     Give only the number."
 
     :param labels: List of labels
+    :param context: Context to add to the prompt from the user
     :return: A prompt for the GPT API
     """
 
@@ -68,10 +70,12 @@ def labels_to_prompt(labels: list[str]) -> str:
         prompt += f"{i + 1}. {label}\n"
     prompt += "\nYou must give only the number corresponding to the label that best fits the image."
     prompt += "\nOnly give the number. For example: 1"
+    if context != "":
+        prompt += "\nHere is some additional context for this task:" + context
     return prompt
 
 
-def choice_label(api_key, inference_image_paths, labels, sample_set) -> list[str]:
+def choice_label(api_key, inference_image_paths, labels, sample_set, context) -> list[str]:
     """
     Using the labels list, a sample set of images, and the OpenAI API key, this function will return the label that
     the GPT-3 model predicts for each image in the inference_image_paths list.
@@ -80,6 +84,7 @@ def choice_label(api_key, inference_image_paths, labels, sample_set) -> list[str
     :param inference_image_paths: List of paths to images where labels need to be added
     :param labels: List of potential labels for the images where an image can only be assigned one label
     :param sample_set: A dataframe containing the image names and their labels with columns "Image Name" and "Label"
+    :param context: Context to add to the prompt from the user
     :return: Which label got assigned to each image of corresponding index in image_paths
     """
 
@@ -89,14 +94,14 @@ def choice_label(api_key, inference_image_paths, labels, sample_set) -> list[str
         prepared_sample_images = prepare_sample_images(sample_set)
     else:
         prepared_sample_images = []
-    label_prompt = labels_to_prompt(labels)
+    label_prompt = labels_to_prompt(labels, context)
 
     results = []
+    progress_bar = st.empty()
 
     for image in inference_image_paths:
         base64_image = encode_image(image)
         # Call GPT Vision API for image labeling
-
         # Call GPT Vision API for image labeling
         headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
         payload = {
@@ -108,7 +113,7 @@ def choice_label(api_key, inference_image_paths, labels, sample_set) -> list[str
                         *prepared_sample_images,
                         {
                             "type": "text",
-                            "text": "Use the above examples of images and their labels to answer the following prompt:",
+                            "text": "Use the above examples of images and their labels to complete the following task:",
                         },
                         {"type": "text", "text": label_prompt},
                         {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}},
@@ -121,12 +126,14 @@ def choice_label(api_key, inference_image_paths, labels, sample_set) -> list[str
         data = response.json()
         content_value = data["choices"][0]["message"]["content"]
         results.append(content_value)
+        progress = (inference_image_paths.index(image) + 1) / len(inference_image_paths)
+        progress_bar.progress(progress, text=f"Predicting: {progress * 100:.2f}% complete")
     return results
 
 
 def image_labeling(api_key):
-    if "predict" not in st.session_state:
-        st.session_state.predict = False
+    if "predict2" not in st.session_state:
+        st.session_state.predict2 = False
     st.markdown(
         f"""
                 <style>
@@ -150,7 +157,10 @@ def image_labeling(api_key):
 
     key_directions()
 
-    st.markdown("""1. Select the labels you want ChatGPT to use while labeling your images.""")
+    st.markdown(
+        """***2. Select Labels:*** Select the labels you want ChatGPT to use while labeling your images.
+    You can also optionally provide some context for the labels you provided (i.e a definition for your labels)"""
+    )
 
     row_input = st.columns(4)
     # username input at column 1
@@ -172,20 +182,27 @@ def image_labeling(api_key):
             with columns[i % 2]:
                 labels[i] = st.text_input("", value=labels[i], placeholder="Label {}".format(i + 1))
 
+    if st.checkbox("Provide context for the labels"):
+        context = st.text_area("Context", "Cyberbullying images are usually offensive or threatening towards the user.")
+    else:
+        context = ""
     image_directories = ["gpt/examples/demo"]
-    st.info("CWD: " + os.getcwd())
 
-    # Iterate through the data/username
+    # Iterate through the data/username directory to find all the image directories
     my_data_directory = os.path.join("data/" + st.session_state["username"])
     for root, dirs, files in os.walk(my_data_directory):
         for name in dirs:
             image_directories.append(os.path.join(root, name))
 
-    st.info("Image Directories: " + str(image_directories))
-
     """
     Get a sample set
     """
+    st.markdown(
+        """***3. Use a labeled sample set*** (optional) Use a sample set of images to give to chatgpt for use
+    in labeling. This is looking for a folder of images with a labels.csv file in it, formatted with the first column
+    being "Image Path" and the second column being "Label" for that image. If there is no labels.csv file provided,
+    you will be prompted to label each image in the folder."""
+    )
     if st.checkbox("Use a sample set to improve accuracy"):
         sample_set = SampleSet()
         # Dropdown to select any folder that has images in it
@@ -211,9 +228,9 @@ def image_labeling(api_key):
 
     # Performing inference
     if st.button("Predict Labels"):
-        st.session_state.predict = True
+        st.session_state.predict2 = True
         st.session_state.filename_pred = selected_folder
-        results = choice_label(api_key, image_paths, labels, sample_set)
+        results = choice_label(api_key, image_paths, labels, sample_set, context)
         st.session_state.output = results
         st.success("Prediction completed", icon="✅")
 
@@ -222,3 +239,21 @@ def image_labeling(api_key):
         for i, result in enumerate(results):
             st.image(image_paths[i], width=200)
             st.write(f"Label: {result}")
+        results_df = {"Image Path": image_paths, "Label": results}
+        results_df = pd.DataFrame(results_df)
+        st.session_state.output = results_df
+
+    # Save the results to a file
+    if st.session_state.predict2:
+        filename = st.text_input("Enter file name to save predicted data")
+        save = st.button("Save File")
+        username = st.session_state["username"]
+        if save:
+            if not os.path.exists("predicted"):
+                os.makedirs("predicted")
+                os.makedirs(f"""predicted/{username}""")
+            file_path = f"predicted/{username}/{filename}.csv"
+            st.session_state.output.to_csv(file_path, index=False)
+
+            st.session_state.predict2 = False
+            st.success("Saved to '" + file_path + "'")

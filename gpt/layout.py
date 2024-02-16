@@ -153,7 +153,7 @@ class BasePage(ABC):
             st.error("Enter your API key.")
 
         # option = st.selectbox("Select a file", [file for file in glob.glob("./data/*.csv")], key="unique_key_1")
-        option = data_upload_element("atychang", get_filepath_instead=True)
+        option = data_upload_element(st.session_state["username"], get_filepath_instead=True)
 
         if st.button("Predict Labels", disabled=st.session_state.llm is None):
             st.session_state.predict = True
