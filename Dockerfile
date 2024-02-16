@@ -31,6 +31,14 @@ RUN npm install \
 
 WORKDIR /app
 
+RUN mkdir /app/model
+
+RUN pip install gdown
+
+RUN gdown 1D-DK__8fRpIwt1Xqe5xRg2brNrjVIqYx
+
+RUN mkdir -p /app/data/images/image
+
 EXPOSE 8501
 
 HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health
