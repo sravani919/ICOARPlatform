@@ -16,17 +16,17 @@ RUN poetry config virtualenvs.create false \
 
 WORKDIR /app/citations
 
-RUN npm install \
+RUN npm install --legacy-peer-deps \
     && npm run build
 
 WORKDIR /app/corousel
 
-RUN npm install \
+RUN npm install --legacy-peer-deps \
     && npm run build
 
 WORKDIR /app/header_tab
 
-RUN npm install \
+RUN npm install --legacy-peer-deps \
     && npm run build
 
 WORKDIR /app
