@@ -1,6 +1,8 @@
-FROM python:3.10-slim
+FROM nikolaik/python-nodejs:python3.10-nodejs21-slim
 
 WORKDIR /app
+
+COPY . .
 
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -9,13 +11,25 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --upgrade pip \
-    && pip install poetry
-
-COPY . .
-
 RUN poetry config virtualenvs.create false \
-    && poetry install --no-dev --no-interaction --no-ansi
+    && poetry install --only main --no-interaction --no-ansi
+
+WORKDIR /app/citations
+
+RUN npm install \
+    && npm run build
+
+WORKDIR /app/corousel
+
+RUN npm install \
+    && npm run build
+
+WORKDIR /app/header_tab
+
+RUN npm install \
+    && npm run build
+
+WORKDIR /app
 
 EXPOSE 8501
 
