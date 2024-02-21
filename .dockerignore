@@ -1,0 +1,14 @@
+.venv/
+.streamlit/
+.vscode/
+.ruff_cache/
+__pycache__/
+models/
+.gitignore
+.github/
+.git/
+.pre-commit-config.yaml
+tests/
+*.csv
+*.jsonl
+build/
