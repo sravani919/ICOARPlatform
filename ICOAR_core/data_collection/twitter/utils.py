@@ -1,6 +1,6 @@
 import os
 
-from data_collection.utils import download_image
+from ..utils import download_image
 
 
 def save_tweet_images(tweet, images_path):

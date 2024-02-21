@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 from typing import Optional
 
@@ -6,6 +5,7 @@ import streamlit as st
 from langchain.base_language import BaseLanguageModel
 from langchain.llms import OpenAI
 from langchain.prompts.few_shot import FewShotPromptTemplate
+from streamlit import secrets
 
 
 def display_download_button():
@@ -37,12 +37,9 @@ def openai_model_form() -> Optional[BaseLanguageModel]:
     AVAILABLE_MODELS = (
         "gpt-3.5-turbo",
         "gpt-3.5-turbo-0301",
-        "text-davinci-003",
-        "text-davinci-002",
-        "code-davinci-002",
         "gpt-4",
     )
-    api_key = st.text_input("OpenAI API key", value=os.environ.get("OPENAI_API_KEY", ""), type="password")
+    api_key = next(iter(secrets["openai"].values()))
     model_name = st.selectbox("Model", AVAILABLE_MODELS, index=2)
     cols = st.columns(2)
     with cols[0]:
@@ -58,6 +55,4 @@ def openai_model_form() -> Optional[BaseLanguageModel]:
         )
     with cols[1]:
         top_p = st.slider("Top-p", min_value=0.0, max_value=1.0, value=1.0, step=0.01)
-    if not api_key:
-        return None
     return OpenAI(model_name=model_name, temperature=temperature, top_p=top_p, openai_api_key=api_key)  # type:ignore

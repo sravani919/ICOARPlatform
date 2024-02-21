@@ -6,7 +6,7 @@ Can scrape about 2 videos per second
 from tiktokapipy.async_api import TikTokAPI
 from tqdm.auto import tqdm
 
-from data_collection.utils import BaseDataCollector, save_data
+from ..utils import BaseDataCollector, save_data
 
 
 def format_videos(videos):
@@ -89,7 +89,7 @@ if __name__ == "__main__":
     """
 
     vids = hashtag_search(hashtag, count)
-    print("tiktoks saved to ", save_data(vids, hashtag, folder_path="../../data"))
+    print("tiktoks saved to ", save_data(vids, hashtag, folder_path="../../../data"))
 
 
 class Collector(BaseDataCollector):

@@ -3,7 +3,7 @@ import time  # For sleeping between requests
 import streamlit as st
 import tweepy
 
-from data_collection.utils import BaseDataCollector
+from ..utils import BaseDataCollector
 
 query_options = ["count", "keywords", "start_date", "end_date", "images"]
 
@@ -295,4 +295,5 @@ class Collector(BaseDataCollector):
         return ["keywords", "count", "images", "start_date", "end_date"]
 
     def collect(self, keywords, count, images, start_date, end_date):
-        return grab_tweets(keywords, count, images, start_date, end_date)
+        raise NotImplementedError
+        # return grab_tweets(keywords, count, images, start_date, end_date)

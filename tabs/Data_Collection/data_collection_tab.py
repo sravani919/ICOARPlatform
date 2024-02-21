@@ -3,8 +3,10 @@ import pkgutil
 import pandas as pd
 import streamlit as st
 
-import data_collection
-from data_collection.utils import download_images
+from ICOAR_core import data_collection
+from ICOAR_core.data_collection.utils import ProgressUpdate, download_images
+
+from .query_builder import query_builder
 
 if "results" not in st.session_state:
     st.session_state.results = None
@@ -25,55 +27,9 @@ def reset_query_values():
     st.session_state.query_values = {}
 
 
-def none_default_text_input(label):
-    """
-    Creates a text input that returns None if the user inputs nothing
-    :param label: The label of the text input
-    :return: The value of the text input or None if the user inputs nothing
-    """
-    v = st.text_input(label)
-    if v == "":
-        return None
-    return v
-
-
-def query_builder(option, container=None):
-    """
-    Creates a query option based on the option and container and inserts it into the container.
-    :param option: The query option to create
-    :param container:  The container to insert the query option into
-    :return:The value of the query option
-    """
-    with container:
-        if option == "keywords" or option == "keywords AND":
-            return none_default_text_input("Keywords AND (Comma separated)")
-        if option == "keywordsOR":
-            return none_default_text_input("Keywords OR (Comma separated)")
-        if option == "count":
-            return st.number_input("Number of posts", value=100)
-        if option == "images":
-            return st.checkbox("Must have images")
-        if option == "start_date":
-            return st.date_input("Start date")
-        if option == "end_date":
-            return st.date_input("End date")
-        if option == "locations":
-            return none_default_text_input("Locations e.g. US,MX")
-        if option == "hashtags":
-            return none_default_text_input("Hashtags e.g. fun,comedy")
-        if option == "video_url":
-            return none_default_text_input("Video URL")
-        if option == "search_id":
-            return none_default_text_input("Search ID")
-        if option == "cursor":
-            return none_default_text_input("Cursor")
-
-    raise ValueError(f"Unknown query option: {option}")
-
-
 def social_media_selector(social_medias):
     st.session_state.social_media_option = st.radio(
-        "Social Media Platform", list(social_medias.keys()), on_change=reset_query_values
+        "Platform", list(social_medias.keys()), on_change=reset_query_values
     )
     # index=list(social_medias.keys()).index(
     #     st.session_state.social_media_option))
@@ -118,7 +74,7 @@ def data_collection_tab():
     main_columns = st.columns(3)
 
     with main_columns[0]:
-        st.subheader("1. Select a social media platform")
+        st.subheader("1. Select a platform")
         social_media_selector(social_medias)
         # Fancy vertical divider
         st.markdown("-------------------")
@@ -156,9 +112,20 @@ def data_collection_tab():
         st.markdown("-------------------")
 
         if st.button("Collect"):
+            # The last yield contains the data
+            # Every other yield contains a tuple with a float between 0 and 1 representing the progress and a string
+            # describing the progress
+            # Updating a progress bar with each yield until the last one
+            # The last yield should be the data
             st.session_state.results = None
-            with st.spinner("Collecting data..."):
-                st.session_state.results = st.session_state.collector.collect(**st.session_state.query_values)
+            gen = st.session_state.collector.collect_generator(**st.session_state.query_values)
+            progress_bar = st.progress(0)
+            for i, data in enumerate(gen):
+                if isinstance(data, ProgressUpdate):
+                    progress_bar.progress(data.progress, text=data.text)
+                else:
+                    st.session_state.results = data
+                    break
 
     if st.session_state.results is not None:
         cols = st.columns(1)

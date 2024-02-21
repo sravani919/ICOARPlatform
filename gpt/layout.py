@@ -1,4 +1,7 @@
-import glob
+"""
+Manages the text annotation page
+"""
+
 import os
 import time
 from abc import ABC, abstractmethod
@@ -9,9 +12,12 @@ import pandas as pd
 import streamlit as st
 from langchain.chains import LLMChain
 from langchain.prompts.few_shot import FewShotPromptTemplate
+from streamlit import secrets
 
 from gpt.components import display_download_button, openai_model_form, task_instruction_editor
-from gpt.utils import escape_markdown
+from gpt.image_labeling import image_labeling
+from gpt.utils import escape_markdown, key_directions
+from tabs.Data_Collection.data_upload import data_upload_element
 
 
 class BasePage(ABC):
@@ -19,6 +25,10 @@ class BasePage(ABC):
 
     def __init__(self, title: str) -> None:
         self.title = title
+        if "openai" in secrets:
+            self.api_key = next(iter(secrets["openai"].values()), None)
+        else:
+            st.error("[openai] key not in secrets.toml")
 
     @property
     def columns(self) -> List[str]:
@@ -45,7 +55,7 @@ class BasePage(ABC):
     def annotate(self, examples: List[Dict]) -> List[Dict]:
         return examples
 
-    def render(self) -> None:
+    def text_labeling(self):
         if "llm" not in st.session_state:
             st.session_state.llm = None
 
@@ -72,53 +82,52 @@ class BasePage(ABC):
                     is a demo of how it works:
                     """
         )
-        st.markdown("In this example, we are using sentiment labels on a text:")
+        st.markdown("In this example, we are labeling whether text is cyberbullying or not:")
+
+        key_directions()
+
         st.markdown(
-            """**1. Input Text:** Enter or paste the text you want to annotate into the provided text box along with
+            """**2. Input Text:** Enter or paste the text you want to annotate into the provided text box along with
                     desired labels. This text may include sentences, paragraphs, or any content based on your custom
                     labels.Along with the text, specify the labels you want to apply."""
         )
 
         columns = self.columns
+        self.example_path = "text_classification.json"
         examples = self.make_examples(columns)
         examples = self.annotate(examples)
 
         st.markdown(
-            """**2. Edit the prompt (Optional):** You can modify the prompt that instruct ChatGPT. The choice of
-                    prompt greatly influences the generated responsesand the quality of the annotation. Ensure that your
-                    edits are clear and relevant to the task."""
+            """**3. Edit the prompt (Optional):** You can modify the prompt that instruct ChatGPT. The choice of
+                    prompt greatly influences the generated responses and the quality of the annotation. Ensure that
+                    your edits are clear and relevant to the task."""
         )
 
         prompt = self.make_prompt(examples)
         prompt = task_instruction_editor(prompt)
 
         st.markdown(
-            """**3. Test with a Single Example (Optional):** Before labeling your entire dataset, it's a good practice
+            """**4. Test with a Single Example (Optional):** Before labeling your entire dataset, it's a good practice
             to test ChatGPT performance with a single example to see if the predictions are accurate and align with your
             instructions."""
         )
-        # col1, col2 = st.columns([3, 1])
 
         inputs = self.prepare_inputs(columns)
-
-        # with st.sidebar:
-        #     llm = openai_model_form()
-        # with col1:
-        #     inputs = self.prepare_inputs(columns)
-
-        # with col2:
-        #     llm = openai_model_form()
 
         with st.expander("See your full prompt"):
             st.markdown(f"```\n{prompt.format(**inputs)}\n```")
 
         st.markdown(
-            """**4. Parameter Usage:** The parameters you specify means you can make adjustments to how ChatGPT
+            """**5. Parameter Usage:** The parameters you specify means you can make adjustments to how ChatGPT
             generates responses to better suit your task. For meanings of sliders see
             [this link](https://community.openai.com/t/cheat-sheet-mastering-temperature-and-top-p-in-chatgpt-api-a-few-tips-and-tricks-on-controlling-the-creativity-deterministic-output-of-prompt-responses/172683)."""
         )
 
-        with st.expander("Add API keys and hyper-parameters"):
+        if self.api_key is None:
+            st.error("Enter your API key in secrets.toml under [openai].")
+            return
+
+        with st.expander("Add hyper-parameters"):
             st.session_state.llm = openai_model_form()
 
         if st.button("Predict", disabled=st.session_state.llm is None):
@@ -143,10 +152,8 @@ class BasePage(ABC):
         if st.session_state.llm is None:
             st.error("Enter your API key.")
 
-        option = st.selectbox("Select a file", [file for file in glob.glob("./data/*.csv")], key="unique_key_1")
-
-        # if llm is None:
-        #     st.error("Enter your API key.")
+        # option = st.selectbox("Select a file", [file for file in glob.glob("./data/*.csv")], key="unique_key_1")
+        option = data_upload_element(st.session_state["username"], get_filepath_instead=True)
 
         if st.button("Predict Labels", disabled=st.session_state.llm is None):
             st.session_state.predict = True
@@ -192,3 +199,11 @@ class BasePage(ABC):
 
                 st.session_state.predict = False
                 st.success("Saved to '" + file_path + "'")
+
+    def render(self) -> None:
+        labeling_mode = st.selectbox("Select Labeling Mode", ["Text Labeling", "Image Labeling"])
+
+        if labeling_mode == "Text Labeling":
+            self.text_labeling()
+        elif labeling_mode == "Image Labeling":
+            image_labeling(self.api_key)

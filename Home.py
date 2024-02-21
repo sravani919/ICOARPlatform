@@ -139,9 +139,9 @@ elif selected_value == 5:
     else:
         from tabs.Visualisation.Text_Visualisation import Text_Visualisation_tab
 
-    cols = st.columns(1)
-    with cols[0]:
-        Text_Visualisation_tab()
+        cols = st.columns(1)
+        with cols[0]:
+            Text_Visualisation_tab()
 
 elif selected_value == 6:
     if not st.session_state["authentication_status"]:
@@ -151,6 +151,7 @@ elif selected_value == 6:
         with cols[0]:
             image_sections = ["Image Analysis", "Meme Analysis", "Deepfake Detection"]
             selected_image_section = selected_data = st.selectbox("Select type of multi-media analysis", image_sections)
+            st.markdown("-------------------")
             st.subheader(selected_image_section)
             if selected_image_section == image_sections[0]:
                 from tabs.image.bully_classifification import bully_classification
