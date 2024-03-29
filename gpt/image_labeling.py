@@ -150,8 +150,7 @@ def image_labeling(api_key):
 
     if "predict2" not in st.session_state:
         st.session_state.predict2 = False
-    if "load_prompt_history" not in st.session_state:
-        st.session_state.load_prompt_history = False
+
     st.markdown(
         f"""
                 <style>
