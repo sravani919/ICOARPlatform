@@ -132,6 +132,8 @@ def choice_label(api_key, inference_image_paths, labels, sample_set, context) ->
 
 
 def image_labeling(api_key):
+    import pickle
+
     if "predict2" not in st.session_state:
         st.session_state.predict2 = False
     st.markdown(
@@ -217,12 +219,40 @@ def image_labeling(api_key):
     else:  # If the user does not want to use a sample set
         sample_set = None
 
+    label_prompt = labels_to_prompt(labels, context)
+    sub_cols = st.columns(2)
+    with sub_cols[0]:
+        edited_prompt = st.text_area("Prompt Preview", label_prompt, height=200)
+
+        prompt_name = st.text_input("Save Prompt (Optional):")
+        if st.button("Save Prompt"):
+            prompts = {}
+            prompt_file_path = "././data/prompts.pickle"
+
+            if os.path.exists(prompt_file_path):
+                with open(prompt_file_path, "rb") as f:
+                    prompts = pickle.load(f)
+
+            prompts[prompt_name] = edited_prompt
+            print(len(prompts))
+            with open(prompt_file_path, "wb") as f:
+                pickle.dump(prompts, f)
+    with sub_cols[1]:
+        if st.button("Load Prompt History"):
+            prompt_mp = {}
+            if os.path.exists("././data/prompts.pickle"):
+                with open("././data/prompts.pickle", "rb") as f:
+                    prompt_mp = pickle.load(f)
+
+            selected_prompt = st.selectbox("Select an option:", prompt_mp.keys())
+            if selected_prompt:
+                st.text_area("", prompt_mp[selected_prompt], height=200)
+
     """
     Get the set of images to label / perform inference on
     """
 
     st.subheader("Select the images to label")
-    print(image_directories)
     selected_folder = st.selectbox("Choose a folder with images", image_directories, key="inference_set")
     image_paths = get_image_paths(selected_folder)
 

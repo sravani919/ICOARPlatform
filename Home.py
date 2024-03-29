@@ -149,7 +149,7 @@ elif selected_value == 6:
     else:
         cols = st.columns(1)
         with cols[0]:
-            image_sections = ["Image Analysis", "Meme Analysis", "Deepfake Detection"]
+            image_sections = ["Image Analysis", "Image Analysis Using LLMs", "Meme Analysis", "Deepfake Detection"]
             selected_image_section = selected_data = st.selectbox("Select type of multi-media analysis", image_sections)
             st.markdown("-------------------")
             st.subheader(selected_image_section)
@@ -158,6 +158,10 @@ elif selected_value == 6:
 
                 bully_classification()
 
+            elif selected_image_section == image_sections[1]:
+                from tabs.image.bully_classifification import image_classification_llm
+
+                image_classification_llm()
             elif selected_image_section == image_sections[1]:
                 from tabs.image.meme_classification import meme_classification
 
