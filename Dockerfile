@@ -37,6 +37,8 @@ RUN mkdir -p /app/models
 
 RUN pip install gdown
 
+RUN pip install replicate
+
 RUN gdown 1D-DK__8fRpIwt1Xqe5xRg2brNrjVIqYx
 
 RUN mkdir -p /app/data/images/image

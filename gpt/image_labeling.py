@@ -124,6 +124,7 @@ def choice_label(api_key, inference_image_paths, labels, sample_set, context) ->
         }
         response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
         data = response.json()
+        print("data- ", data)
         content_value = data["choices"][0]["message"]["content"]
         results.append(content_value)
         progress = (inference_image_paths.index(image) + 1) / len(inference_image_paths)
@@ -131,11 +132,26 @@ def choice_label(api_key, inference_image_paths, labels, sample_set, context) ->
     return results
 
 
+def prompt_history():
+    import pickle
+
+    prompt_mp = {}
+    if os.path.exists("././data/prompts.pickle"):
+        with open("././data/prompts.pickle", "rb") as f:
+            prompt_mp = pickle.load(f)
+
+    selected_prompt = st.selectbox("Select prompt:", prompt_mp.keys())
+    if selected_prompt:
+        st.text_area("", prompt_mp[selected_prompt], height=200)
+
+
 def image_labeling(api_key):
     import pickle
 
     if "predict2" not in st.session_state:
         st.session_state.predict2 = False
+    if "load_prompt_history" not in st.session_state:
+        st.session_state.load_prompt_history = False
     st.markdown(
         f"""
                 <style>
@@ -178,7 +194,7 @@ def image_labeling(api_key):
         for i in range(number_of_labels - len(labels)):
             labels.append(f"Label {len(labels) + 1}")
 
-    with st.container(border=True):
+    with st.container():
         columns = st.columns(2)
         for i in range(number_of_labels):
             with columns[i % 2]:
@@ -188,7 +204,7 @@ def image_labeling(api_key):
         context = st.text_area("Context", "Cyberbullying images are usually offensive or threatening towards the user.")
     else:
         context = ""
-    image_directories = ["gpt/examples/demo"]
+    image_directories = ["gpt/examples/demo", "/home/psilimk/ICOAR/data/images/llm"]
 
     # Iterate through the data/username directory to find all the image directories
     my_data_directory = os.path.join("data/" + st.session_state["username"])
@@ -238,15 +254,10 @@ def image_labeling(api_key):
             with open(prompt_file_path, "wb") as f:
                 pickle.dump(prompts, f)
     with sub_cols[1]:
-        if st.button("Load Prompt History"):
-            prompt_mp = {}
-            if os.path.exists("././data/prompts.pickle"):
-                with open("././data/prompts.pickle", "rb") as f:
-                    prompt_mp = pickle.load(f)
+        load_prompt_history = st.toggle("Load Prompt History")
 
-            selected_prompt = st.selectbox("Select an option:", prompt_mp.keys())
-            if selected_prompt:
-                st.text_area("", prompt_mp[selected_prompt], height=200)
+        if load_prompt_history:
+            prompt_history()
 
     """
     Get the set of images to label / perform inference on
@@ -254,6 +265,9 @@ def image_labeling(api_key):
 
     st.subheader("Select the images to label")
     selected_folder = st.selectbox("Choose a folder with images", image_directories, key="inference_set")
+
+    st.text_input("Enter [GPT-4 API Key](https://platform.openai.com/api-keys)")
+
     image_paths = get_image_paths(selected_folder)
 
     # Performing inference
