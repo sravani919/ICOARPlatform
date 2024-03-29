@@ -67,6 +67,14 @@ def query_builder(option, container=None):
     def delete_temp_data():
         return st.checkbox("Delete unsaved preview data afterwards")
 
+    def get_comments():
+        return st.checkbox("Get comments")
+
+    def set_comment_limit():
+        if st.checkbox("Limit comments per post"):
+            return st.number_input("Comment limit per post", value=100)
+        return None
+
     options = {
         "keywords": keywords_and,
         "keywordsOR": keywords_or,
@@ -82,6 +90,8 @@ def query_builder(option, container=None):
         "kaggle_dataset": kaggle_dataset,
         "huggingface_dataset": huggingface_dataset,
         "delete_temp_data": delete_temp_data,
+        "get_comments": get_comments,
+        "comment_limit": set_comment_limit,
     }
 
     with container:

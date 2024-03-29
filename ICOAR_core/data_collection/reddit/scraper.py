@@ -14,9 +14,9 @@ def init_connection():
     return reddit
 
 
-def fetch_data(reddit, keywords, max_results, collect_images, only_images):
+def fetch_data(reddit, keywords, max_results, collect_images, only_images, get_comments, comment_limit):
     subreddit = reddit.subreddit("all")
-    results = subreddit.search(keywords, sort="new", limit=max_results)
+    results = subreddit.search(keywords, sort="relevance", limit=max_results)
 
     data = []
     for post in results:
@@ -28,8 +28,29 @@ def fetch_data(reddit, keywords, max_results, collect_images, only_images):
         else:
             image_urls = []
 
-        data.append(
-            {
+        if get_comments:
+            submission = reddit.submission(id=post.id)
+            comments = []
+            submission.comments.replace_more(limit=comment_limit)
+            for i, comment in enumerate(submission.comments.list()):
+                if i >= comment_limit:
+                    break
+                # comments.append(
+                #     {
+                #         "id": comment.id,
+                #         "author": comment.author.name if comment.author else None,
+                #         "score": comment.score,
+                #         "created_utc": datetime.utcfromtimestamp(comment.created_utc).strftime("%Y-%m-%d %H:%M:%S"),
+                #         "text": comment.body,
+                #     }
+                # )
+                # Remove double quotes
+                comment.body = comment.body.replace('"', '')
+                comments.append(comment.body)
+        else:
+            comments = []
+
+        post_data = {
                 "id": post.id,
                 "title": post.title,
                 "author": post.author.name,
@@ -43,17 +64,22 @@ def fetch_data(reddit, keywords, max_results, collect_images, only_images):
                 "over_18": post.over_18,
                 "image_urls": image_urls,
             }
-        )
+
+        for i, comment in enumerate(comments):
+            post_data[f"comment_{i}"] = comment
+
+        data.append(post_data)
+
 
     return data
 
 
-def grab_posts(keywords, tweet_count, must_have_images):
+def grab_posts(keywords, tweet_count, must_have_images, get_comments, comment_limit):
     reddit = init_connection()
 
-    collect_images = True
+    collect_images = False
 
-    posts = fetch_data(reddit, keywords, tweet_count, collect_images, must_have_images)
+    posts = fetch_data(reddit, keywords, tweet_count, collect_images, must_have_images, get_comments, comment_limit)
 
     if collect_images:
         for i, post in enumerate(posts):
@@ -71,7 +97,7 @@ class Collector(BaseDataCollector):
         pass
 
     def query_options(self):
-        return ["count", "keywords", "images"]
+        return ["count", "keywords", "images", "get_comments", "comment_limit"]
 
-    def collect_generator(self, count, keywords, images):
-        yield from grab_posts(keywords, count, images)
+    def collect_generator(self, count, keywords, images, get_comments, comment_limit):
+        yield from grab_posts(keywords, count, images, get_comments, comment_limit)

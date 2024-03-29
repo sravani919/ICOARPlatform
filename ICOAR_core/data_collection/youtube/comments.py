@@ -66,8 +66,8 @@ def extract_comments(video_url, count):
             usernames = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "#comment #author-text")))
 
             # Slice out the comments and usernames that we already have
-            comments = comments[len(dataset):]
-            usernames = usernames[len(dataset):]
+            comments = comments[len(dataset) :]
+            usernames = usernames[len(dataset) :]
 
             for comment, username in zip(comments, usernames):
                 dataset.add((username.text, comment.text))
@@ -89,7 +89,7 @@ if __name__ == "__main__":
     last_progress = 0
     for comments in extract_comments(video_url, 500):
         if isinstance(comments, ProgressUpdate):
-            if comments.progress > last_progress + .1:
+            if comments.progress > last_progress + 0.1:
                 print(comments.progress, comments.text)
                 last_progress = comments.progress
         else:
