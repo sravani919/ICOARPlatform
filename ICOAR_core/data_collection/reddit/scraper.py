@@ -16,10 +16,14 @@ def init_connection():
 
 def fetch_data(reddit, keywords, max_results, collect_images, only_images, get_comments, comment_limit):
     subreddit = reddit.subreddit("all")
+    yield ProgressUpdate(0, "Fetching posts")
     results = subreddit.search(keywords, sort="relevance", limit=max_results)
+    yield ProgressUpdate(0.5, "Processing posts")
 
     data = []
-    for post in results:
+    for j, post in enumerate(results):
+        yield ProgressUpdate(j / max_results, f"Processing posts ({j + 1}/{max_results} posts processed)")
+
         if only_images and (post.is_self or not post.url.endswith((".jpg", ".jpeg", ".png", ".gif"))):
             continue
 
@@ -33,6 +37,9 @@ def fetch_data(reddit, keywords, max_results, collect_images, only_images, get_c
             comments = []
             submission.comments.replace_more(limit=comment_limit)
             for i, comment in enumerate(submission.comments.list()):
+                yield ProgressUpdate(
+                    i / comment_limit, f"Processing comments ({i + 1}/{comment_limit} comments processed)"
+                )
                 if i >= comment_limit:
                     break
                 # comments.append(
@@ -45,31 +52,30 @@ def fetch_data(reddit, keywords, max_results, collect_images, only_images, get_c
                 #     }
                 # )
                 # Remove double quotes
-                comment.body = comment.body.replace('"', '')
+                comment.body = comment.body.replace('"', "")
                 comments.append(comment.body)
         else:
             comments = []
 
         post_data = {
-                "id": post.id,
-                "title": post.title,
-                "author": post.author.name,
-                "score": post.score,
-                "post_url": f"https://www.reddit.com{post.permalink}",
-                "created_utc": datetime.utcfromtimestamp(post.created_utc).strftime("%Y-%m-%d %H:%M:%S"),
-                "num_comments": post.num_comments,
-                # changed from selftext to text to better align with the preprocessing
-                "text": post.selftext,
-                "total_awards_received": post.total_awards_received,
-                "over_18": post.over_18,
-                "image_urls": image_urls,
-            }
+            "id": post.id,
+            "title": post.title,
+            "author": post.author.name,
+            "score": post.score,
+            "post_url": f"https://www.reddit.com{post.permalink}",
+            "created_utc": datetime.utcfromtimestamp(post.created_utc).strftime("%Y-%m-%d %H:%M:%S"),
+            "num_comments": post.num_comments,
+            # changed from selftext to text to better align with the preprocessing
+            "text": post.selftext,
+            "total_awards_received": post.total_awards_received,
+            "over_18": post.over_18,
+            "image_urls": image_urls,
+        }
 
         for i, comment in enumerate(comments):
             post_data[f"comment_{i}"] = comment
 
         data.append(post_data)
-
 
     return data
 
@@ -79,7 +85,13 @@ def grab_posts(keywords, tweet_count, must_have_images, get_comments, comment_li
 
     collect_images = False
 
-    posts = fetch_data(reddit, keywords, tweet_count, collect_images, must_have_images, get_comments, comment_limit)
+    # Forwarding the progress updates until the data is ready
+    for posts in fetch_data(
+        reddit, keywords, tweet_count, collect_images, must_have_images, get_comments, comment_limit
+    ):
+        if isinstance(posts, ProgressUpdate):
+            yield posts
+            continue
 
     if collect_images:
         for i, post in enumerate(posts):

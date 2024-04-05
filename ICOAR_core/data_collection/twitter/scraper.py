@@ -4,7 +4,6 @@ import toml
 from twscrape import API, AccountsPool, gather
 
 from ..utils import BaseDataCollector
-from ..utils import ProgressUpdate
 
 
 def get_accounts():
@@ -77,8 +76,6 @@ async def a_grab_tweets(keywords, tweet_count, must_have_images, start, end):
     await pool.login_all()
 
     print("Logged in to Twitter accounts")
-
-
 
     # Creating an API object
     api = API(pool)
