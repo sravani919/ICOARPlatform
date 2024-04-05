@@ -61,6 +61,8 @@ better-profanity = "^0.7.0"
 kaggle = "^1.6.4"
 datasets = "^2.16.1"
 twscrape = "^0.11.1"
+google-api-core = "^2.18.0"
+google-api-python-client = "^2.125.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"

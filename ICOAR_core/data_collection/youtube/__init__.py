@@ -1,6 +1,7 @@
-from . import comments
+from . import comments, youtube_data_api_videos
 
 name = "YouTube"
 collection_methods = {
-    "Comments": comments,
+    "Comment Scraping": comments,
+    "YouTube Data API (Videos)": youtube_data_api_videos,
 }

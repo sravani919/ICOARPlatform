@@ -51,7 +51,7 @@ def save_images(tweets, filename, i):
 
 def load_accounts_txt(path_to_txt):
     """
-    Loads the accounts from a txt file and appends them to the streamlit secrets.toml file, printing the result
+    Loads the accounts from a txt file and appends them to the streamlit secrets.toml file
     :param path_to_txt: The path to the txt file
     """
     with open(path_to_txt, "r") as file:

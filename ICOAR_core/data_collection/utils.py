@@ -71,6 +71,9 @@ def download_images(posts, filename, i):
     post = posts[i]
     images_path = ""
 
+    if type(post["image_urls"]) is not list:
+        post["image_urls"] = [post["image_urls"]]
+
     for i, url in enumerate(post["image_urls"]):
         try:
             response = requests.get(url)
