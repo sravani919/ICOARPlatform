@@ -43,7 +43,7 @@ def fetch_models_from_hf(search_text):
     )
 
     print("Fetching model list from hugging face...")
-    models = hf_api.list_models(filter="text-classification", search=search_text)
+    models = list(hf_api.list_models(filter="text-classification", search=search_text))
     # sort models by downloads to get the user higher quality models.
     models.sort(key=lambda model: model.downloads, reverse=True)
 
@@ -207,7 +207,7 @@ def validation():
                     st.session_state.model_list = [model_name]
                     st.session_state.disabled = False
                 if st.session_state.model_list:
-                    MODEL = st.radio("Model: ", st.session_state.model_list)
+                    MODEL = st.radio("Model: ", [st.session_state.model_list[0]])
                     st.markdown("-------------------")
                     st.write(f"Verify we have the right model: [{MODEL}](https://huggingface.co/{MODEL})")
 

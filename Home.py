@@ -149,7 +149,13 @@ elif selected_value == 6:
     else:
         cols = st.columns(1)
         with cols[0]:
-            image_sections = ["Image Analysis", "Image Analysis Using LLMs", "Meme Analysis", "Deepfake Detection"]
+            image_sections = [
+                "Cyberbullying Image Analysis",
+                "Cyberbullying Image Analysis Using LLMs",
+                "Meme Analysis",
+                "Deepfake Detection",
+                "Huggingface Image Analysis",
+            ]
             selected_image_section = selected_data = st.selectbox("Select type of multi-media analysis", image_sections)
             st.markdown("-------------------")
             st.subheader(selected_image_section)
@@ -162,15 +168,20 @@ elif selected_value == 6:
                 from tabs.image.bully_classifification import image_classification_llm
 
                 image_classification_llm()
-            elif selected_image_section == image_sections[1]:
+            elif selected_image_section == image_sections[2]:
                 from tabs.image.meme_classification import meme_classification
 
                 meme_classification()
 
-            elif selected_image_section == image_sections[2]:
+            elif selected_image_section == image_sections[3]:
                 from tabs.image.deepfake_detection import df_detection
 
                 df_detection()
+            elif selected_image_section == image_sections[4]:
+                from tabs.image.huggingface_image_analysis import huggingface_image_analysis
+
+                print("Fetching model list from hugging face...")
+                huggingface_image_analysis()
 elif selected_value == 7:
     from tabs.Prompt_Engineering import generate_prompt
 
