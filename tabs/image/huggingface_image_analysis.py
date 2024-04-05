@@ -31,20 +31,25 @@ def fetch_models_from_hf(search_text):
 
 
 def huggingface_image_analysis():
-    multi = """:bulb:
-                    Select a folder that contains images you want to analyze. You can also select images to
-                    construct a new folder in the data directory if you don't have one already"""
-    st.markdown(multi)
-    image_folder = find_images.image_folder_upload_element(st.session_state.username)
-    if image_folder is None:
-        st.warning("Please select a folder to proceed")
-        return
     if "img_disabled" not in st.session_state:
         st.session_state.img_disabled = True
     if "img_model_list" not in st.session_state:
         st.session_state.img_model_list = []
     if "img_predict" not in st.session_state:
         st.session_state.img_predict = False
+    if "image_folder" not in st.session_state:
+        st.session_state.image_folder = None
+    multi = """:bulb:
+                    Select a folder that contains images you want to analyze. You can also select images to
+                    construct a new folder in the data directory if you don't have one already"""
+    st.markdown(multi)
+    st.session_state.image_folder = find_images.image_folder_upload_element(st.session_state.username)
+    if st.session_state.image_folder is None:
+        st.warning("Please select a folder to proceed")
+        return
+    else:
+        image_folder = st.session_state.image_folder
+
     MODEL = ""
     multi = """:bulb: **Steps** -
                 \n 1. Input your Huggingface API token in the secrets.toml file. If you don't have
