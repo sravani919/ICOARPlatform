@@ -36,11 +36,16 @@ def fetch_data(reddit, keywords, max_results, collect_images, only_images, get_c
             submission = reddit.submission(id=post.id)
             comments = []
             submission.comments.replace_more(limit=comment_limit)
+
+            # When the comment_limit is None, it should be treated as infinity
+            cl = comment_limit if comment_limit is not None else float("inf")
+            max_comments = min(cl, len(submission.comments.list()))
+
             for i, comment in enumerate(submission.comments.list()):
                 yield ProgressUpdate(
-                    i / comment_limit, f"Processing comments ({i + 1}/{comment_limit} comments processed)"
+                    i / max_comments, f"Processing comments ({i + 1}/{max_comments} comments processed)"
                 )
-                if i >= comment_limit:
+                if i >= max_comments:
                     break
                 # comments.append(
                 #     {
@@ -70,14 +75,11 @@ def fetch_data(reddit, keywords, max_results, collect_images, only_images, get_c
             "total_awards_received": post.total_awards_received,
             "over_18": post.over_18,
             "image_urls": image_urls,
+            "comments": comments,
         }
 
-        for i, comment in enumerate(comments):
-            post_data[f"comment_{i}"] = comment
-
         data.append(post_data)
-
-    return data
+    yield data
 
 
 def grab_posts(keywords, tweet_count, must_have_images, get_comments, comment_limit):
@@ -92,6 +94,8 @@ def grab_posts(keywords, tweet_count, must_have_images, get_comments, comment_li
         if isinstance(posts, ProgressUpdate):
             yield posts
             continue
+        else:
+            break
 
     if collect_images:
         for i, post in enumerate(posts):
@@ -100,7 +104,6 @@ def grab_posts(keywords, tweet_count, must_have_images, get_comments, comment_li
 
     # df = pd.DataFrame(posts)
     # # st.dataframe(df)
-
     yield posts
 
 
