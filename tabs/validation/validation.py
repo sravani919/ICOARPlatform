@@ -4,6 +4,7 @@ import string
 import pandas as pd
 import streamlit as st
 import torch
+import transformers
 from huggingface_hub import HfApi
 from transformers import (
     AutoModelForSequenceClassification,
@@ -43,7 +44,7 @@ def fetch_models_from_hf(search_text):
     )
 
     print("Fetching model list from hugging face...")
-    models = hf_api.list_models(filter="text-classification", search=search_text)
+    models = list(hf_api.list_models(filter="text-classification", search=search_text))
     # sort models by downloads to get the user higher quality models.
     models.sort(key=lambda model: model.downloads, reverse=True)
 
@@ -79,7 +80,13 @@ def save_file(df, filename):
 
 
 def predict(text, model, tokenizer):
-    inputs = tokenizer(text, return_tensors="pt")
+    if (
+        type(model) == transformers.models.roberta.modeling_roberta.RobertaForSequenceClassification
+        or type(model) == transformers.models.distilbert.modeling_distilbert.DistilBertForSequenceClassification
+    ):
+        inputs = tokenizer(text, return_tensors="pt", max_length=512, padding=True, truncation=True)
+    else:
+        inputs = tokenizer(text, return_tensors="pt")
     outputs = model(**inputs)
     output = outputs.logits.argmax().item()
 
@@ -207,7 +214,7 @@ def validation():
                     st.session_state.model_list = [model_name]
                     st.session_state.disabled = False
                 if st.session_state.model_list:
-                    MODEL = st.radio("Model: ", st.session_state.model_list)
+                    MODEL = st.radio("Model: ", [st.session_state.model_list[0]])
                     st.markdown("-------------------")
                     st.write(f"Verify we have the right model: [{MODEL}](https://huggingface.co/{MODEL})")
 
@@ -250,7 +257,7 @@ def validation():
             model_config = BertConfig.from_json_file("model/config.json")
             model_state_dict = torch.load("model/pytorch_model.bin", map_location=torch.device("cpu"))
             model = BertForSequenceClassification(config=model_config)
-            model.load_state_dict(model_state_dict)
+            model.load_state_dict(model_state_dict, strict=False)
             tokenizer = BertTokenizer.from_pretrained("digitalepidemiologylab/covid-twitter-bert-v2")
         else:
             with st.spinner("Downloading necessary models. It may take few minutes. Please wait..."):
@@ -262,6 +269,7 @@ def validation():
 
                 if "id2label" in MODELS:
                     model = AutoModelForSequenceClassification.from_pretrained(MODEL, id2label=MODELS["id2label"])
+                    tokenizer = MODELS["tokenizer"].from_pretrained(MODEL)
                 elif MODEL == "dslim/bert-base-NER":
                     model = AutoModelForTokenClassification.from_pretrained(MODEL)
                     nlp = tpipeline("ner", model=model, tokenizer=tokenizer)
@@ -277,6 +285,8 @@ def validation():
         progress_bar = st.empty()
 
         for index, row in df.iterrows():
+            if pd.isnull(row["text"]):
+                continue
             if MODEL == "dslim/bert-base-NER" or MODEL == "QCRI/bert-base-multilingual-cased-pos-english":
                 if MODEL == "dslim/bert-base-NER":
                     output = nlp(row["text"])
