@@ -9,6 +9,8 @@ def image_folder_upload_element(email):
     :param email: The email of the user, used to know which data folder to use
     :return: The path of the selected folder
     """
+    if "uploading_imgs" not in st.session_state:
+        st.session_state.uploading_imgs = False
 
     # Find all folders in the user's data directory
     folder_path = f"data/{email}"
@@ -21,6 +23,7 @@ def image_folder_upload_element(email):
     # If the user selects the upload option
     if selected_folder == "Upload new folder":
         # Upload the folder
+        st.session_state.uploading_imgs = True
         uploaded_files = st.file_uploader("Upload images", type=["jpg", "png", "jpeg"], accept_multiple_files=True)
 
         if uploaded_files is not None:
@@ -38,14 +41,18 @@ def image_folder_upload_element(email):
                     with open(os.path.join(new_folder_path, uploaded_file.name), "wb") as f:
                         f.write(uploaded_file.getbuffer())
                 st.success("Images uploaded successfully")
-                # Return the path of the new folder
-                return new_folder_path
+                # Add the new folder to the folders list
+                # Update the selected folder to be the new folder
 
     # If the user selects a folder already in the data folder
     elif selected_folder != "":
-        # Return the path of the selected folder
         return os.path.join(folder_path, selected_folder)
 
     # If the user selects no folder
     else:
         return None
+
+    # Return the path of the selected folder
+    if st.session_state.uploading_imgs:
+        st.session_state.uploading_imgs = False
+        return os.path.join(folder_path, new_folder_name)
