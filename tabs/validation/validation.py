@@ -34,6 +34,8 @@ def initialize_state():
         st.session_state.disabled = True
     if "selected_option" not in st.session_state:
         st.session_state.selected_option = "Recommended Models"
+    if "current_model" not in st.session_state:
+        st.session_state.current_model = None
 
 
 def fetch_models_from_hf(search_text):
@@ -189,6 +191,9 @@ def validation():
             }
 
             selected_model_name = st.selectbox("Select a model", list(MODELS.keys()))
+            if st.session_state.current_model != selected_model_name:
+                st.session_state.predict = False
+                st.session_state.current_model = selected_model_name
 
             MODELS = MODELS[selected_model_name]
             MODEL = MODELS["model"]
@@ -213,6 +218,9 @@ def validation():
                 if model_button:
                     st.session_state.model_list = [model_name]
                     st.session_state.disabled = False
+                    if st.session_state.current_model != model_name:
+                        st.session_state.predict = False
+                        st.session_state.current_model = model_name
                 if st.session_state.model_list:
                     MODEL = st.radio("Model: ", [st.session_state.model_list[0]])
                     st.markdown("-------------------")
@@ -236,6 +244,9 @@ def validation():
                             "All Results",
                             st.session_state.model_list[3:],
                         )
+                    if st.session_state.current_model != MODEL:
+                        st.session_state.predict = False
+                        st.session_state.current_model = MODEL
                 if MODEL:
                     with st.expander("Model Details"):
                         model_url = f"https://huggingface.co/{MODEL}"
