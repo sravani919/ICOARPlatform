@@ -157,7 +157,7 @@ def Text_Visualisation_tab():
                 st.error("The user_name, username or author_username column is not present in the dataset.")
                 return
 
-            data[date_key] = pd.to_datetime(data[date_key], errors="coerce", unit="s")
+            data[date_key] = pd.to_datetime(data[date_key], errors="coerce") # remove unit="s" for debugging
             data = data[data[date_key].notna()]
             keywords = (
                 st.text_input("Enter the keywords of interest seperated by comma (i.e., covid, lockdown, ... ):")
