@@ -114,5 +114,8 @@ class Collector(BaseDataCollector):
     def query_options(self):
         return ["count", "keywords", "images", "get_comments", "comment_limit"]
 
+    def auth(self) -> list[str]:
+        return []
+
     def collect_generator(self, count, keywords, images, get_comments, comment_limit):
         yield from grab_posts(keywords, count, images, get_comments, comment_limit)

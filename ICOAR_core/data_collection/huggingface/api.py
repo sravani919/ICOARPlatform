@@ -11,6 +11,9 @@ class Collector(BaseDataCollector):
     def query_options(self):
         return ["huggingface_dataset"]
 
+    def auth(self) -> list[str]:
+        return []
+
     def collect_generator(self, *args, **kwargs):
         """
         Should take in the query options

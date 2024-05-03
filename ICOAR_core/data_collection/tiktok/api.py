@@ -338,5 +338,8 @@ class Collector(BaseDataCollector):
             "cursor",
         ]
 
+    def auth(self) -> list[str]:
+        return ["tiktok.client_key", "tiktok.client_secret"]
+
     def collect_generator(self, *args, **kwargs):
         yield from get_videos(*args, **kwargs)

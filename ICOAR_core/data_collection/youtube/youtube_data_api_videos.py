@@ -28,6 +28,9 @@ class Collector(BaseDataCollector):
     def query_options(self):
         return ["search_query", "count"]
 
+    def auth(self) -> list[str]:
+        return ["youtube.accounts"]
+
     def collect_generator(self, search_query, count):
         # Load in accounts from the toml
         try:

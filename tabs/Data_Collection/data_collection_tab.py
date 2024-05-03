@@ -86,9 +86,31 @@ def data_collection_tab():
         columns = st.columns(2)
         for query_option in query_options:
             st.session_state.query_values[query_option] = query_builder(query_option, columns[0])
+        st.markdown("-------------------")
+        st.subheader("3. Authentication")
+        st.markdown("*Values are preloaded from the `secrets.toml`*")
+        st.markdown("---------")
+        needed_keys = st.session_state.collector.auth()
+        if len(needed_keys) > 0:
+            for key in needed_keys:
+                # Example key: "tiktok.client_id", to access from secrets.toml it would be
+                # st.secrets["tiktok"]["client_id"]
+                parts = key.split(".")
+
+                # Indexing repeatedly into the secrets dictionary to get the value
+                value_from_secrets = st.secrets.get(parts[0], {})
+                for part in parts[1:]:
+                    value_from_secrets = value_from_secrets.get(part, {})
+
+                if value_from_secrets == {}:
+                    value_from_secrets = None
+
+                st.session_state.query_values[key] = st.text_input(key, type="password", value=value_from_secrets)
+        else:
+            st.success("No authentication needed!")
 
     with main_columns[2]:
-        st.subheader("3. Summary")
+        st.subheader("4. Summary")
 
         platform = st.session_state.socialmedia.name
         collection_method = st.session_state.collector.__class__.__module__.split(".")[-1].title()

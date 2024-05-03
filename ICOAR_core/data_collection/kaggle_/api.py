@@ -28,6 +28,9 @@ class Collector(BaseDataCollector):
     def query_options(self):
         return ["kaggle_dataset", "delete_temp_data"]
 
+    def auth(self) -> list[str]:
+        return ["kaggle.username", "kaggle.key"]
+
     def collect_generator(self, *args, **kwargs):
         """
         Should take in the query options

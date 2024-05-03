@@ -113,5 +113,8 @@ class Collector(BaseDataCollector):
     def query_options(self):
         return ["count", "keywords", "images", "start_date", "end_date"]
 
+    def auth(self) -> list[str]:
+        return ["twitter.accounts"]
+
     def collect_generator(self, keywords, count, images, start_date, end_date):
         yield grab_posts(keywords, count, images, start_date, end_date)

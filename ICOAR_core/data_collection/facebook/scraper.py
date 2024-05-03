@@ -77,5 +77,8 @@ class Collector(BaseDataCollector):
     def query_options(self):
         return ["count", "keywords"]
 
+    def auth(self) -> list[str]:
+        return ["facebook.email", "facebook.password"]
+
     def collect_generator(self, keywords, count):
         yield from grab_posts(keywords, count)

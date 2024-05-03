@@ -107,5 +107,8 @@ class Collector(BaseDataCollector):
     def query_options(self):
         return ["video_url", "count"]
 
+    def auth(self) -> list[str]:
+        return []
+
     def collect_generator(self, video_url, count):
         yield from extract_comments(video_url, count)
