@@ -294,6 +294,9 @@ class Collector(BaseDataCollector):
     def query_options(self):
         return ["keywords", "count", "images", "start_date", "end_date"]
 
+    def auth(self) -> list[str]:
+        return ["twitter.api_token"]
+
     def collect(self, keywords, count, images, start_date, end_date):
         raise NotImplementedError
         # return grab_tweets(keywords, count, images, start_date, end_date)

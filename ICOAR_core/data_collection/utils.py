@@ -71,6 +71,9 @@ def download_images(posts, filename, i):
     post = posts[i]
     images_path = ""
 
+    if type(post["image_urls"]) is not list:
+        post["image_urls"] = [post["image_urls"]]
+
     for i, url in enumerate(post["image_urls"]):
         try:
             response = requests.get(url)
@@ -96,9 +99,18 @@ class BaseDataCollector:
     """
 
     @property
-    def query_options(self):
+    def query_options(self) -> list[str]:
         """
         Should return a list of query options such as ['count', 'keywords', 'start_date', 'end_date']
+        """
+        raise NotImplementedError
+
+    @property
+    def auth(self) -> list[str]:
+        """
+        Should return a list of the keys/tokens needed for the collection to succeed
+        The format should be as to where it would be in the secrets.toml
+        @example ["tiktok.client_key", "tiktok.client_secret"]
         """
         raise NotImplementedError
 
@@ -106,6 +118,8 @@ class BaseDataCollector:
         """
         Should take in the query options and return a list of dictionaries with each dictionary
         being a singe result.
+
+        DEPRECATED: Use collect_generator instead
         """
         raise NotImplementedError
 

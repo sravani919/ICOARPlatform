@@ -64,31 +64,40 @@ def extract_comments(video_url, count):
             # Collecting the comment and the username
             comments = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "#comment #content-text")))
             usernames = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "#comment #author-text")))
+
+            # Slice out the comments and usernames that we already have
+            comments = comments[len(dataset) :]
+            usernames = usernames[len(dataset) :]
+
             for comment, username in zip(comments, usernames):
                 dataset.add((username.text, comment.text))
-                yield ProgressUpdate(len(dataset) / count, f"Loading comments: {len(dataset)} / {count}")
 
                 # If we have enough comments, stop scrolling
                 if len(dataset) >= count:
                     yield ProgressUpdate(1, "Formatting comments...")
                     formatted = format_comments(list(dataset))
                     yield formatted
-                    break
+                    return
+            yield ProgressUpdate(len(dataset) / count, f"Loading comments: {len(dataset)} / {count}")
 
 
 if __name__ == "__main__":
     # For testing purposes
     video_url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-    comments = extract_comments(video_url, 100)
-    print("Extracted " + str(len(comments)) + " comments from " + video_url)
-    print(comments)
+    start_time = time.time()
+    # Each progressupdate.progress is a num from 0 to 1
+    last_progress = 0
+    for comments in extract_comments(video_url, 500):
+        if isinstance(comments, ProgressUpdate):
+            if comments.progress > last_progress + 0.1:
+                print(comments.progress, comments.text)
+                last_progress = comments.progress
+        else:
+            print(comments)
+            print("number of comments:", len(comments))
+            break
 
-    # Getting number of comments without a username
-    count = 0
-    for comment in comments:
-        if comment[0] == "":
-            count += 1
-    print("Number of comments without a username: " + str(count))
+    print("Time taken: " + str(time.time() - start_time))
 
 
 class Collector(BaseDataCollector):
@@ -97,6 +106,9 @@ class Collector(BaseDataCollector):
 
     def query_options(self):
         return ["video_url", "count"]
+
+    def auth(self) -> list[str]:
+        return []
 
     def collect_generator(self, video_url, count):
         yield from extract_comments(video_url, count)

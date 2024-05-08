@@ -99,5 +99,8 @@ class Collector(BaseDataCollector):
     def query_options(self):
         return ["count", "hashtag"]
 
+    def auth(self) -> list[str]:
+        return []
+
     def collect(self, hashtag, count):
         return hashtag_search(hashtag, count)

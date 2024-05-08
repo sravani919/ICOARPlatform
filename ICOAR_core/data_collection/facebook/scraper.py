@@ -2,12 +2,10 @@
 Scrapes from Facebook using the facebook-scraper package
 
 """
+import facebook_scraper
 from facebook_scraper import get_posts_by_search
 
-from ..utils import BaseDataCollector, ProgressUpdate, mike, save_data
-
-credentials = (mike["gmail_username"], mike["facebook_password"])
-
+from ..utils import BaseDataCollector, ProgressUpdate
 
 options = {"progress": True}
 
@@ -45,31 +43,6 @@ def format_posts(posts):
     return formatted_posts
 
 
-def grab_posts(query, max_results):
-    posts = []
-    yield ProgressUpdate(0, "Starting Facebook scrape")
-
-    for post in get_posts_by_search(query, credentials=credentials, options=options, pages=10):
-        posts.append(post)
-        yield ProgressUpdate(
-            len(posts) / max_results, f"Scraping Facebook ({len(posts)}/{max_results} results scraped)"
-        )
-        if len(posts) >= max_results:
-            break
-    posts = format_posts(posts)
-    yield posts
-
-
-if __name__ == "__main__":
-    """
-    For testing purposes
-    """
-    posts = grab_posts("keyboard", 5)
-
-    posts = format_posts(posts)
-    print(len(posts), "posts Saved to", save_data(posts, "facebook"))
-
-
 class Collector(BaseDataCollector):
     def __init__(self):
         pass
@@ -77,5 +50,25 @@ class Collector(BaseDataCollector):
     def query_options(self):
         return ["count", "keywords"]
 
-    def collect_generator(self, keywords, count):
-        yield from grab_posts(keywords, count)
+    def auth(self) -> list[str]:
+        return ["facebook.email", "facebook.password"]
+
+    def collect_generator(self, **kwargs):
+        posts = []
+        yield ProgressUpdate(0, "Starting Facebook scrape")
+
+        credentials = (kwargs["facebook.email"], kwargs["facebook.password"])
+        max_results = kwargs["count"]
+        try:
+            for post in get_posts_by_search(kwargs["keywords"], credentials=credentials, options=options, pages=10):
+                posts.append(post)
+                yield ProgressUpdate(
+                    len(posts) / max_results, f"Scraping Facebook ({len(posts)}/{max_results} results scraped)"
+                )
+                if len(posts) >= max_results:
+                    break
+        except facebook_scraper.exceptions.LoginError:
+            yield ProgressUpdate(1, "Login error")
+            return
+        posts = format_posts(posts)
+        yield posts

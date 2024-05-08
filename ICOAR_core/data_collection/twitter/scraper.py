@@ -1,18 +1,15 @@
 import asyncio
 
-import toml
 from twscrape import API, AccountsPool, gather
 
 from ..utils import BaseDataCollector
 
 
-def get_accounts():
+def get_accounts(accounts_str):
     # Reading from accounts.csv where the info is seperated by colons, not commas
-    secrets = toml.load(".streamlit/secrets.toml")
-    f = secrets["twitter"]["accounts"]
 
     accounts = []
-    for account in f.split(","):
+    for account in accounts_str.split(","):
         values = [v.strip() for v in account.split(":")]
         accounts.append(values)
     return accounts
@@ -25,7 +22,7 @@ def format_tweets(tweets):
         for mention in tweet.mentionedUsers:
             mentions.append(mention.username)
 
-        coordinates = None
+        coordinates = [None, None]
         if tweet.coordinates is not None:
             coordinates = [tweet.coordinates.longitude, tweet.coordinates.latitude]
 
@@ -43,7 +40,7 @@ def format_tweets(tweets):
         for link in tweet.links:
             links.append(link.url)
 
-        place = tweet.place.fullName if tweet.place is not None else None
+        place = tweet.place.fullName if tweet.place is not None else "NA"
 
         formatted_tweet = {
             "id": tweet.id,
@@ -62,18 +59,21 @@ def format_tweets(tweets):
             "links": links,
         }
         formatted_tweets.append(formatted_tweet)
+
     return formatted_tweets
 
 
-async def a_grab_tweets(keywords, tweet_count, must_have_images, start, end):
+async def a_grab_tweets(keywords, tweet_count, must_have_images, start, end, **kwargs):
     # Setting up the accounts pool
     pool = AccountsPool()
-    for account in get_accounts():
+    for account in get_accounts(kwargs["twitter.accounts"]):
         await pool.add_account(*account)
 
     # Logging in to all new accounts
     # yield ProgressUpdate(0, "Logging in to Twitter accounts...")
     await pool.login_all()
+
+    print("Logged in to Twitter accounts")
 
     # Creating an API object
     api = API(pool)
@@ -98,11 +98,6 @@ async def a_grab_tweets(keywords, tweet_count, must_have_images, start, end):
     return formatted_tweets
 
 
-def grab_posts(keywords, count, images, start_date, end_date):
-    result = asyncio.run(a_grab_tweets(keywords, count, images, start_date, end_date))
-    return result
-
-
 class Collector(BaseDataCollector):
     def __init__(self):
         pass
@@ -110,5 +105,9 @@ class Collector(BaseDataCollector):
     def query_options(self):
         return ["count", "keywords", "images", "start_date", "end_date"]
 
-    def collect_generator(self, keywords, count, images, start_date, end_date):
-        yield grab_posts(keywords, count, images, start_date, end_date)
+    def auth(self) -> list[str]:
+        return ["twitter.accounts"]
+
+    def collect_generator(self, keywords, count, images, start_date, end_date, **kwargs):
+        result = asyncio.run(a_grab_tweets(keywords, count, images, start_date, end_date, **kwargs))
+        yield result

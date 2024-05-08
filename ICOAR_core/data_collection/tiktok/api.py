@@ -4,7 +4,6 @@ import logging
 import time
 
 import requests
-import toml
 
 from ..utils import BaseDataCollector, ProgressUpdate
 
@@ -245,6 +244,7 @@ def get_videos(
     hashtags: str = None,
     cursor: int = None,
     search_id: str = None,
+    **kwargs,
 ):
     """
     Uses the TikTok API to get videos
@@ -266,6 +266,9 @@ def get_videos(
     """
     Preprocessing the query options, so they can be passed to the TikTok API
     """
+
+    client_key = kwargs.get("tiktok.client_key")
+    client_secret = kwargs.get("tiktok.client_secret")
 
     if keywords is None and hashtags is None and locations is None and keywordsOR is None:
         yield ProgressUpdate(0, "No keywords, hashtags, or locations specified")
@@ -291,14 +294,6 @@ def get_videos(
         today = datetime.datetime.today()
         start_date = (today - datetime.timedelta(days=7)).strftime("%Y%m%d")
         end_date = today.strftime("%Y%m%d")
-
-    try:
-        secrets = toml.load(".streamlit/secrets.toml")
-        client_key = secrets["tiktok"]["client_key"]
-        client_secret = secrets["tiktok"]["client_secret"]
-    except AttributeError:
-        cant_find_keys()
-        return
 
     ttapi = TikTokApi(client_key, client_secret)
 
@@ -337,6 +332,9 @@ class Collector(BaseDataCollector):
             "search_id",
             "cursor",
         ]
+
+    def auth(self) -> list[str]:
+        return ["tiktok.client_key", "tiktok.client_secret"]
 
     def collect_generator(self, *args, **kwargs):
         yield from get_videos(*args, **kwargs)

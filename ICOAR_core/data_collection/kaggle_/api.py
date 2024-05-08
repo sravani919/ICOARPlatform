@@ -3,7 +3,6 @@ import os
 import shutil
 
 import pandas as pd
-import toml
 
 from ..utils import BaseDataCollector
 
@@ -28,6 +27,9 @@ class Collector(BaseDataCollector):
     def query_options(self):
         return ["kaggle_dataset", "delete_temp_data"]
 
+    def auth(self) -> list[str]:
+        return ["kaggle.username", "kaggle.key"]
+
     def collect_generator(self, *args, **kwargs):
         """
         Should take in the query options
@@ -46,13 +48,8 @@ class Collector(BaseDataCollector):
 
         kaggle_dataset = kaggle_dataset_url.split("kaggle.com/datasets/")[1]
 
-        try:
-            # Loading secrets.toml to get Kaggle API credentials
-            secrets = toml.load(".streamlit/secrets.toml")
-            username = secrets["kaggle"]["username"]
-            key = secrets["kaggle"]["key"]
-        except Exception as e:
-            raise ValueError(cant_find_keys() + f"\n{e}")
+        username = kwargs["kaggle.username"]
+        key = kwargs["kaggle.key"]
 
         # Overwrites the kaggle.json file in the .kaggle directory in the user's home directory
         home_dir = os.path.expanduser("~")

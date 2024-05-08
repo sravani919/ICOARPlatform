@@ -1,5 +1,7 @@
 import os
 
+import toml
+
 from ..utils import download_image
 
 
@@ -45,3 +47,29 @@ def save_images(tweets, filename, i):
     save_tweet_images(tweets[i], images_path)
 
     return images_path
+
+
+def load_accounts_txt(path_to_txt):
+    """
+    Loads the accounts from a txt file and appends them to the streamlit secrets.toml file
+    :param path_to_txt: The path to the txt file
+    """
+    with open(path_to_txt, "r") as file:
+        accounts = file.readlines()
+
+    current_accounts = toml.load(".streamlit/secrets.toml")["twitter"]["accounts"]
+    for account in accounts:
+        account = account.strip()
+        if account not in current_accounts:
+            current_accounts += "," + account
+
+    # Replace the current accounts in the secrets.toml file
+    with open(".streamlit/secrets.toml", "r") as file:
+        data = toml.load(file)
+        data["twitter"]["accounts"] = current_accounts
+    with open(".streamlit/secrets.toml", "w") as file:
+        toml.dump(data, file)
+
+
+if __name__ == "__main__":
+    load_accounts_txt("/Users/ethan/Downloads/order5202644.txt")
