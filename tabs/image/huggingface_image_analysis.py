@@ -132,9 +132,15 @@ def huggingface_image_analysis():
                 image_tensor = transform(image).unsqueeze(0)
                 outputs = model(image_tensor)
                 predicted_label = outputs.logits.argmax().item()
-                df = df.append(
-                    {"Image Name": os.path.basename(image_file), "Label": predicted_label}, ignore_index=True
-                )
+                config = model.config
+                if hasattr(config, "id2label"):
+                    predicted_label = config.id2label[predicted_label]
+                else:
+                    predicted_label = predicted_label
+
+                new_row = pd.DataFrame({"Image Name": [os.path.basename(image_file)], "Label": [predicted_label]})
+                df = pd.concat([df, new_row], ignore_index=True)
+
         st.success("Prediction complete!")
         if st.session_state.img_predict:
             file_name = st.text_input("Enter the name of the file to save the predictions to:")
