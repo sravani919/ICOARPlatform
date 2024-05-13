@@ -1,5 +1,6 @@
 import os
 import string
+from io import StringIO
 
 import pandas as pd
 import streamlit as st
@@ -78,7 +79,15 @@ def save_file(df, filename):
         os.makedirs(f"""predicted/{username}""")
     file_path = f"predicted/{username}/{filename}.csv"
     df.to_csv(file_path, index=False)
+
     return file_path
+
+
+def get_csv_string(df):
+    """Converts the DataFrame to a CSV string, which can be used for downloading."""
+    csv = StringIO()
+    df.to_csv(csv, index=False)
+    return csv.getvalue()
 
 
 def predict(text, model, tokenizer):
@@ -366,6 +375,16 @@ def validation():
                     file_path = save_file(st.session_state.output, filename)
                     st.session_state.predict = False
                     st.success("Saved to '" + file_path + "'")
+
+                csv_data = get_csv_string(st.session_state.output)
+                st.download_button(
+                    label="Download",
+                    data=csv_data,
+                    file_name=f"{filename}.csv",
+                    mime="text/csv",
+                    help="Click to download the CSV file with predicted data.",
+                )
+
             elif selected_tab == "Emotional Analysis":
                 emotional_analysis(st.session_state.output)
         else:
@@ -375,3 +394,12 @@ def validation():
                 file_path = save_file(st.session_state.output, filename)
                 st.session_state.predict = False
                 st.success("Saved to '" + file_path + "'")
+
+            csv_data = get_csv_string(st.session_state.output)
+            st.download_button(
+                label="Download",
+                data=csv_data,
+                file_name=f"{filename}.csv",
+                mime="text/csv",
+                help="Click to download the CSV file with predicted data.",
+            )
