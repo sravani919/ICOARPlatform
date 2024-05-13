@@ -3,6 +3,7 @@ import streamlit as st
 
 from data_preprocessing import options, preprocess
 from tabs.Data_Collection.data_upload import data_upload_element
+from tabs.validation.validation import get_csv_string
 
 
 def data_preprocessing_tab():
@@ -40,7 +41,17 @@ def data_preprocessing_tab():
 
     if st.session_state.preprocessing_status:
         st.dataframe(st.session_state.processed_df)
+
         name = st.text_input("Enter a file name or leave as is to overwrite", value=st.session_state.filename)
+
         if st.button("Save"):
             st.session_state.processed_df.to_csv(name, index=False)
             st.success("Saved to " + name)
+        csv_data = get_csv_string(st.session_state.processed_df)
+        st.download_button(
+            label="Download",
+            data=csv_data,
+            file_name=f"{name}",
+            mime="text/csv",
+            help="Click to download the CSV file with predicted data.",
+        )
