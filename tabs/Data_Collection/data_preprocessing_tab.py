@@ -1,17 +1,9 @@
-from io import StringIO
-
 import pandas as pd
 import streamlit as st
 
 from data_preprocessing import options, preprocess
 from tabs.Data_Collection.data_upload import data_upload_element
-
-
-def get_csv_string(df):
-    """Converts the DataFrame to a CSV string, which can be used for downloading."""
-    csv = StringIO()
-    df.to_csv(csv, index=False)
-    return csv.getvalue()
+from tabs.validation.validation import get_csv_string
 
 
 def data_preprocessing_tab():
