@@ -16,7 +16,7 @@ interface State {
   activeStep: number
 }
 
-const menu_options = ["Data Collection", "Pre-processing", "Text Analysis", "Annotation", "Visualization", "Multi-media Analysis", "Prompt Optimization"]
+const menu_options = ["Data Collection", "Pre-processing", "Text Analysis", "Visualization", "Multi-media Analysis", "Annotation", "Prompt Optimization"]
 
 class DiscreteSlider extends StreamlitComponentBase<State> {
   public constructor(props: ComponentProps) {

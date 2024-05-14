@@ -127,23 +127,13 @@ elif selected_value == 4:
     if not st.session_state["authentication_status"]:
         login_error()
     else:
-        from tabs.Text_Annotation.Text_annotation import text_annotation_tab
-
-        cols = st.columns(1)
-        with cols[0]:
-            text_annotation_tab()
-
-elif selected_value == 5:
-    if not st.session_state["authentication_status"]:
-        login_error()
-    else:
         from tabs.Visualisation.Text_Visualisation import Text_Visualisation_tab
 
         cols = st.columns(1)
         with cols[0]:
             Text_Visualisation_tab()
 
-elif selected_value == 6:
+elif selected_value == 5:
     if not st.session_state["authentication_status"]:
         login_error()
     else:
@@ -182,10 +172,23 @@ elif selected_value == 6:
 
                 print("Fetching model list from hugging face...")
                 huggingface_image_analysis()
+
+elif selected_value == 6:
+    if not st.session_state["authentication_status"]:
+        login_error()
+    else:
+        from tabs.Text_Annotation.Text_annotation import text_annotation_tab
+
+        cols = st.columns(1)
+        with cols[0]:
+            text_annotation_tab()
+
 elif selected_value == 7:
     from tabs.Prompt_Engineering import generate_prompt
 
     generate_prompt()
+
+
 elif selected_value == 8:
     if "authentication_status" not in st.session_state or not st.session_state["authentication_status"]:
         st.warning("You're logged out. Please sign in to access the features")
