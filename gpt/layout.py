@@ -200,8 +200,8 @@ class BasePage(ABC):
                 st.session_state.predict = False
                 st.success("Saved to '" + file_path + "'")
 
-    def render(self) -> None:
-        labeling_mode = st.selectbox("Select Labeling Mode", ["Text Labeling", "Image Labeling"])
+    def render(self, labeling_mode) -> None:
+        # labeling_mode = st.selectbox("Select Labeling Mode", ["Text Labeling", "Image Labeling"])
 
         if labeling_mode == "Text Labeling":
             self.text_labeling()

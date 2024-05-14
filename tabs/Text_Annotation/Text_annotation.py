@@ -23,6 +23,6 @@ class TextClassificationPage(BasePage):
 
 
 # Create a subtab for "Text Annotation"
-def text_annotation_tab():
+def text_annotation_tab(labeling_mode):
     page = TextClassificationPage(st.subheader("Annotate Your own data"))
-    page.render()
+    page.render(labeling_mode)
