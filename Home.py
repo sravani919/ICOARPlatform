@@ -44,6 +44,20 @@ def discrete_slider():
     return _discrete_slider(default=0, logged_in=False)
 
 
+def selection_bar():
+    """Declare and call the custom Streamlit component for selection."""
+    production = True  # This should be dynamically set based on your environment
+    if production:
+        root_dir = os.path.dirname(os.path.abspath(__file__))
+        build_dir = os.path.join(root_dir, "header_tab2/build")
+        # Ensure this component name is unique in the frontend build
+        _selection_bar = components.declare_component("discrete_slider", path=build_dir)
+    else:
+        _selection_bar = components.declare_component("discrete_slider", url="http://localhost:3000")
+
+    return _selection_bar()
+
+
 st.markdown(
     f"""
             <style>
@@ -177,19 +191,31 @@ elif selected_value == 6:
     if not st.session_state["authentication_status"]:
         login_error()
     else:
-        from tabs.Text_Annotation.Text_annotation import text_annotation_tab
+        user_choice = selection_bar()
 
-        cols = st.columns(1)
-        with cols[0]:
-            text_annotation_tab()
+        if user_choice == "Text Annotaion":
+            from tabs.Text_Annotation.Text_annotation import text_annotation_tab
+
+            cols = st.columns(1)
+            with cols[0]:
+                text_annotation_tab(labeling_mode="Text Labeling")
+
+        elif user_choice == "Image Labeling":
+            print("labeling")
+
+            from tabs.Text_Annotation.Text_annotation import text_annotation_tab
+
+            cols = st.columns(1)
+            with cols[0]:
+                text_annotation_tab(labeling_mode="Image Labeling")
+
+        elif user_choice == "Prompt Optimization":
+            from tabs.Prompt_Engineering import generate_prompt
+
+            generate_prompt()()
+
 
 elif selected_value == 7:
-    from tabs.Prompt_Engineering import generate_prompt
-
-    generate_prompt()
-
-
-elif selected_value == 8:
     if "authentication_status" not in st.session_state or not st.session_state["authentication_status"]:
         st.warning("You're logged out. Please sign in to access the features")
     else:
