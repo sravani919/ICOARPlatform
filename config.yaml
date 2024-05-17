@@ -1,0 +1,52 @@
+_type: llm_chain
+llm:
+  _type: openai-chat
+  model_name: gpt-3.5-turbo
+  temperature: 0.7
+  top_p: 1.0
+llm_kwargs: {}
+memory: null
+metadata: null
+output_key: text
+output_parser:
+  _type: default
+prompt:
+  _type: few_shot
+  example_prompt:
+    _type: prompt
+    input_variables:
+    - text
+    - label
+    output_parser: null
+    partial_variables: {}
+    template: 'text: {text}
+
+      label: {label}'
+    template_format: f-string
+    validate_template: true
+  example_selector: null
+  example_separator: '
+
+
+    '
+  examples:
+  - label: 'Yes'
+    text: shut up loser obviously you have nothing better to do
+  - label: 'Yes'
+    text: why do you dress like that?? you have no friends
+  - label: 'No'
+    text: shut up or ill report you
+  - label: 'No'
+    text: me and my friends are hanging out tonight!
+  input_variables:
+  - input
+  output_parser: null
+  partial_variables: {}
+  prefix: "Classify the text as a form of cyberbullying with the following labels,\
+    \ \n- No\n- Yes\n"
+  suffix: 'text: {input}'
+  template_format: f-string
+  validate_template: true
+return_final_only: true
+tags: null
+verbose: false

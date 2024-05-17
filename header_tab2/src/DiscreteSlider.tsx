@@ -12,7 +12,7 @@ interface State {
   activeStep: number;
 }
 
-const menu_options = ['Text Annotaion', "Image Labeling" ,"Prompt Optimization"];
+const menu_options = ['Text Annotaion', 'Image Labeling' ,'In-Context Learning','Prompt Optimization'];
 
 class DiscreteSlider extends StreamlitComponentBase<State> {
   public constructor(props: ComponentProps) {
