@@ -214,6 +214,13 @@ elif selected_value == 6:
 
             generate_prompt()()
 
+        elif user_choice == "In-Context Learning":
+            from tabs.Text_Annotation.In_context_leanring import in_context_learning
+
+            cols = st.columns(1)
+            with cols[0]:
+                in_context_learning()
+
 
 elif selected_value == 7:
     if "authentication_status" not in st.session_state or not st.session_state["authentication_status"]:
