@@ -27,6 +27,11 @@ WORKDIR /app/header_tab
 RUN npm install --legacy-peer-deps \
     && npm run build
 
+WORKDIR /app/header_tab2
+
+RUN npm install --legacy-peer-deps \
+    && npm run build
+
 WORKDIR /app
 
 RUN poetry config virtualenvs.create false \
