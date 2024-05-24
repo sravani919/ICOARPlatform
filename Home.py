@@ -17,6 +17,7 @@ if "user_registration" not in st.session_state:
 if "user_registration_complete" not in st.session_state:
     st.session_state.user_registration_complete = False
 
+
 st.set_page_config(
     page_title="ICOAR",
     layout="wide",
@@ -44,12 +45,26 @@ def discrete_slider():
     return _discrete_slider(default=0, logged_in=False)
 
 
-def selection_bar():
+def selection_bar_1():
     """Declare and call the custom Streamlit component for selection."""
     production = True  # This should be dynamically set based on your environment
     if production:
         root_dir = os.path.dirname(os.path.abspath(__file__))
         build_dir = os.path.join(root_dir, "header_tab2/build")
+        # Ensure this component name is unique in the frontend build
+        _selection_bar = components.declare_component("discrete_slider", path=build_dir)
+    else:
+        _selection_bar = components.declare_component("discrete_slider", url="http://localhost:3000")
+
+    return _selection_bar()
+
+
+def selection_bar_2():
+    """Declare and call the custom Streamlit component for selection."""
+    production = True  # This should be dynamically set based on your environment
+    if production:
+        root_dir = os.path.dirname(os.path.abspath(__file__))
+        build_dir = os.path.join(root_dir, "header_tab3/build")
         # Ensure this component name is unique in the frontend build
         _selection_bar = components.declare_component("discrete_slider", path=build_dir)
     else:
@@ -93,6 +108,9 @@ st.markdown(
     unsafe_allow_html=True,
 )
 selected_value = int(discrete_slider())
+
+# Clear the previous component if necessary
+
 
 if selected_value == 0:
     from tabs.login import login
@@ -151,47 +169,47 @@ elif selected_value == 5:
     if not st.session_state["authentication_status"]:
         login_error()
     else:
-        cols = st.columns(1)
-        with cols[0]:
-            image_sections = [
-                "Cyberbullying Image Analysis",
-                "Cyberbullying Image Analysis Using LLMs",
-                "Meme Analysis",
-                "Deepfake Detection",
-                "Huggingface Image Analysis",
-            ]
-            selected_image_section = selected_data = st.selectbox("Select type of multi-media analysis", image_sections)
-            st.markdown("-------------------")
-            st.subheader(selected_image_section)
-            if selected_image_section == image_sections[0]:
-                from tabs.image.bully_classifification import bully_classification
+        placeholder = st.empty()
+        with placeholder.container():
+            user_choice_2 = selection_bar_2()
+            if user_choice_2 == "Cyberbullying Image Analysis":
+                cols = st.columns(1)
+                with cols[0]:
+                    from tabs.image.bully_classifification import bully_classification
 
-                bully_classification()
+                    bully_classification()
+            elif user_choice_2 == "Meme Analysis":
+                cols = st.columns(1)
+                with cols[0]:
+                    from tabs.image.meme_classification import meme_classification
 
-            elif selected_image_section == image_sections[1]:
-                from tabs.image.bully_classifification import image_classification_llm
+                    meme_classification()
+            elif user_choice_2 == "Deepfake Detection":
+                cols = st.columns(1)
+                with cols[0]:
+                    from tabs.image.deepfake_detection import df_detection
 
-                image_classification_llm()
-            elif selected_image_section == image_sections[2]:
-                from tabs.image.meme_classification import meme_classification
+                    df_detection()
+            elif user_choice_2 == "Customized Image Analysis":
+                cols = st.columns(1)
+                with cols[0]:
+                    from tabs.image.huggingface_image_analysis import huggingface_image_analysis
 
-                meme_classification()
+                    print("Fetching model list from hugging face...")
+                    huggingface_image_analysis()
+            elif user_choice_2 == "Cyberbullying Detection using GPT":
+                cols = st.columns(1)
+                with cols[0]:
+                    from tabs.image.bully_classifification import image_classification_llm
 
-            elif selected_image_section == image_sections[3]:
-                from tabs.image.deepfake_detection import df_detection
+                    image_classification_llm()
 
-                df_detection()
-            elif selected_image_section == image_sections[4]:
-                from tabs.image.huggingface_image_analysis import huggingface_image_analysis
-
-                print("Fetching model list from hugging face...")
-                huggingface_image_analysis()
 
 elif selected_value == 6:
     if not st.session_state["authentication_status"]:
         login_error()
     else:
-        user_choice = selection_bar()
+        user_choice = selection_bar_1()
 
         if user_choice == "Text Annotaion":
             from tabs.Text_Annotation.Text_annotation import text_annotation_tab
