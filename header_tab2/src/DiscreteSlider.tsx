@@ -28,7 +28,7 @@ class DiscreteSlider extends StreamlitComponentBase<State> {
   public render = (): ReactNode => {
     return (
       <div style={{ height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-        <Box style={{ width: '35%', height: '60px', backgroundColor: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)' }}>
+        <Box style={{ width: '37%', height: '60px', backgroundColor: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)' }}>
           <Tabs
             value={this.state.activeStep.toString()}
             onChange={(_, newValue) => this.handleChange(newValue)}
@@ -46,10 +46,10 @@ class DiscreteSlider extends StreamlitComponentBase<State> {
                     style={{
                       color: '#333',
                       fontWeight: 'bold',
-                      fontSize: '16px',
+                      fontSize: '14px',
                       height: '60px',
-                      textTransform: 'uppercase',
-                      padding: '0 20px'
+                      padding: '0 20px',
+                      textTransform: 'none'
                     }}
                   />
                 );
