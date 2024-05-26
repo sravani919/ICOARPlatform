@@ -8,7 +8,7 @@ import {
 } from "streamlit-component-lib";
 import React, { ReactNode } from "react";
 
-import icoarLogo from './icoar_logo.jpg';  // Ensure the logo image is in the same directory
+import icoarLogo from './icoar_logo.png';  // Ensure the logo image is in the same directory
 
 interface State {
   activeStep: number;
@@ -66,7 +66,7 @@ class DiscreteSlider extends StreamlitComponentBase<State> {
             </Tabs>
           </div>
           <div style={{ width: '10%', textAlign: 'center', color: '#bbbbbb', cursor: 'pointer' }}
-            onClick={() => { document.cookie = "some_cookie_name=;"; this.handleChange(8); }}>
+            onClick={() => { document.cookie = "some_cookie_name=;"; this.handleChange(7); }}>
             Account
           </div>
         </Box>
