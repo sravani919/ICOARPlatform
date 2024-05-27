@@ -98,6 +98,7 @@ class SampleSet:
 
             if st.button("Save Labels"):
                 self.save(folder_path)
+                st.success("File saved successfully", icon="✅")
 
     def __len__(self):
         return len(self.image_paths)
