@@ -1,5 +1,8 @@
 import base64
 import os
+import pickle
+import tempfile
+import zipfile
 
 import pandas as pd
 import requests
@@ -10,22 +13,11 @@ from gpt.utils import key_directions
 
 
 def encode_image(image_path):
-    """
-    Encodes an image to base64
-    :param image_path: Path to the image
-    :return: The base64 encoded image
-    """
     with open(image_path, "rb") as image_file:
         return base64.b64encode(image_file.read()).decode("utf-8")
 
 
-# formats files with their labels for easy use with GPT API
 def prepare_sample_images(sample_set):
-    """
-    Formats the sample images and their labels for use with the GPT API
-    :param sample_set: A DataFrame containing the images paths and their labels with columns "Image Path" and "Label"
-    :return: A list of messages in the form of dictionaries that can be used with the GPT API
-    """
     image_messages = []
     for i in range(len(sample_set.image_paths)):
         image_path = sample_set.image_paths[i]
@@ -48,23 +40,7 @@ def prepare_sample_images(sample_set):
     return image_messages
 
 
-def labels_to_prompt(labels: list[str], context: str = "") -> str:
-    """
-    Converts the labels to a prompt for the GPT API
-
-    For examaple if the lables are ["not cyberbullying", "cyberbullying"], the prompt will be:
-    "Label the following image with either
-
-    1. cyberbullying
-    2. not cyberbullying.
-
-    Give only the number."
-
-    :param labels: List of labels
-    :param context: Context to add to the prompt from the user
-    :return: A prompt for the GPT API
-    """
-
+def labels_to_prompt(labels, context=""):
     prompt = "Label the following image with one of the following:\n\n"
     for i, label in enumerate(labels):
         prompt += f"{i + 1}. {label}\n"
@@ -75,21 +51,7 @@ def labels_to_prompt(labels: list[str], context: str = "") -> str:
     return prompt
 
 
-def choice_label(api_key, inference_image_paths, labels, sample_set, context) -> list[str]:
-    """
-    Using the labels list, a sample set of images, and the OpenAI API key, this function will return the label that
-    the GPT-3 model predicts for each image in the inference_image_paths list.
-
-    :param api_key: OpenAI API key
-    :param inference_image_paths: List of paths to images where labels need to be added
-    :param labels: List of potential labels for the images where an image can only be assigned one label
-    :param sample_set: A dataframe containing the image names and their labels with columns "Image Name" and "Label"
-    :param context: Context to add to the prompt from the user
-    :return: Which label got assigned to each image of corresponding index in image_paths
-    """
-
-    # Generate a prompt for labeling images
-
+def choice_label(api_key, inference_image_paths, labels, sample_set, context):
     if sample_set is not None:
         prepared_sample_images = prepare_sample_images(sample_set)
     else:
@@ -101,8 +63,6 @@ def choice_label(api_key, inference_image_paths, labels, sample_set, context) ->
 
     for image in inference_image_paths:
         base64_image = encode_image(image)
-        # Call GPT Vision API for image labeling
-        # Call GPT Vision API for image labeling
         headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
         payload = {
             "model": "gpt-4-vision-preview",
@@ -124,7 +84,6 @@ def choice_label(api_key, inference_image_paths, labels, sample_set, context) ->
         }
         response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
         data = response.json()
-        print("data- ", data)
         content_value = data["choices"][0]["message"]["content"]
         results.append(content_value)
         progress = (inference_image_paths.index(image) + 1) / len(inference_image_paths)
@@ -132,9 +91,14 @@ def choice_label(api_key, inference_image_paths, labels, sample_set, context) ->
     return results
 
 
-def prompt_history():
-    import pickle
+def handle_zip_upload(uploaded_zip):
+    temp_dir = tempfile.mkdtemp()
+    with zipfile.ZipFile(uploaded_zip, "r") as zip_ref:
+        zip_ref.extractall(temp_dir)
+    return temp_dir
 
+
+def prompt_history():
     prompt_mp = {}
     if os.path.exists("././data/prompts.pickle"):
         with open("././data/prompts.pickle", "rb") as f:
@@ -146,8 +110,6 @@ def prompt_history():
 
 
 def image_labeling(api_key):
-    import pickle
-
     if "predict2" not in st.session_state:
         st.session_state.predict2 = False
 
@@ -180,7 +142,6 @@ def image_labeling(api_key):
     )
 
     row_input = st.columns(4)
-    # username input at column 1
     with row_input[0]:
         number_of_labels = st.number_input("Number of labels", min_value=1, max_value=10, value=2)
 
@@ -200,20 +161,24 @@ def image_labeling(api_key):
                 labels[i] = st.text_input("", value=labels[i], placeholder="Label {}".format(i + 1))
 
     if st.checkbox("Provide context for the labels"):
-        context = st.text_area("Context", "Cyberbullying images are usually offensive or threatening towards the user.")
+        context = st.text_area(
+            "Context",
+            """Cyberbullying images typically have the following features:
+        - Subjects oriented towards the viewer, conveying a threatening or confrontational stance.
+        - Facial expressions showing mocking joy, ridicule, or taunting.
+        - Specific hand gestures like the middle finger, "loser" sign, and thumbs down.
+        - Presence of threatening objects such as guns and knives used to intimidate the viewer.""",
+        )
+
     else:
         context = ""
-    image_directories = ["gpt/examples/demo", "/home/psilimk/ICOAR/data/images/llm"]
+    # image_directories = ["gpt/examples/demo", "/home/psilimk/ICOAR/data/images/llm"]
 
-    # Iterate through the data/username directory to find all the image directories
-    my_data_directory = os.path.join("data/" + st.session_state["username"])
-    for root, dirs, files in os.walk(my_data_directory):
-        for name in dirs:
-            image_directories.append(os.path.join(root, name))
+    # my_data_directory = os.path.join("data/" + st.session_state["username"])
+    # for root, dirs, files in os.walk(my_data_directory):
+    #     for name in dirs:
+    #         image_directories.append(os.path.join(root, name))
 
-    """
-    Get a sample set
-    """
     st.markdown(
         """***3. Use a labeled sample set*** (optional) Use a sample set of images to give to chatgpt for use
     in labeling. This is looking for a folder of images with a labels.csv file in it, formatted with the first column
@@ -222,17 +187,17 @@ def image_labeling(api_key):
     )
     if st.checkbox("Use a sample set to improve accuracy"):
         sample_set = SampleSet()
-        # Dropdown to select any folder that has images in it
-        st.subheader("Building a Sample Set")
-        selected_folder = st.selectbox("Choose a folder with images", image_directories, key="sample_set")
+        uploaded_zip = st.file_uploader("Upload a ZIP file with images", type="zip", key="sample_set_zip")
 
-        # If the selected folder does not have a labels.csv file, then it needs to be created
-        if not os.path.isfile(os.path.join(selected_folder, "labels.csv")):
-            sample_set.build(selected_folder, labels)
+        if uploaded_zip is not None:
+            temp_dir = handle_zip_upload(uploaded_zip)
+
+            if not os.path.isfile(os.path.join(temp_dir, "labels.csv")):
+                sample_set.build(temp_dir, labels)
+            else:
+                sample_set.load(temp_dir)
         else:
-            sample_set.load(selected_folder)
-    else:  # If the user does not want to use a sample set
-        sample_set = None
+            sample_set = None
 
     label_prompt = labels_to_prompt(labels, context)
     sub_cols = st.columns(2)
@@ -258,21 +223,19 @@ def image_labeling(api_key):
         if load_prompt_history:
             prompt_history()
 
-    """
-    Get the set of images to label / perform inference on
-    """
-
     st.subheader("Select the images to label")
-    selected_folder = st.selectbox("Choose a folder with images", image_directories, key="inference_set")
+    uploaded_zip = st.file_uploader("Upload a ZIP file with images", type="zip", key="inference_set_zip")
+
+    if uploaded_zip is not None:
+        temp_dir = handle_zip_upload(uploaded_zip)
+        image_paths = get_image_paths(temp_dir)
+        image_names = [os.path.basename(path) for path in image_paths]
 
     st.text_input("Enter [GPT-4 API Key](https://platform.openai.com/api-keys)")
 
-    image_paths = get_image_paths(selected_folder)
-
-    # Performing inference
     if st.button("Predict Labels"):
         st.session_state.predict2 = True
-        st.session_state.filename_pred = selected_folder
+        st.session_state.filename_pred = temp_dir
         results = choice_label(api_key, image_paths, labels, sample_set, context)
         st.session_state.output = results
         st.success("Prediction completed", icon="✅")
@@ -282,11 +245,11 @@ def image_labeling(api_key):
         for i, result in enumerate(results):
             st.image(image_paths[i], width=200)
             st.write(f"Label: {result}")
-        results_df = {"Image Path": image_paths, "Label": results}
+        results_df = {"Image Name": image_names, "Label": results}
         results_df = pd.DataFrame(results_df)
         st.session_state.output = results_df
 
-    # Save the results to a file
+        # Save the results to a file
     if st.session_state.predict2:
         filename = st.text_input("Enter file name to save predicted data")
         save = st.button("Save File")
