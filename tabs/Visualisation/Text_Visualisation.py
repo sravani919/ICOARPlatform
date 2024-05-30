@@ -2,12 +2,10 @@ import glob
 
 import gensim
 import matplotlib.pyplot as plt
-import networkx as nx
 import pandas as pd
 import plotly.graph_objects as go
 import pyLDAvis
 import pyLDAvis.gensim_models as gensimvis
-import seaborn as sns
 import streamlit as st
 from nltk.tokenize import word_tokenize
 
@@ -25,9 +23,10 @@ def Text_Visualisation_tab():
 
     if st.session_state.filename_pred != "":
         df = pd.read_csv(st.session_state.filename_pred)
-        options = ["📊Bar Plot", "🥧Pie Chart", "🎯Topic Modeling", "📈Temporal Analysis", "🕸User Network"]
+        options = ["📊Bar Plot", "🥧Pie Chart", "🎯Topic Modeling", "📈Temporal Analysis"]
         selected_option = st.selectbox("Select an type of visualisation", options)
         data = df
+        data = data[data["text"].notna()]  # remove all data with nan text
         # fig, ax = plt.subplots()
 
         if selected_option == "📊Bar Plot":
@@ -138,6 +137,18 @@ def Text_Visualisation_tab():
             st.components.v1.html(html_string, width=1480, height=960, scrolling=True)
 
         elif selected_option == "📈Temporal Analysis":
+            interval_options = ["1 day", "1 hour", "30 minutes", "1 minute"]
+            time_interval = st.selectbox("Select the time interval of the analysis:", interval_options)
+            if time_interval == "1 day":
+                sample_key = "D"
+            elif time_interval == "1 hour":
+                sample_key = "60min"
+            elif time_interval == "30 minutes":
+                sample_key = "30min"
+            elif time_interval == "1 minute":
+                sample_key = "1min"
+            else:
+                sample_key = "D"
             fig, ax = plt.subplots(figsize=(10, 6))
             # look for columns date or create_time, if not present, show error
             if "date" in data.columns:
@@ -157,7 +168,8 @@ def Text_Visualisation_tab():
                 st.error("The user_name, username or author_username column is not present in the dataset.")
                 return
 
-            data[date_key] = pd.to_datetime(data[date_key], errors="coerce")  # remove unit="s" for debugging
+            # data[date_key] = pd.to_datetime(data[date_key], errors="coerce")  # remove unit="s" for debugging
+            data.loc[:, date_key] = pd.to_datetime(data[date_key], errors="coerce")
             data = data[data[date_key].notna()]
             keywords = (
                 st.text_input("Enter the keywords of interest seperated by comma (i.e., covid, lockdown, ... ):")
@@ -167,7 +179,9 @@ def Text_Visualisation_tab():
 
             masks = [data["text"].str.contains(keyword.strip(), case=False, na=False) for keyword in keywords]
 
-            daily_counts = [data.loc[mask, date_key].value_counts().sort_index().resample("D").sum() for mask in masks]
+            daily_counts = [
+                data.loc[mask, date_key].value_counts().sort_index().resample(sample_key).sum() for mask in masks
+            ]
 
             cols1 = st.columns(2)
             with cols1[0]:
@@ -209,7 +223,7 @@ def Text_Visualisation_tab():
             with cols2[0]:
                 # overall daily tweet count for all keywords
                 mask = data["text"].str.contains("|".join(keywords), case=False)
-                daily_counts_sum = data.loc[mask, date_key].value_counts().sort_index().resample("D").sum()
+                daily_counts_sum = data.loc[mask, date_key].value_counts().sort_index().resample(sample_key).sum()
                 trace1 = go.Scatter(
                     x=daily_counts_sum.index, y=daily_counts_sum.values, mode="lines", name="Daily Tweet Count"
                 )
@@ -231,62 +245,62 @@ def Text_Visualisation_tab():
 
                 st.plotly_chart(fig2)
 
-        elif selected_option == "🕸User Network":
-            fig, ax = plt.subplots(figsize=(10, 6))
-            keywords = st.text_input("Enter the keywords (comma-separated): ")
-            keywords = [keyword.strip() for keyword in keywords.split(",")]
+        # elif selected_option == "🕸User Network":
+        #     fig, ax = plt.subplots(figsize=(10, 6))
+        #     keywords = st.text_input("Enter the keywords (comma-separated): ")
+        #     keywords = [keyword.strip() for keyword in keywords.split(",")]
 
-            G = nx.Graph()
+        #     G = nx.Graph()
 
-            # Define color palette
-            colors = sns.color_palette("Set2", len(keywords))
+        #     # Define color palette
+        #     colors = sns.color_palette("Set2", len(keywords))
 
-            filtered_data = data[data["text"].str.contains("|".join(keywords), case=False)]
+        #     filtered_data = data[data["text"].str.contains("|".join(keywords), case=False)]
 
-            if "user_name" in data.columns:
-                user_key = "user_name"
-            elif "username" in data.columns:
-                user_key = "username"
-            elif "author_username" in data.columns:
-                user_key = "author_username"
-            else:
-                st.error("The user_name, username or author_username column is not present in the dataset.")
-                return
-            # Iterate over each filtered row
-            for index, row in filtered_data.iterrows():
-                text = row["text"]
-                user = row[user_key]
+        #     if "user_name" in data.columns:
+        #         user_key = "user_name"
+        #     elif "username" in data.columns:
+        #         user_key = "username"
+        #     elif "author_username" in data.columns:
+        #         user_key = "author_username"
+        #     else:
+        #         st.error("The user_name, username or author_username column is not present in the dataset.")
+        #         return
+        #     # Iterate over each filtered row
+        #     for index, row in filtered_data.iterrows():
+        #         text = row["text"]
+        #         user = row[user_key]
 
-                # Check which keyword(s) are present in the text
-                present_keywords = [keyword.capitalize() for keyword in keywords if keyword.lower() in text.lower()]
+        #         # Check which keyword(s) are present in the text
+        #         present_keywords = [keyword.capitalize() for keyword in keywords if keyword.lower() in text.lower()]
 
-                # Add edges for the present keywords
-                for keyword in present_keywords:
-                    G.add_edge(user, keyword, color=colors[keywords.index(keyword.lower())])
+        #         # Add edges for the present keywords
+        #         for keyword in present_keywords:
+        #             G.add_edge(user, keyword, color=colors[keywords.index(keyword.lower())])
 
-            # Position nodes using Fruchterman-Reingold layout
-            pos = nx.fruchterman_reingold_layout(G)
+        #     # Position nodes using Fruchterman-Reingold layout
+        #     pos = nx.fruchterman_reingold_layout(G)
 
-            # Draw edges with colors
-            edges = [(u, v) for (u, v, d) in G.edges(data=True)]
+        #     # Draw edges with colors
+        #     edges = [(u, v) for (u, v, d) in G.edges(data=True)]
 
-            # Draw the edges
-            for edge in edges:
-                color = G[edge[0]][edge[1]]["color"]
-                nx.draw_networkx_edges(G, pos, edgelist=[edge], edge_color=color, alpha=0.5)
+        #     # Draw the edges
+        #     for edge in edges:
+        #         color = G[edge[0]][edge[1]]["color"]
+        #         nx.draw_networkx_edges(G, pos, edgelist=[edge], edge_color=color, alpha=0.5)
 
-            # Draw the nodes (hidden in this case)
-            nx.draw_networkx_nodes(G, pos, node_color="white", node_size=0)
-            plt.axis("off")
+        #     # Draw the nodes (hidden in this case)
+        #     nx.draw_networkx_nodes(G, pos, node_color="white", node_size=0)
+        #     plt.axis("off")
 
-            # Create legends
-            legends = [
-                plt.Line2D([], [], color=colors[i], alpha=0.5, label=keywords[i].capitalize())
-                for i in range(len(keywords))
-            ]
+        #     # Create legends
+        #     legends = [
+        #         plt.Line2D([], [], color=colors[i], alpha=0.5, label=keywords[i].capitalize())
+        #         for i in range(len(keywords))
+        #     ]
 
-            # Add legends to the plot
-            plt.legend(handles=legends, loc="upper right")
+        #     # Add legends to the plot
+        #     plt.legend(handles=legends, loc="upper right")
 
-            # Show the graph
-            st.pyplot(fig)
+        #     # Show the graph
+        #     st.pyplot(fig)
