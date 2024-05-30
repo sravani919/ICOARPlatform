@@ -132,7 +132,7 @@ def meme_classification():
     # Unzip the file and verify if it contains images
     if uploaded_meme and not st.session_state.image_uploaded:
         uploaded_meme.name = "memes"
-        with open(os.path.join("data/", "memes.zip"), "wb") as f:
+        with open(os.path.join("././data/", "memes.zip"), "wb") as f:
             f.write(uploaded_meme.getbuffer())
         extract_file()
         file_list, verified = verify_files()
