@@ -1,5 +1,3 @@
-import glob
-
 import gensim
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -9,21 +7,26 @@ import pyLDAvis.gensim_models as gensimvis
 import streamlit as st
 from nltk.tokenize import word_tokenize
 
+from emotional_analysis import emotional_analysis
+from tabs.Data_Collection.data_upload import data_upload_element
 from visualization import add_graph_info
 
 
 def Text_Visualisation_tab():
     if "filename_pred" not in st.session_state:
         st.session_state.filename_pred = ""
+
     username = st.session_state["username"]
-    option = st.selectbox("Select a file", [file for file in glob.glob(f"""./predicted/{username}/*.csv""")])
+
+    # Use data_upload_element to allow file upload
+    uploaded_file = data_upload_element(username, get_filepath_instead=True)
 
     if st.button("Load"):
-        st.session_state.filename_pred = option
+        st.session_state.filename_pred = uploaded_file
 
-    if st.session_state.filename_pred != "":
+    if st.session_state.filename_pred:
         df = pd.read_csv(st.session_state.filename_pred)
-        options = ["📊Bar Plot", "🥧Pie Chart", "🎯Topic Modeling", "📈Temporal Analysis"]
+        options = ["📊Bar Plot", "🥧Pie Chart", "🎯Topic Modeling", "📈Temporal Analysis", "Emotion Analysis"]
         selected_option = st.selectbox("Select an type of visualisation", options)
         data = df
         data = data[data["text"].notna()]  # remove all data with nan text
@@ -244,6 +247,10 @@ def Text_Visualisation_tab():
                 fig2 = go.Figure(data=[trace2], layout=layout2)
 
                 st.plotly_chart(fig2)
+
+        elif selected_option == "Emotion Analysis":
+            st.session_state.output = df
+            emotional_analysis(st.session_state.output)
 
         # elif selected_option == "🕸User Network":
         #     fig, ax = plt.subplots(figsize=(10, 6))
