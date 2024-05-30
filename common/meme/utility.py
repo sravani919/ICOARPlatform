@@ -6,7 +6,7 @@ import easyocr as ocr
 import numpy as np
 from PIL import Image
 
-data_folder = "data/"
+data_folder = "././data/"
 memes_file_name = "memes.zip"
 memes_folder_name = "memes"
 valid_extensions = {".jpeg", ".jpg", ".png"}
