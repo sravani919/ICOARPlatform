@@ -19,7 +19,6 @@ from transformers import (
 from transformers import pipeline as tpipeline
 
 import tabs.Data_Collection.data_upload as data_upload
-from emotional_analysis import emotional_analysis
 
 
 def initialize_state():
@@ -365,29 +364,6 @@ def validation():
 
     if st.session_state.predict:
         if MODEL == "arpanghoshal/EmoRoBERTa":
-            tabs = ["Save Data", "Emotional Analysis"]
-            with st.container():
-                selected_tab = st.radio("Select a tab", tabs)
-            if selected_tab == "Save Data":
-                filename = st.text_input("Enter file name  to save predicted data")
-                save = st.button("Save File")
-                if save:
-                    file_path = save_file(st.session_state.output, filename)
-                    st.session_state.predict = False
-                    st.success("Saved to '" + file_path + "'")
-
-                csv_data = get_csv_string(st.session_state.output)
-                st.download_button(
-                    label="Download",
-                    data=csv_data,
-                    file_name=f"{filename}.csv",
-                    mime="text/csv",
-                    help="Click to download the CSV file with predicted data.",
-                )
-
-            elif selected_tab == "Emotional Analysis":
-                emotional_analysis(st.session_state.output)
-        else:
             filename = st.text_input("Enter file name  to save predicted data")
             save = st.button("Save File")
             if save:
@@ -395,6 +371,18 @@ def validation():
                 st.session_state.predict = False
                 st.success("Saved to '" + file_path + "'")
 
+            csv_data = get_csv_string(st.session_state.output)
+            st.download_button(
+                label="Download",
+                data=csv_data,
+                file_name=f"{filename}.csv",
+                mime="text/csv",
+                help="Click to download the CSV file with predicted data.",
+            )
+
+        # elif selected_tab == "Emotional Analysis":
+        #     emotional_analysis(st.session_state.output)
+        else:
             csv_data = get_csv_string(st.session_state.output)
             st.download_button(
                 label="Download",
