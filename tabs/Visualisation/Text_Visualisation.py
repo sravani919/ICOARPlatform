@@ -25,6 +25,7 @@ def Text_Visualisation_tab():
 
     if choice == "Upload new data":
         # Use data_upload to allow file upload
+        st.session_state.filename_pred = ""
         uploaded_file = data_upload_element(username, get_filepath_instead=True)
 
         if uploaded_file:
@@ -35,7 +36,7 @@ def Text_Visualisation_tab():
         folder_files = [file for file in glob.glob(f"./predicted/{username}/*.csv")]
         selected_file = st.selectbox("Select a file from folder", [""] + folder_files)
 
-        if st.button("Load selected file"):
+        if st.button("Load"):
             if selected_file:
                 st.session_state.filename_pred = selected_file
 
