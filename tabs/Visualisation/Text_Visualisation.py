@@ -1,3 +1,5 @@
+import glob
+
 import gensim
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -19,10 +21,23 @@ def Text_Visualisation_tab():
     username = st.session_state["username"]
 
     # Use data_upload_element to allow file upload
-    uploaded_file = data_upload_element(username, get_filepath_instead=True)
+    choice = st.radio("Choose data source:", ("Upload new data", "Select from folder"))
 
-    if st.button("Load"):
-        st.session_state.filename_pred = uploaded_file
+    if choice == "Upload new data":
+        # Use data_upload to allow file upload
+        uploaded_file = data_upload_element(username, get_filepath_instead=True)
+
+        if uploaded_file:
+            st.session_state.filename_pred = uploaded_file
+
+    elif choice == "Select from folder":
+        # Allow user to select a file from a folder
+        folder_files = [file for file in glob.glob(f"./predicted/{username}/*.csv")]
+        selected_file = st.selectbox("Select a file from folder", [""] + folder_files)
+
+        if st.button("Load selected file"):
+            if selected_file:
+                st.session_state.filename_pred = selected_file
 
     if st.session_state.filename_pred:
         df = pd.read_csv(st.session_state.filename_pred)
