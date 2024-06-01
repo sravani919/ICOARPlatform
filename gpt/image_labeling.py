@@ -263,3 +263,11 @@ def image_labeling(api_key):
 
             st.session_state.predict2 = False
             st.success("Saved to '" + file_path + "'")
+
+            with open(file_path, "rb") as file:
+                st.download_button(
+                    label="Download Predicted Data",
+                    data=file,
+                    file_name=f"{filename}.csv",
+                    mime="text/csv",
+                )

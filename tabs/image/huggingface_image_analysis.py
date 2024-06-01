@@ -146,6 +146,16 @@ def huggingface_image_analysis():
             file_name = st.text_input("Enter the name of the file to save the predictions to:")
             save_button = st.button("Save Predictions")
             if save_button:
-                df.to_csv(f"data/{st.session_state.username}/{file_name}.csv", index=False)
-                st.success(f"Predictions saved to data/{st.session_state.username}/{file_name}.csv")
+                file_path = f"data/{st.session_state.username}/{file_name}.csv"
+                df.to_csv(file_path, index=False)
+                st.success(f"Predictions saved to {file_path}")
                 st.session_state.img_predict = False
+
+                # Add download button
+                with open(file_path, "rb") as file:
+                    st.download_button(
+                        label="Download Predictions",
+                        data=file,
+                        file_name=f"{file_name}.csv",
+                        mime="text/csv",
+                    )

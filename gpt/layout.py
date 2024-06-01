@@ -200,6 +200,14 @@ class BasePage(ABC):
                 st.session_state.predict = False
                 st.success("Saved to '" + file_path + "'")
 
+                with open(file_path, "rb") as file:
+                    st.download_button(
+                        label="Download Predicted Data",
+                        data=file,
+                        file_name=f"{filename}.csv",
+                        mime="text/csv",
+                    )
+
     def render(self, labeling_mode) -> None:
         # labeling_mode = st.selectbox("Select Labeling Mode", ["Text Labeling", "Image Labeling"])
 
