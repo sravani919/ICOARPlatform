@@ -20,6 +20,7 @@ if "user_registration_complete" not in st.session_state:
 
 st.set_page_config(
     page_title="ICOAR",
+    page_icon="./header_tab/src/icoar_logo.png",
     layout="wide",
 )
 hide_streamlit_style = """
