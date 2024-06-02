@@ -42,7 +42,7 @@ def slice_image(im, desired_size):
     old_size = im.size
     ratio = float(desired_size) / min(old_size)
     new_size = tuple([int(x * ratio) for x in old_size])
-    im = im.resize(new_size, Image.ANTIALIAS)
+    im = im.resize(new_size, Image.LANCZOS)
     ar = np.array(im)
     images = []
     if ar.shape[0] < ar.shape[1]:
@@ -70,7 +70,7 @@ def resize_pad_image(im, desired_size):
     old_size = im.size
     ratio = float(desired_size) / max(old_size)
     new_size = tuple([int(x * ratio) for x in old_size])
-    im = im.resize(new_size, Image.ANTIALIAS)
+    im = im.resize(new_size, Image.LANCZOS)
 
     # create a new image and paste the resized on it
     new_im = Image.new("RGB", (desired_size, desired_size))
