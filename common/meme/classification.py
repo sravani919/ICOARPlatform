@@ -172,8 +172,9 @@ model = MMBTForClassification(config, transformer, img_encoder)
 model.to(device)
 
 model = MMBTForClassification(config, transformer, img_encoder)
-checkpoint = torch.load("model/model-embs4-seq80-auc0.736-loss1.111-acc0.551.pt", map_location=torch.device("cpu"))
-model.load_state_dict(checkpoint["model_state_dict"])
+state_dict = torch.load("model/model-embs4-seq80-auc0.760-loss1.175-acc0.671.pt", map_location=device)
+print("Model Loaded")
+model.load_state_dict(state_dict["model_state_dict"])
 model.to(device)
 
 num_labels = 1
