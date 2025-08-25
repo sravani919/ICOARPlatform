@@ -28,8 +28,9 @@ Integrative Cyberinfrastructure for Online Abuse Research (ICOAR)
 4. Install custom packages.
 
     ```pip install streamlit_authenticator```
+   ```pip install "streamlit-authenticator==0.2.3"```
 
-5. Create configuration files for the project in the `.streamlit` directory.
+6. Create configuration files for the project in the `.streamlit` directory.
 
     - `.streamlit/secrets.toml`
 
@@ -57,20 +58,20 @@ Integrative Cyberinfrastructure for Online Abuse Research (ICOAR)
             - allen.ty.chang@gmail.com
     ```
 
-6. Run the app
+7. Run the app
 
     ```shell
     streamlit run Home.py
     ```
 
-7. Create folder /model in ICOAR project directory. </br>
+8. Create folder /model in ICOAR project directory. </br>
    Download the image classification model from - https://drive.google.com/drive/folders/1q0bxYKrcQgEgg0Ps2N_WxgTApQK997g9 </br>
    Copy the model in the above directory.
 
 
-8. Create folder /data/images/image in ICOAR project directory.
+9. Create folder /data/images/image in ICOAR project directory.
 
-9. Download Node.js - https://nodejs.org/en/download/
+10. Download Node.js - https://nodejs.org/en/download/
     Generate a build for the react component. </br>
     Open a new terminal and run the below commands
    ```shell
