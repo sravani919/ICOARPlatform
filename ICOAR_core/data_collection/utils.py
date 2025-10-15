@@ -7,6 +7,21 @@ import pandas as pd
 import requests
 from PIL import Image
 
+def _get_username_safe():
+    """
+    Return the Streamlit username if available, else env var ICOAR_USERNAME,
+    else 'anonymous'. Never raises when Streamlit isn't running.
+    """
+    try:
+        import streamlit as st  # local import to avoid hard dependency at module import
+        u = st.session_state.get("username", None)  # may raise if no runtime; wrapped
+        if u:
+            return str(u)
+    except Exception:
+        pass
+    return os.environ.get("ICOAR_USERNAME") or "anonymous"
+
+
 IMAGE_DOWNLOAD_MAX_ATTEMPTS = 3
 
 mike = {
@@ -46,21 +61,79 @@ def download_image(url):
     return
 
 
+#def save_data(posts, filename, folder_path="data"):
+ #   import streamlit as st
+
+#    df = pd.DataFrame(posts)
+
+#    if not os.path.exists(folder_path):
+ #       os.makedirs(folder_path)
+  #  username = st.session_state["username"]
+ #   file_path = f"{folder_path}/{username}/{filename}.csv"
+ #   df.to_csv(file_path, index=False)
+  #  return file_path
+
 def save_data(posts, filename, folder_path="data"):
-    import streamlit as st
+    import streamlit as st  # keep as-is; well still be safe if not running Streamlit
 
     df = pd.DataFrame(posts)
 
+    # Always ensure base folder exists
     if not os.path.exists(folder_path):
-        os.makedirs(folder_path)
-    username = st.session_state["username"]
-    file_path = f"{folder_path}/{username}/{filename}.csv"
+        os.makedirs(folder_path, exist_ok=True)
+
+    # SAFE username (works with or without Streamlit runtime)
+    try:
+        username = st.session_state["username"]  # may raise in CLI
+        if not username:
+            raise KeyError
+        username = str(username)
+    except Exception:
+        username = _get_username_safe()
+
+    # Ensure per-user folder exists
+    user_dir = os.path.join(folder_path, username)
+    os.makedirs(user_dir, exist_ok=True)
+
+    file_path = os.path.join(user_dir, f"{filename}.csv")
     df.to_csv(file_path, index=False)
     return file_path
 
 
+#def download_images(posts, filename, i):
+ #   import streamlit as st
+
+#    """
+   # Downloads the images from the given posts to the given file path
+  #  :param posts: The list of post dictionaries
+   # :param filename: The filename being used to save the posts
+   # :param i: The index of the post to download the images from
+   # """
+   # post = posts[i]
+   # images_path = ""
+
+    #if type(post["image_urls"]) is not list:
+      #  post["image_urls"] = [post["image_urls"]]
+
+   # for i, url in enumerate(post["image_urls"]):
+      #  try:
+       #     response = requests.get(url)
+         #   if response.status_code == 200:
+          #      file_name = f"{post['id']}_{i}.jpg"
+           #     username = st.session_state["username"]
+             #   images_path = f"data/{username}/{filename}_images"
+             #   if not os.path.exists(images_path):
+               #     os.makedirs(images_path)
+              #  file_path = os.path.join(images_path, file_name)
+              #  with open(file_path, "wb") as file:
+               #     file.write(response.content)
+        #except requests.exceptions.RequestException:
+        #    continue
+
+    #return images_path
+
 def download_images(posts, filename, i):
-    import streamlit as st
+    import streamlit as st  # keep as-is
 
     """
     Downloads the images from the given posts to the given file path
@@ -68,28 +141,44 @@ def download_images(posts, filename, i):
     :param filename: The filename being used to save the posts
     :param i: The index of the post to download the images from
     """
+    if not posts or i is None or i < 0 or i >= len(posts):
+        return ""
+
     post = posts[i]
     images_path = ""
+
+    if "image_urls" not in post or not post["image_urls"]:
+        return ""
 
     if type(post["image_urls"]) is not list:
         post["image_urls"] = [post["image_urls"]]
 
-    for i, url in enumerate(post["image_urls"]):
+    # SAFE username
+    try:
+        username = st.session_state["username"]  # may raise in CLI
+        if not username:
+            raise KeyError
+        username = str(username)
+    except Exception:
+        username = _get_username_safe()
+
+    images_path = f"data/{username}/{filename}_images"
+    os.makedirs(images_path, exist_ok=True)
+
+    saved_any = False
+    for idx, url in enumerate(post["image_urls"]):
         try:
-            response = requests.get(url)
+            response = requests.get(url, timeout=5)
             if response.status_code == 200:
-                file_name = f"{post['id']}_{i}.jpg"
-                username = st.session_state["username"]
-                images_path = f"data/{username}/{filename}_images"
-                if not os.path.exists(images_path):
-                    os.makedirs(images_path)
+                file_name = f"{post.get('id', 'post')}_{idx}.jpg"
                 file_path = os.path.join(images_path, file_name)
                 with open(file_path, "wb") as file:
                     file.write(response.content)
+                saved_any = True
         except requests.exceptions.RequestException:
             continue
 
-    return images_path
+    return images_path if saved_any else ""
 
 
 class BaseDataCollector:

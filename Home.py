@@ -1,12 +1,17 @@
 import os
-
 import streamlit as st
 import streamlit.components.v1 as components
 import streamlit_authenticator as stauth
 import yaml
+import requests  # Import the 'requests' module
 from yaml.loader import SafeLoader
 
 from tabs.login import login_error
+from icoar_agent import run_agent_response
+
+
+
+
 
 if "authenticator" not in st.session_state:
     st.session_state.authenticator = None
@@ -16,6 +21,9 @@ if "user_registration" not in st.session_state:
     st.session_state.user_registration = False
 if "user_registration_complete" not in st.session_state:
     st.session_state.user_registration_complete = False
+if "authentication_status" not in st.session_state:
+    st.session_state.authentication_status = False
+
 
 
 st.set_page_config(
@@ -44,7 +52,7 @@ else:
 
 def discrete_slider():
     return _discrete_slider(default=0, logged_in=False)
-
+ 
 
 def selection_bar_1():
     """Declare and call the custom Streamlit component for selection."""
@@ -112,7 +120,6 @@ selected_value = int(discrete_slider())
 
 # Clear the previous component if necessary
 
-
 if selected_value == 0:
     from tabs.login import login
 
@@ -128,9 +135,10 @@ if selected_value == 0:
 
     login(st.session_state.authenticator, config)
 
+
 elif selected_value == 1:
-    if not st.session_state["authentication_status"]:
-        login_error()
+    if not st.session_state["authentication_status"]: 
+       login_error()
     else:
         from tabs.Data_Collection.data_collection_tab import data_collection_tab
 
@@ -252,3 +260,78 @@ elif selected_value == 7:
             st.markdown("**Name**: " + st.session_state["name"])
             st.markdown("**Username**: " + st.session_state["username"])
             st.session_state.authenticator.logout("Logout", "main", key="unique_key")
+
+
+# --- Permanent Assistant in sidebar ---
+#if st.session_state.get("authentication_status"):
+#    with st.sidebar:
+#        st.markdown("### Assistant (Rasa)")
+ #       sb_msg = st.text_input("Ask Rasa", key="sb_rasa_input")
+ #       if sb_msg:
+   #         for m in send_to_rasa(sb_msg):
+ #               render_rasa_message(m)
+
+   #     with st.expander("Quick test: show downloads"):
+   #         topic = st.text_input("Topic (optional):", key="sb_topic")
+      #      if st.button("Show downloads", key="sb_show"):
+        #        msg = "show downloads" if not topic else f"show downloads for {topic}"
+           #     for m in send_to_rasa(msg):
+            #        render_rasa_message(m)
+#else:
+    #with st.sidebar:
+      #  st.info("Please log in to use the assistant.")
+
+
+# --- Permanent Assistant in sidebar (GPT) ---
+if st.session_state.get("authentication_status"):
+    with st.sidebar:
+        st.markdown("### AI Assistant (GPT-4o)")
+
+        # Ensure the agent sees the logged-in username (used for data/<user>/ paths)
+        uname = st.session_state.get("username") or st.session_state.get("name") or "anonymous"
+        os.environ.setdefault("ICOAR_USERNAME", str(uname))
+
+        user_prompt = st.text_area("Ask me anything related to ICOAR:", key="gpt_input", height=120, placeholder="e.g., Collect 15 Reddit posts on cyberbullying (no comments/images).")
+        submit = st.button("Submit", key="gpt_submit")
+
+        if submit:
+            if not (user_prompt or "").strip():
+                st.warning("Please enter a prompt.")
+            else:
+                with st.spinner("Thinking..."):
+                    try:
+                        result = run_agent_response(user_prompt)  # returns {"text": ..., "file": ...}
+                    except Exception as e:
+                        result = {"text": f"L Error calling agent: {e}", "file": None}
+
+                st.markdown("#### Response")
+                st.write(result.get("text") or "")
+
+                # If a collector ran, offer CSV download + preview
+                fpath = result.get("file")
+                if fpath and os.path.exists(fpath):
+                    with open(fpath, "rb") as f:
+                        st.download_button(
+                            "Download CSV",
+                            f,
+                            file_name=os.path.basename(fpath),
+                            mime="text/csv",
+                            key="dl_csv"
+                        )
+                    # Optional quick preview
+                    try:
+                        import pandas as pd
+                        df = pd.read_csv(fpath)
+                        st.dataframe(df.head(25))
+                    except Exception:
+                        pass
+else:
+    with st.sidebar:
+        st.info("Please log in to use the assistant.")
+
+
+
+
+
+
+

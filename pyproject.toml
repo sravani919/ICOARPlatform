@@ -4,6 +4,7 @@ version = "0.1.0"
 description = ""
 authors = ["Tsu-Yao Chang <tsuyaoc@clemson.edu>"]
 readme = "README.md"
+package-mode = false
 
 [build-system]
 requires = ["poetry-core"]
@@ -11,6 +12,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.12"
+dlib = "^20.0.0"
 streamlit = "^1.20.0"
 tweepy = { extras = ["async"], version = "^4.13.0" }
 fasttext-wheel = "^0.9.2"

@@ -1,0 +1,52 @@
+[
+  {
+    "tag_name": "entity",
+    "ids_to_tags": {
+      "1": "B-dataset_id",
+      "2": "I-dataset_id",
+      "3": "L-dataset_id",
+      "4": "U-dataset_id",
+      "5": "B-file_format",
+      "6": "I-file_format",
+      "7": "L-file_format",
+      "8": "U-file_format",
+      "9": "B-keywords",
+      "10": "I-keywords",
+      "11": "L-keywords",
+      "12": "U-keywords",
+      "13": "B-max_results",
+      "14": "I-max_results",
+      "15": "L-max_results",
+      "16": "U-max_results",
+      "17": "B-platform",
+      "18": "I-platform",
+      "19": "L-platform",
+      "20": "U-platform",
+      "0": "O"
+    },
+    "tags_to_ids": {
+      "B-dataset_id": 1,
+      "I-dataset_id": 2,
+      "L-dataset_id": 3,
+      "U-dataset_id": 4,
+      "B-file_format": 5,
+      "I-file_format": 6,
+      "L-file_format": 7,
+      "U-file_format": 8,
+      "B-keywords": 9,
+      "I-keywords": 10,
+      "L-keywords": 11,
+      "U-keywords": 12,
+      "B-max_results": 13,
+      "I-max_results": 14,
+      "L-max_results": 15,
+      "U-max_results": 16,
+      "B-platform": 17,
+      "I-platform": 18,
+      "L-platform": 19,
+      "U-platform": 20,
+      "O": 0
+    },
+    "num_tags": 21
+  }
+]

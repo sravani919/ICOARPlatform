@@ -28,6 +28,7 @@ def login_error():
     st.error("Please login on the home page to view this tab")
 
 
+
 def user_login(authenticator, config):
     if st.session_state.user_registration_complete:
         st.success("User registered successfully. Please login")
@@ -41,6 +42,7 @@ def user_login(authenticator, config):
         st.session_state.user_registration_complete = False
     elif st.session_state["authentication_status"] is None:
         st.warning("Please enter your username and password")
+
 
 
 def user_registration(authenticator, config):

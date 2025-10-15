@@ -1,0 +1,271 @@
+version: "3.1"
+
+intents:
+  - greet
+  - goodbye
+  - affirm
+  - deny
+  - mood_great
+  - mood_unhappy
+  - bot_challenge
+  - ask_icoar_overview
+  - ask_icoar_modules
+  - ask_data_collection
+  - ask_text_models
+  - ask_image_models
+  - ask_visualizations
+  - ask_custom_models
+  - ask_next_steps
+  - collect_reddit
+# (keep your existing intents)
+  - dataset_search
+  - dataset_download
+  - provide_filters
+  - provide_platform
+  - provide_credentials
+  - stop
+
+entities:
+  - platform        # "kaggle" | "huggingface"
+  - dataset_id      # e.g. imdb, uciml/pima-indians-diabetes-database
+  - keywords
+  - file_format     # csv, json, parquet, tsv, txt
+  - max_results
+  - download_path
+
+
+slots:
+  username:
+    type: text
+  count:
+    type: any
+  images:
+    type: any
+  get_comments:
+    type: any
+  comment_limit:
+    type: any
+
+
+  platform:
+    type: text
+    influence_conversation: true
+    mappings:
+      - type: from_entity
+        entity: platform
+      - type: from_text
+        conditions:
+          - active_loop: dataset_search_form
+          - active_loop: dataset_download_form
+
+  dataset_id:
+    type: text
+    influence_conversation: true
+    mappings:
+      - type: from_entity
+        entity: dataset_id
+      - type: from_text
+        conditions:
+          - active_loop: dataset_download_form
+
+  keywords:
+    type: text
+    influence_conversation: true
+    mappings:
+      - type: from_entity
+        entity: keywords
+      - type: from_text
+        conditions:
+          - active_loop: dataset_search_form
+
+  file_format:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: from_entity
+        entity: file_format
+      - type: from_text
+        conditions:
+          - active_loop: dataset_download_form
+
+  max_results:
+    type: any
+    influence_conversation: false
+    mappings:
+      - type: from_entity
+        entity: max_results
+      - type: from_text
+        conditions:
+          - active_loop: dataset_search_form
+
+  download_path:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: from_entity
+        entity: download_path
+      - type: from_text
+        conditions:
+          - active_loop: dataset_download_form
+
+  needs_auth:
+    type: bool
+    initial_value: false
+    influence_conversation: false
+    mappings:
+      - type: from_intent
+        value: true
+        intent: provide_credentials
+      - type: from_intent
+        value: false
+        intent: deny
+
+responses:
+  utter_greet:
+    - text: "Hey! How are you?"
+
+  utter_cheer_up:
+    - text: "Here is something to cheer you up:"
+      image: "https://i.imgur.com/nGF1K8f.jpg"
+
+  utter_did_that_help:
+    - text: "Did that help you?"
+
+  utter_happy:
+    - text: "Great, carry on!"
+
+  utter_goodbye:
+    - text: "Bye"
+
+  utter_iamabot:
+    - text: "I am a bot, powered by Rasa."
+
+  utter_icoar_overview:
+    - text: >
+        ICOAR (Integrative Cyberinfrastructure for Online Abuse Research) helps you
+        collect data from platforms like X/Twitter, Reddit, YouTube, etc., run state-of-the-art
+        text & multimedia models (toxic/hate/cyberbullying, hateful memes, deepfakes),
+        a
+
+responses:
+  utter_greet:
+    - text: "Hey! How are you?"
+
+  utter_cheer_up:
+    - text: "Here is something to cheer you up:"
+      image: "https://i.imgur.com/nGF1K8f.jpg"
+
+  utter_did_that_help:
+    - text: "Did that help you?"
+
+  utter_happy:
+    - text: "Great, carry on!"
+
+  utter_goodbye:
+    - text: "Bye"
+
+  utter_iamabot:
+    - text: "I am a bot, powered by Rasa."
+
+  utter_icoar_overview:
+    - text: >
+        ICOAR (Integrative Cyberinfrastructure for Online Abuse Research) helps you
+        collect data from platforms like X/Twitter, Reddit, YouTube, etc., run state-of-the-art
+        text & multimedia models (toxic/hate/cyberbullying, hateful memes, deepfakes),
+        and visualize insights (temporal trends, topics, user networks, frequency).
+
+  utter_icoar_modules:
+    - text: >
+        Modules include Data Collection, Preprocessing, Text Models, Multimedia Models,
+        Visualization (temporal, topics, networks, frequency), and Custom Model Integration
+        via Hugging Face. Ask me for next steps to get a guided flow.
+
+  utter_data_collection:
+    - text: >
+        Go to Data Collection. Set platform(s), keywords/hashtags, date range, and limit.
+        Then start the job. You can later clean it in Preprocessing.
+
+  utter_text_models:
+    - text: >
+        Built-ins: Sentiment, Toxic content, Hate speech, Cyberbullying (text), NER.
+        You can run them on the current dataset from the Text Models tab.
+
+  utter_image_models:
+    - text: >
+        Built-ins: Cyberbullying images, Hateful memes (MMBT), Deepfake detection.
+        Use the Multimedia tab to upload images or batches.
+
+  utter_visualizations:
+    - text: >
+        We support Temporal trends, Topic modeling, User network graphs, and Frequency analysis.
+        Open the Visualization tab after you run models to explore results.
+
+  utter_custom_models:
+    - text: >
+        From the Custom Models area, search Hugging Face by task (e.g., "hate speech"),
+        select a model, and plug it into the pipeline no coding needed.
+
+  # (keep the ones you already have)
+
+
+  utter_ask_platform:
+    - text: "Which platform should I use  Kaggle or Hugging Face?"
+
+  utter_ask_keywords:
+    - text: "What keywords should I search (e.g., 'hate speech twitter')?"
+
+  utter_ask_dataset_id:
+    - text: "Paste the dataset identifier (e.g., hf: imdb or kaggle: uciml/pima-indians-diabetes-database)."
+
+  utter_ask_file_format:
+    - text: "Preferred file format (csv, json, parquet)? If unsure, I'll keep the default."
+
+  utter_ask_download_path:
+    - text: "Where should I save it? (e.g., /data/icoar/datasets)"
+
+  utter_need_kaggle_creds:
+    - text: "I need Kaggle credentials (username/key) or a ~/.kaggle/kaggle.json. You can set env vars and say 'use env'."
+
+  utter_confirm_download:
+    - text: "I'm about to download '{dataset_id}' from '{platform}' to '{download_path}'. Proceed?"
+
+  utter_searching:
+    - text: "Searching {platform} for: {keywords}..."
+  utter_cancelled:
+    - text: "Okay, I've cancelled that."
+  utter_default:
+    - text: "Sorry, I didnt catch that. Try: 'what is icoar', or 'find datasets about hate speech on kaggle'."
+
+
+forms:
+  dataset_search_form:
+    required_slots:
+      - platform
+      - keywords
+      - max_results
+  dataset_download_form:
+    required_slots:
+      - platform
+      - dataset_id
+      - file_format
+      - download_path
+
+actions:
+  - action_icoar_next_steps
+  - action_icoar_shortcuts
+  - action_hello_world
+  # (keep your existing actions)
+  - validate_dataset_search_form
+  - validate_dataset_download_form
+  - action_search_datasets
+  - action_download_dataset
+  - action_clear_download_slots
+  - action_run_data_collection
+  - action_collect_reddit
+
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true
+
+
+
