@@ -221,6 +221,7 @@ def _build_query_from_text(user_text: str, platform: Optional[str]) -> Dict[str,
     base.update(time_hint)
     return base
 
+
 def _safe_args_from_user_text(user_input: str) -> Dict[str, Any]:
     plat = _detect_platform_natural(user_input) or "reddit"
     qry = _build_query_from_text(user_input, plat)
@@ -231,27 +232,13 @@ def _safe_args_from_user_text(user_input: str) -> Dict[str, Any]:
             qry["keywords"] = ", ".join(abuse_keys)
 
     qry.setdefault("allow_nsfw", SAFE_NSFW)
-
-    # special defaults for reddit
     if plat == "reddit":
         qry.setdefault("get_comments", False)
         qry.setdefault("comment_limit", 0)
         qry.setdefault("images", False)
         qry.setdefault("sort", "relevance")
 
-    # =G IMPORTANT: reddit and facebook both use Scraper, others use API
-    if plat in ("reddit", "facebook"):
-        method = "Scraper"
-    else:
-        method = "API"
-
-    return {
-        "platform": plat,
-        "method": method,
-        "query": qry,
-    }
-
-
+    return {"platform": plat, "method": "Scraper" if plat == "reddit" else "API", "query": qry}
 
 
 # =========================================================
@@ -387,7 +374,6 @@ def _collect_assistant_text(messages) -> str:
 # =========================================================
 # 5) COLLECTION TOOL
 # =========================================================
-
 def run_collect_tool(inputs: Dict[str, Any]) -> Dict[str, Any]:
     try:
         platform = (inputs.get("platform") or "").lower().strip()
@@ -399,32 +385,26 @@ def run_collect_tool(inputs: Dict[str, Any]) -> Dict[str, Any]:
         print("  method:", method)
         print("  query:", json.dumps(query, indent=2))
 
-        # default count
         query.setdefault("count", 10)
 
-        # normalize / canonize abuse keywords a bit
         if "keywords" in query and query["keywords"]:
             canon = _canonize_keywords(query["keywords"])
             if canon:
                 query["keywords"] = ", ".join(canon)
 
-        # normalize method
         if method in ("scraper", "scrape"):
             method = "Scraper"
         elif method in ("api", "rest"):
             method = "API"
         else:
-            method = "Scraper" if platform in ("reddit", "facebook") else "API"
+            method = "Scraper" if platform == "reddit" else "API"
 
-        # clean some platform aliases
         if platform in ("kaggle_", "kaggle-api"):
             platform = "kaggle"
 
         allowed_platforms = ("reddit", "huggingface", "kaggle", "facebook", "twitter", "youtube", "tiktok")
         if platform not in allowed_platforms:
             return {"status": "error", "message": f"Unknown platform: {platform}"}
-
-        # --- PLATFORM-SPECIFIC DEFAULTS ---
 
         if platform == "reddit":
             query.setdefault("get_comments", False)
@@ -433,13 +413,11 @@ def run_collect_tool(inputs: Dict[str, Any]) -> Dict[str, Any]:
             query.setdefault("allow_nsfw", SAFE_NSFW)
             query.setdefault("sort", "relevance")
 
-        # user folder
         username = _safe_get_username() or "anonymous"
         _safe_set_username(username)
         user_dir = (DATA_ROOT / username).resolve()
         user_dir.mkdir(parents=True, exist_ok=True)
 
-        # Kaggle creds
         ksec = {}
         try:
             ksec = dict(st.secrets.get("kaggle", {}))
@@ -452,34 +430,11 @@ def run_collect_tool(inputs: Dict[str, Any]) -> Dict[str, Any]:
             if not query.get("kaggle.username") or not query.get("kaggle.key"):
                 return {"status": "error", "message": "Kaggle credentials are missing."}
 
-        # Facebook creds
-        fbsec = {}
-        try:
-            fbsec = dict(st.secrets.get("facebook", {}))
-        except Exception:
-            fbsec = {}
-
-        if platform == "facebook":
-            query.setdefault("facebook.email", fbsec.get("email"))
-            query.setdefault("facebook.password", fbsec.get("password"))
-            if not query.get("facebook.email") or not query.get("facebook.password"):
-                return {
-                    "status": "error",
-                    "message": "Facebook credentials are missing.",
-                }
-
-        # remove unused generic keys
         for k in ("allow_nsfw", "sort", "time_hint"):
             query.pop(k, None)
 
-        # keep only what each collector expects
         if platform == "reddit":
             allowed = {"keywords", "count", "get_comments", "comment_limit", "images"}
-            query = {k: v for k, v in query.items() if k in allowed and v is not None}
-        elif platform == "facebook":
-            # your Facebook Collector.query_options() => ["count", "keywords"]
-            # plus auth() => ["facebook.email", "facebook.password"]
-            allowed = {"keywords", "count", "facebook.email", "facebook.password"}
             query = {k: v for k, v in query.items() if k in allowed and v is not None}
 
         print("Final collector call:")
@@ -487,21 +442,16 @@ def run_collect_tool(inputs: Dict[str, Any]) -> Dict[str, Any]:
         print("  method:", method)
         print("  query:", json.dumps(query, indent=2))
 
-        # actual collection
         try:
             save_name = f"{platform}_" + datetime.now().strftime("%Y%m%d-%H%M%S")
             out_file, rows = collect_data(platform, method, query, save_name=save_name)
         except Exception as e:
-            return {
-                "status": "error",
-                "message": f"Error during collection: {e.__class__.__name__}: {e}",
-                "traceback": traceback.format_exc(),
-            }
+            return {"status": "error", "message": f"Error during collection: {e.__class__.__name__}: {e}",
+                    "traceback": traceback.format_exc()}
 
         if not out_file:
             return {"status": "no_results", "message": "Collector returned no file."}
 
-        # row_count
         try:
             row_count = len(rows)
         except Exception:
@@ -522,27 +472,15 @@ def run_collect_tool(inputs: Dict[str, Any]) -> Dict[str, Any]:
                 print("WARN: copy into stable_path failed:", copy_err)
 
         final_path = str(stable_path)
-        msg = (
-            f"Saved {row_count} rows to {final_path}"
-            if row_count is not None
-            else f"Saved to {final_path}"
-        )
+        msg = f"Saved {row_count} rows to {final_path}" if row_count is not None else f"Saved to {final_path}"
 
-        _set_last_file("raw", final_path)
+        _set_last_file("raw", final_path)  # remember last raw
 
-        return {
-            "status": "ok",
-            "file": final_path,
-            "rows": int(row_count) if row_count is not None else None,
-            "message": msg,
-        }
+        return {"status": "ok", "file": final_path, "rows": int(row_count) if row_count is not None else None, "message": msg}
 
     except Exception as e:
-        return {
-            "status": "error",
-            "message": f"Collector error: {e}",
-            "traceback": traceback.format_exc(),
-        }
+        return {"status": "error", "message": f"Collector error: {e}", "traceback": traceback.format_exc()}
+
 
 # =========================================================
 # 6) CLEAN / VISUALIZE / SUMMARIZE

@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import streamlit as st
 
@@ -5,6 +6,45 @@ from data_preprocessing import options, preprocess
 from tabs.Data_Collection.data_upload import data_upload_element
 from tabs.validation.validation import get_csv_string
 
+# ---------- NEW: helper for AI Assistant ----------
+
+def run_preprocess_file(input_path: str):
+    """
+    Used by the AI Assistant when you click 'Clean Text'.
+    Cleans the CSV at input_path using ALL preprocessing steps, writes <name>__clean.csv,
+    and returns (cleaned_path, cleaned_rows).
+    """
+    # --- normalize path case just in case ---
+    safe_path = input_path.replace("/icoar/", "/ICOAR/")
+
+    # 1. make sure the file actually exists
+    if not os.path.exists(safe_path):
+        raise FileNotFoundError(
+            f"File not found at {safe_path}. "
+            "This can happen if the app restarted or the path changed. "
+            "Please hit Submit again to recollect before cleaning."
+        )
+
+    default_selected = [True] * len(options)
+
+    ok, df_clean = preprocess(safe_path, default_selected)
+    if not ok:
+        raise RuntimeError("Preprocess pipeline returned failure flag")
+
+    base_dir = os.path.dirname(safe_path)
+    base_name = os.path.basename(safe_path)
+    stem, ext = os.path.splitext(base_name)
+    cleaned_name = f"{stem}__clean.csv"
+    cleaned_path = os.path.join(base_dir, cleaned_name)
+
+    df_clean.to_csv(cleaned_path, index=False)
+
+    return cleaned_path, len(df_clean)
+
+
+
+
+# ---------- EXISTING UI: manual preprocessing tab ----------
 
 def data_preprocessing_tab():
     if "preprocessing_status" not in st.session_state:
