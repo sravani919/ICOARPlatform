@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # ICOAR
 Integrative Cyberinfrastructure for Online Abuse Research (ICOAR)
 
@@ -110,3 +111,5 @@ Integrative Cyberinfrastructure for Online Abuse Research (ICOAR)
     ```
 
 3. Make your changes in a new branch and submit a pull request to the `main` branch.
+=======
+
