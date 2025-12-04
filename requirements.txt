@@ -1,0 +1,23 @@
+# Core
+streamlit==1.31.1
+streamlit-authenticator==0.2.3
+
+# OpenAI client (new version) + its typing dependency
+openai>=1.40.0
+typing_extensions>=4.12.2
+
+# Data / utilities
+pandas==1.5.3
+pyyaml
+requests
+python-dotenv
+
+# HuggingFace + datasets for your collectors
+datasets>=2.21.0,<3.0.0
+huggingface-hub>=0.36.0,<1.0.0
+
+# Visualization / misc (add as you actually use them)
+matplotlib
+seaborn
+plotly
+
