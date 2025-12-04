@@ -27,3 +27,9 @@ facebook-scraper @ git+https://github.com/seabnavin19/facebook-scraper.git@fix/g
 lxml[html_clean]
 requests-html
 praw
+tweepy[async]
+snscrape @ git+https://github.com/JustAnotherArchivist/snscrape.git
+twscrape
+kaggle
+datasets
+huggingface-hub
