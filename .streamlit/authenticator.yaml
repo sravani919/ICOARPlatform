@@ -1,0 +1,41 @@
+cookie:
+  expiry_days: 30
+  key: some_signature_key
+  name: some_cookie_name
+credentials:
+  usernames:
+    atychang:
+      email: allen.ty.chang@gmail.com
+      name: Allen Chang
+      password: $2b$12$I.E9myP3MfihzOSxrpkf8.O5S4xJuQNtxg7gd6Mdlzq6hXUVLEGQ.
+    mo123:
+      email: SLDKFOP@GMAIL.COM
+      name: MO123
+      password: $2b$12$EJbnpyuWgEvzMEOgGR3fq.eVEueqe3xJNRpdB2Qije7s63ZWF7QDK
+    spati:
+      email: spati@clemson.edu
+      name: spati
+      password: $2b$12$joKDDNTfuqIG6iSxUNKqV.18HpbmET6bSmOy.ZugscfmB2sSYRqCm
+    sra:
+      email: sra@123
+      name: chinni
+      password: $2b$12$AqhUr0bo3ZDiMVkqVqwPceSm2DXGYWzuSatF1wnXvQH/IzRyUGo6a
+    sravani:
+      email: sravanichinni855@gmail.com
+      name: Sravani
+      password: $2b$12$LjMCO3vgKz5CYC2FfkbrEOP3nZgYJ/w4p2Ivyl6cSOpKfZiL2th8G
+    sravani0189:
+      email: sravanichinni855@gmail.com
+      name: Sravani
+      password: $2b$12$SPh7mfVDx1wX9NpjsLiTIOO43bzJEJ8ZBG9MaIH1LpvoqlUTVd99O
+    sravs:
+      email: sravani@gmail.com
+      name: '123'
+      password: $2b$12$KcjC0i/BbL/1vJbP1PjczO8CSsrfJ/ng.tvPWAULIufzHk5B5uPUO
+    sravs123:
+      email: sravs@gmail.com
+      name: sravs123
+      password: $2b$12$C0v397QQpL6Z6c1XLQNxm.ETorxd.F.CGWKuzQcHnLLcaBPGrPswS
+preauthorized:
+  emails:
+  - allen.ty.chang@gmail.com
