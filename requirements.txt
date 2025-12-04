@@ -34,4 +34,7 @@ kaggle
 datasets
 huggingface-hub
 selenium==4.11.2
+google-api-python-client
+google-api-core
+
 
