@@ -33,3 +33,5 @@ twscrape
 kaggle
 datasets
 huggingface-hub
+selenium==4.11.2
+
