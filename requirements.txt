@@ -24,3 +24,5 @@ plotly
 # ICOAR-specific scrapers
 facebook-scraper @ git+https://github.com/seabnavin19/facebook-scraper.git@fix/get_post_by_search
 
+lxml[html_clean]
+requests-html
