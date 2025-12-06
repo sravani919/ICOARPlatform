@@ -2,6 +2,7 @@ import os
 from datetime import datetime
 
 import streamlit as st
+import streamlit.components.v1 as components
 import streamlit_authenticator as stauth
 import yaml
 import requests  # noqa: F401
@@ -120,11 +121,8 @@ _apply_ai_sidebar_css()
 # -----------------------------
 def render_open_ai_button_after_header():
     # only show if logged in AND currently hidden
-    if st.session_state.get("authentication_status") and not st.session_state.get(
-        "show_ai", False
-    ):
-        st.markdown(
-            """
+    if st.session_state.get("authentication_status") and not st.session_state.get("show_ai", False):
+        st.markdown("""
         <style>
         .ai-topbar {
           display: flex;
@@ -155,19 +153,15 @@ def render_open_ai_button_after_header():
           border-color: #caa56d !important;
         }
         </style>
-        """,
-            unsafe_allow_html=True,
-        )
+        """, unsafe_allow_html=True)
 
         st.markdown('<div class="ai-topbar">', unsafe_allow_html=True)
         st.markdown(
             "<p>Need help collecting data or running analysis? "
             "Your personal <b>AI Assistant</b> can do tasks for you &mdash; just ask!</p>",
-            unsafe_allow_html=True,
+            unsafe_allow_html=True
         )
-        clicked = st.button(
-            "Open Assistant", key="open_ai_topbar_center", use_container_width=False
-        )
+        clicked = st.button("Open Assistant", key="open_ai_topbar_center", use_container_width=False)
         st.markdown("</div>", unsafe_allow_html=True)
 
         if clicked:
@@ -180,84 +174,45 @@ def render_open_ai_button_after_header():
 
 
 # -----------------------------
-# Navigation helpers (pure Streamlit)
+# React tab strip components
 # -----------------------------
-def discrete_slider() -> int:
-    """
-    Main navigation strip replacement.
-    Returns an integer 0–7 matching the old tab indices:
-      0: Login
-      1: Data Collection
-      2: Data Preprocessing
-      3: Validation
-      4: Text Visualisation
-      5: Vision (image tools)
-      6: Text Annotation
-      7: Account
-    """
-    labels = [
-        "Login",
-        "Data Collection",
-        "Data Preprocessing",
-        "Validation",
-        "Text Visualisation",
-        "Vision",
-        "Text Annotation",
-        "Account",
-    ]
-    choice = st.radio(
-        "Navigation",
-        labels,
-        horizontal=True,
-        index=0,
-    )
-    return labels.index(choice)
+production = True
+
+if production:
+    root_dir = os.path.dirname(os.path.abspath(__file__))
+    build_dir = os.path.join(root_dir, "header_tab/build")
+    _discrete_slider = components.declare_component("discrete_slider", path=build_dir)
+else:
+    _discrete_slider = components.declare_component("discrete_slider", url="http://localhost:3000")
 
 
-def selection_bar_1() -> str:
-    """
-    Secondary menu for Text Annotation tab group.
-    Returns one of the following strings:
-      - 'Text Annotation'
-      - 'Image Labeling'
-      - 'Prompt Optimization'
-      - 'In-Context Learning'
-    """
-    options = [
-        "Text Annotation",
-        "Image Labeling",
-        "Prompt Optimization",
-        "In-Context Learning",
-    ]
-    return st.radio(
-        "Choose annotation tool:",
-        options,
-        horizontal=True,
-    )
+def discrete_slider():
+    # returns the selected main tab index
+    return _discrete_slider(default=0, logged_in=False)
 
 
-def selection_bar_2() -> str:
-    """
-    Secondary menu for Vision tab group.
-    Returns one of these strings:
-      - 'Cyberbullying Image Analysis'
-      - 'Meme Analysis'
-      - 'Deepfake Detection'
-      - 'Customized Image Analysis'
-      - 'Cyberbullying Detection using GPT'
-    """
-    options = [
-        "Cyberbullying Image Analysis",
-        "Meme Analysis",
-        "Deepfake Detection",
-        "Customized Image Analysis",
-        "Cyberbullying Detection using GPT",
-    ]
-    return st.radio(
-        "Choose vision tool:",
-        options,
-        horizontal=True,
-    )
+def selection_bar_1():
+    # secondary menu for Text Annotation tab group
+    production_local = True
+    if production_local:
+        root_dir = os.path.dirname(os.path.abspath(__file__))
+        build_dir = os.path.join(root_dir, "header_tab2/build")
+        _selection_bar = components.declare_component("discrete_slider", path=build_dir)
+    else:
+        _selection_bar = components.declare_component("discrete_slider", url="http://localhost:3000")
+    return _selection_bar()
+
+
+def selection_bar_2():
+    # secondary menu for Vision tab group
+    production_local = True
+    if production_local:
+        root_dir = os.path.dirname(os.path.abspath(__file__))
+        build_dir = os.path.join(root_dir, "header_tab3/build")
+        _selection_bar = components.declare_component("discrete_slider", path=build_dir)
+    else:
+        _selection_bar = components.declare_component("discrete_slider", url="http://localhost:3000")
+    return _selection_bar()
 
 
 # -----------------------------
@@ -308,7 +263,6 @@ render_open_ai_button_after_header()
 
 if selected_value == 0:
     from tabs.login import login
-
     with open(".streamlit/authenticator.yaml") as file:
         config = yaml.load(file, Loader=SafeLoader)
     st.session_state.authenticator = stauth.Authenticate(
@@ -325,7 +279,6 @@ elif selected_value == 1:
         login_error()
     else:
         from tabs.Data_Collection.data_collection_tab import data_collection_tab
-
         data_collection_tab()
 
 elif selected_value == 2:
@@ -334,10 +287,7 @@ elif selected_value == 2:
     else:
         cols = st.columns(1)
         with cols[0]:
-            from tabs.Data_Collection.data_preprocessing_tab import (
-                data_preprocessing_tab,
-            )
-
+            from tabs.Data_Collection.data_preprocessing_tab import data_preprocessing_tab
             data_preprocessing_tab()
 
 elif selected_value == 3:
@@ -345,7 +295,6 @@ elif selected_value == 3:
         login_error()
     else:
         from tabs.validation.validation import validation
-
         cols = st.columns(1)
         with cols[0]:
             validation()
@@ -355,7 +304,6 @@ elif selected_value == 4:
         login_error()
     else:
         from tabs.Visualisation.Text_Visualisation import Text_Visualisation_tab
-
         cols = st.columns(1)
         with cols[0]:
             Text_Visualisation_tab()
@@ -369,25 +317,18 @@ elif selected_value == 5:
             user_choice_2 = selection_bar_2()
             if user_choice_2 == "Cyberbullying Image Analysis":
                 from tabs.image.bully_classifification import bully_classification
-
                 bully_classification()
             elif user_choice_2 == "Meme Analysis":
                 from tabs.image.meme_classification import meme_classification
-
                 meme_classification()
             elif user_choice_2 == "Deepfake Detection":
                 from tabs.image.deepfake_detection import df_detection
-
                 df_detection()
             elif user_choice_2 == "Customized Image Analysis":
-                from tabs.image.huggingface_image_analysis import (
-                    huggingface_image_analysis,
-                )
-
+                from tabs.image.huggingface_image_analysis import huggingface_image_analysis
                 huggingface_image_analysis()
             elif user_choice_2 == "Cyberbullying Detection using GPT":
                 from tabs.image.bully_classifification import image_classification_llm
-
                 image_classification_llm()
 
 elif selected_value == 6:
@@ -395,25 +336,21 @@ elif selected_value == 6:
         login_error()
     else:
         user_choice = selection_bar_1()
-        if user_choice == "Text Annotation":
+        if user_choice == "Text Annotaion":
             from tabs.Text_Annotation.Text_annotation import text_annotation_tab
-
             cols = st.columns(1)
             with cols[0]:
                 text_annotation_tab(labeling_mode="Text Labeling")
         elif user_choice == "Image Labeling":
             from tabs.Text_Annotation.Text_annotation import text_annotation_tab
-
             cols = st.columns(1)
             with cols[0]:
                 text_annotation_tab(labeling_mode="Image Labeling")
         elif user_choice == "Prompt Optimization":
             from tabs.Prompt_Engineering import generate_prompt
-
             generate_prompt()()
         elif user_choice == "In-Context Learning":
             from tabs.Text_Annotation.In_context_leanring import in_context_learning
-
             cols = st.columns(1)
             with cols[0]:
                 in_context_learning()
@@ -433,13 +370,10 @@ elif selected_value == 7:
 # -------------------------------------------------
 # Assistant Sidebar (only if logged in + toggled on)
 # -------------------------------------------------
-if st.session_state.get("authentication_status") and st.session_state.get(
-    "show_ai", False
-):
+if st.session_state.get("authentication_status") and st.session_state.get("show_ai", False):
     with st.sidebar:
         # Close button styling + chat bubble CSS
-        st.markdown(
-            """
+        st.markdown("""
             <style>
               .ai-close .stButton>button {
                 background: transparent !important;
@@ -483,9 +417,7 @@ if st.session_state.get("authentication_status") and st.session_state.get(
                 margin-top: 0.05rem;
               }
             </style>
-        """,
-            unsafe_allow_html=True,
-        )
+        """, unsafe_allow_html=True)
 
         # Header row: title + close "x"
         hcol1, hcol2 = st.columns([1, 0.08])
@@ -513,11 +445,7 @@ if st.session_state.get("authentication_status") and st.session_state.get(
                 st.rerun()
 
         # tell backend who this user is (used in file paths)
-        uname = (
-            st.session_state.get("username")
-            or st.session_state.get("name")
-            or "anonymous"
-        )
+        uname = st.session_state.get("username") or st.session_state.get("name") or "anonymous"
         os.environ.setdefault("ICOAR_USERNAME", str(uname))
 
         # -------------------------------
@@ -527,9 +455,7 @@ if st.session_state.get("authentication_status") and st.session_state.get(
 
         with st.container():
             st.markdown("#### Conversation")
-            st.markdown(
-                '<div class="chat-container">', unsafe_allow_html=True
-            )
+            st.markdown('<div class="chat-container">', unsafe_allow_html=True)
 
             if not chat_messages:
                 st.markdown(
@@ -568,9 +494,7 @@ if st.session_state.get("authentication_status") and st.session_state.get(
             "Ask me anything related to ICOAR:",
             key="gpt_input",
             height=140,
-            placeholder=(
-                "e.g., Collect 15 Reddit posts on cyberbullying from the last month."
-            ),
+            placeholder="e.g., Collect 15 Reddit posts on cyberbullying from the last month.",
         )
 
         submit = st.button("Submit", key="gpt_submit", use_container_width=True)
@@ -618,9 +542,7 @@ if st.session_state.get("authentication_status") and st.session_state.get(
                             {
                                 "role": "assistant",
                                 "text": text,
-                                "timestamp": datetime.now().strftime(
-                                    "%H:%M:%S"
-                                ),
+                                "timestamp": datetime.now().strftime("%H:%M:%S"),
                             }
                         )
 
@@ -646,9 +568,7 @@ if st.session_state.get("authentication_status") and st.session_state.get(
                             "question": cleaned,
                             "normalized": norm,
                             "result": result,
-                            "timestamp": datetime.now().isoformat(
-                                timespec="seconds"
-                            ),
+                            "timestamp": datetime.now().isoformat(timespec="seconds"),
                         }
                     )
                     st.session_state["assistant_history"] = history[-10:]
@@ -660,9 +580,7 @@ if st.session_state.get("authentication_status") and st.session_state.get(
                             {
                                 "role": "assistant",
                                 "text": text,
-                                "timestamp": datetime.now().strftime(
-                                    "%H:%M:%S"
-                                ),
+                                "timestamp": datetime.now().strftime("%H:%M:%S"),
                             }
                         )
 
@@ -691,11 +609,7 @@ if st.session_state.get("authentication_status") and st.session_state.get(
 
             # show visualization image if we have one
             if result.get("plot_png"):
-                st.image(
-                    result["plot_png"],
-                    caption="Top keywords (preview)",
-                    use_column_width=True,
-                )
+                st.image(result["plot_png"], caption="Top keywords (preview)", use_column_width=True)
 
             # download CSV if available
             fpath = result.get("file")
@@ -715,11 +629,7 @@ if st.session_state.get("authentication_status") and st.session_state.get(
 
             # follow-up action buttons (Clean / Visualize / Summarize / Export)
             actions = result.get("actions") or []
-            app_actions = [
-                a
-                for a in actions
-                if a.get("type") in {"clean", "visualize", "summarize", "export"}
-            ]
+            app_actions = [a for a in actions if a.get("type") in {"clean", "visualize", "summarize", "export"}]
 
             if app_actions:
                 st.markdown("#### Continue Analysis")
@@ -748,9 +658,7 @@ if st.session_state.get("authentication_status") and st.session_state.get(
                                     {
                                         "role": "assistant",
                                         "text": text,
-                                        "timestamp": datetime.now().strftime(
-                                            "%H:%M:%S"
-                                        ),
+                                        "timestamp": datetime.now().strftime("%H:%M:%S"),
                                     }
                                 )
                                 st.session_state["assistant_chat"] = chat[-40:]
@@ -762,9 +670,7 @@ if st.session_state.get("authentication_status") and st.session_state.get(
             # ---- Previous questions (simple history view) ----
             history = st.session_state.get("assistant_history", [])
             if history:
-                with st.expander(
-                    "Previous questions in this session", expanded=False
-                ):
+                with st.expander("Previous questions in this session", expanded=False):
                     for item in reversed(history[-10:]):
                         q = item.get("question", "")
                         ts = item.get("timestamp", "")
@@ -780,9 +686,11 @@ if st.session_state.get("authentication_status") and st.session_state.get(
 
                         st.markdown(f"**Q:** {q}")
                         if ts:
-                            st.markdown(
-                                f"<sub>{ts}</sub>", unsafe_allow_html=True
-                            )
+                            st.markdown(f"<sub>{ts}</sub>", unsafe_allow_html=True)
                         if preview:
                             st.markdown(preview)
                         st.markdown("---")
+
+
+
+
