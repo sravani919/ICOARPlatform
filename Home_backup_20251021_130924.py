@@ -1,4 +1,6 @@
 import os
+from datetime import datetime
+
 import streamlit as st
 import streamlit.components.v1 as components
 import streamlit_authenticator as stauth
@@ -28,6 +30,29 @@ if "show_ai" not in st.session_state:
     st.session_state.show_ai = False
 if "assistant_result" not in st.session_state:
     st.session_state.assistant_result = None
+# simple in-session history of Q&A
+if "assistant_history" not in st.session_state:
+    st.session_state.assistant_history = []
+# notice when we reuse an old result
+if "assistant_notice" not in st.session_state:
+    st.session_state.assistant_notice = ""
+# chat-style conversation (user + assistant turns)
+if "assistant_chat" not in st.session_state:
+    st.session_state.assistant_chat = []
+
+
+# -----------------------------
+# Helper: normalize query text
+# -----------------------------
+def _normalize_query(text: str) -> str:
+    """
+    Normalize user query so we can detect duplicates:
+    - strip spaces
+    - lowercase
+    - collapse multiple spaces
+    """
+    text = (text or "").strip().lower()
+    return " ".join(text.split())
 
 
 # -----------------------------
@@ -79,11 +104,13 @@ section[data-testid="stSidebar"] { display: none; } /* older builds */
 </style>
 """
 
+
 def _apply_ai_sidebar_css():
     if st.session_state.get("show_ai", False):
         st.markdown(AI_SIDEBAR_VISIBLE_CSS, unsafe_allow_html=True)
     else:
         st.markdown(AI_SIDEBAR_HIDDEN_CSS, unsafe_allow_html=True)
+
 
 # apply now so layout is correct
 _apply_ai_sidebar_css()
@@ -131,7 +158,7 @@ def render_open_ai_button_after_header():
         st.markdown('<div class="ai-topbar">', unsafe_allow_html=True)
         st.markdown(
             "<p>Need help collecting data or running analysis? "
-            "Your personal <b>AI Assistant</b> can do tasks for you  just ask!</p>",
+            "Your personal <b>AI Assistant</b> can do tasks for you &mdash; just ask!</p>",
             unsafe_allow_html=True
         )
         clicked = st.button("Open Assistant", key="open_ai_topbar_center", use_container_width=False)
@@ -158,9 +185,11 @@ if production:
 else:
     _discrete_slider = components.declare_component("discrete_slider", url="http://localhost:3000")
 
+
 def discrete_slider():
     # returns the selected main tab index
     return _discrete_slider(default=0, logged_in=False)
+
 
 def selection_bar_1():
     # secondary menu for Text Annotation tab group
@@ -172,6 +201,7 @@ def selection_bar_1():
     else:
         _selection_bar = components.declare_component("discrete_slider", url="http://localhost:3000")
     return _selection_bar()
+
 
 def selection_bar_2():
     # secondary menu for Vision tab group
@@ -340,10 +370,9 @@ elif selected_value == 7:
 # -------------------------------------------------
 # Assistant Sidebar (only if logged in + toggled on)
 # -------------------------------------------------
-
 if st.session_state.get("authentication_status") and st.session_state.get("show_ai", False):
     with st.sidebar:
-        # Close button styling
+        # Close button styling + chat bubble CSS
         st.markdown("""
             <style>
               .ai-close .stButton>button {
@@ -355,6 +384,37 @@ if st.session_state.get("authentication_status") and st.session_state.get("show_
                 padding: 0 !important;
                 height: auto !important;
                 line-height: 1 !important;
+              }
+              .chat-container {
+                display: flex;
+                flex-direction: column;
+                gap: 0.25rem;
+                max-height: 420px;
+                overflow-y: auto;
+                padding-right: 4px;
+                margin-bottom: 0.5rem;
+              }
+              .chat-bubble {
+                padding: 0.45rem 0.7rem;
+                border-radius: 12px;
+                font-size: 0.9rem;
+                line-height: 1.35;
+                word-wrap: break-word;
+                white-space: pre-wrap;
+              }
+              .chat-user {
+                background: #e8f0ff;
+                align-self: flex-end;
+                text-align: right;
+              }
+              .chat-assistant {
+                background: #f7f7f7;
+                align-self: flex-start;
+              }
+              .chat-meta {
+                font-size: 0.7rem;
+                color: #777;
+                margin-top: 0.05rem;
               }
             </style>
         """, unsafe_allow_html=True)
@@ -373,47 +433,179 @@ if st.session_state.get("authentication_status") and st.session_state.get("show_
                     st.rerun()
                 st.markdown("</div>", unsafe_allow_html=True)
 
+        # ---- New Chat button (clears this session's conversation) ----
+        ncol1, _ = st.columns([0.7, 0.3])
+        with ncol1:
+            if st.button("New Chat", key="new_chat"):
+                st.session_state["assistant_chat"] = []
+                st.session_state["assistant_result"] = None
+                st.session_state["assistant_history"] = []
+                st.session_state["assistant_notice"] = ""
+                st.session_state["assistant_last_input"] = ""
+                st.rerun()
+
         # tell backend who this user is (used in file paths)
         uname = st.session_state.get("username") or st.session_state.get("name") or "anonymous"
         os.environ.setdefault("ICOAR_USERNAME", str(uname))
 
-        # user prompt input
+        # -------------------------------
+        # Chat-like conversation history
+        # -------------------------------
+        chat_messages = st.session_state.get("assistant_chat", [])
+
+        with st.container():
+            st.markdown("#### Conversation")
+            st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+
+            if not chat_messages:
+                st.markdown(
+                    "<div class='chat-assistant chat-bubble'>"
+                    "Hi, I'm your ICOAR assistant. Ask me to collect data, clean it, "
+                    "visualize patterns, or summarize your dataset.</div>",
+                    unsafe_allow_html=True,
+                )
+            else:
+                # show last ~20 messages
+                for msg in chat_messages[-20:]:
+                    role = msg.get("role", "assistant")
+                    text = msg.get("text", "")
+                    ts = msg.get("timestamp", "")
+                    cls = "chat-user" if role == "user" else "chat-assistant"
+
+                    # bubble
+                    st.markdown(
+                        f"<div class='{cls} chat-bubble'>{text}</div>",
+                        unsafe_allow_html=True,
+                    )
+                    # tiny timestamp meta (optional)
+                    if ts:
+                        align = "right" if role == "user" else "left"
+                        st.markdown(
+                            f"<div class='chat-meta' style='text-align:{align};'>{ts}</div>",
+                            unsafe_allow_html=True,
+                        )
+
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        # -------------------------------
+        # User prompt input (like ChatGPT)
+        # -------------------------------
         user_prompt = st.text_area(
             "Ask me anything related to ICOAR:",
             key="gpt_input",
-            height=180,
-            placeholder="e.g., Collect 15 Reddit posts on cyberbullying from the last month."
+            height=140,
+            placeholder="e.g., Collect 15 Reddit posts on cyberbullying from the last month.",
         )
 
         submit = st.button("Submit", key="gpt_submit", use_container_width=True)
 
-        # if user pressed "Submit": talk to agent and store result in session
+        # if user pressed "Submit": either reuse history or call agent
         if submit:
-            if not (user_prompt or "").strip():
+            cleaned = (user_prompt or "").strip()
+            if not cleaned:
                 st.warning("Please enter a prompt.")
             else:
-                with st.spinner("Thinking..."):
-                    try:
-                        result = run_agent_response(user_prompt)
-                    except Exception as e:
-                        result = {
-                            "text": f"L Error calling agent: {e}",
-                            "file": None,
-                            "actions": [],
-                            "plot_png": None,
+                norm = _normalize_query(cleaned)
+
+                # check if this question was already asked in this session
+                reused = None
+                for item in st.session_state.get("assistant_history", []):
+                    if item.get("normalized") == norm:
+                        reused = item
+                        break
+
+                # store user message in chat log
+                chat = st.session_state.get("assistant_chat", [])
+                chat.append(
+                    {
+                        "role": "user",
+                        "text": cleaned,
+                        "timestamp": datetime.now().strftime("%H:%M:%S"),
+                    }
+                )
+
+                if reused is not None:
+                    # reuse previous result instead of recollecting
+                    result = reused["result"]
+                    st.session_state["assistant_result"] = result
+                    st.session_state["assistant_last_input"] = cleaned
+                    st.session_state["assistant_notice"] = (
+                        "You already asked this question earlier in this session. "
+                        "I'm showing the saved result. If you want fresh data, "
+                        "change the wording or timeframe and submit again."
+                    )
+
+                    # add assistant message to chat from reused result
+                    text = (result or {}).get("text") or ""
+                    if text:
+                        chat.append(
+                            {
+                                "role": "assistant",
+                                "text": text,
+                                "timestamp": datetime.now().strftime("%H:%M:%S"),
+                            }
+                        )
+
+                    st.session_state["assistant_chat"] = chat[-40:]
+                    st.rerun()
+                else:
+                    # new question: call the agent and store in history
+                    with st.spinner("Thinking..."):
+                        try:
+                            result = run_agent_response(cleaned)
+                        except Exception as e:
+                            result = {
+                                "text": f"L Error calling agent: {e}",
+                                "file": None,
+                                "actions": [],
+                                "plot_png": None,
+                            }
+
+                    # append to history (Q+result)
+                    history = st.session_state.get("assistant_history", [])
+                    history.append(
+                        {
+                            "question": cleaned,
+                            "normalized": norm,
+                            "result": result,
+                            "timestamp": datetime.now().isoformat(timespec="seconds"),
                         }
+                    )
+                    st.session_state["assistant_history"] = history[-10:]
 
-                st.session_state["assistant_result"] = result
-                st.session_state["assistant_last_input"] = user_prompt
-                st.session_state["show_followup"] = True
-                st.rerun()
+                    # add assistant message to chat
+                    text = (result or {}).get("text") or ""
+                    if text:
+                        chat.append(
+                            {
+                                "role": "assistant",
+                                "text": text,
+                                "timestamp": datetime.now().strftime("%H:%M:%S"),
+                            }
+                        )
 
-        # render whatever result we have (either from this run or previous run)
+                    st.session_state["assistant_chat"] = chat[-40:]
+                    st.session_state["assistant_result"] = result
+                    st.session_state["assistant_last_input"] = cleaned
+                    st.session_state["assistant_notice"] = ""
+                    st.session_state["show_followup"] = True
+                    st.rerun()
+
+        # -------------------------------------------------
+        # Render latest result: downloads, plots, buttons
+        # (text body already shown in the chat bubbles)
+        # -------------------------------------------------
         if st.session_state.get("assistant_result"):
             result = st.session_state["assistant_result"]
 
-            st.markdown("#### Response")
-            st.markdown(result.get("text") or "")
+            # show notice if we reused an old result
+            notice = st.session_state.get("assistant_notice")
+            if notice:
+                st.info(notice)
+                # clear notice after showing once
+                st.session_state["assistant_notice"] = ""
+
+            st.markdown("#### Dataset & Actions")
 
             # show visualization image if we have one
             if result.get("plot_png"):
@@ -458,7 +650,47 @@ if st.session_state.get("authentication_status") and st.session_state.get("show_
                             # update session with the sub_result so it persists
                             st.session_state["assistant_result"] = sub_result
 
+                            # also add to chat as a short system-style message
+                            chat = st.session_state.get("assistant_chat", [])
+                            text = (sub_result or {}).get("text") or ""
+                            if text:
+                                chat.append(
+                                    {
+                                        "role": "assistant",
+                                        "text": text,
+                                        "timestamp": datetime.now().strftime("%H:%M:%S"),
+                                    }
+                                )
+                                st.session_state["assistant_chat"] = chat[-40:]
+
                             # immediate visual feedback
                             st.success(f"{label} completed successfully!")
                             st.rerun()
+
+            # ---- Previous questions (simple history view) ----
+            history = st.session_state.get("assistant_history", [])
+            if history:
+                with st.expander("Previous questions in this session", expanded=False):
+                    for item in reversed(history[-10:]):
+                        q = item.get("question", "")
+                        ts = item.get("timestamp", "")
+                        res = item.get("result") or {}
+                        if isinstance(res, dict):
+                            text = res.get("text") or ""
+                        else:
+                            text = str(res)
+
+                        preview = text.strip()
+                        if len(preview) > 260:
+                            preview = preview[:260] + "..."
+
+                        st.markdown(f"**Q:** {q}")
+                        if ts:
+                            st.markdown(f"<sub>{ts}</sub>", unsafe_allow_html=True)
+                        if preview:
+                            st.markdown(preview)
+                        st.markdown("---")
+
+
+
 
