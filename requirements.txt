@@ -42,6 +42,7 @@ better-profanity
 tweet-preprocessor
 spacy
 gensim
+nltk 
 
 # NLP models for validation tab
 torch
