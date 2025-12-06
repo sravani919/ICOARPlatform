@@ -20,6 +20,7 @@ huggingface-hub>=0.36.0,<1.0.0
 matplotlib
 seaborn
 plotly
+pyLDAvis 
 
 # ICOAR-specific scrapers
 facebook-scraper @ git+https://github.com/seabnavin19/facebook-scraper.git@fix/get_post_by_search
