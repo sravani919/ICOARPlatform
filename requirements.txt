@@ -41,4 +41,7 @@ better-profanity
 tweet-preprocessor
 spacy
 
+# NLP models for validation tab
+torch
+transformers
 
