@@ -1,8 +1,13 @@
 import os
 import pandas as pd
-import preprocessor as p
 import requests
 from better_profanity import profanity
+
+# --- Try to import tweet-preprocessor, but don't crash if missing ---
+try:
+    import preprocessor as p  # type: ignore
+except ImportError:
+    p = None
 
 # --- Try to import fasttext, but don't crash if missing ---
 try:
@@ -12,7 +17,7 @@ except ImportError:
 
 # --- Try to load spaCy model, but don't crash if missing ---
 try:
-    import spacy
+    import spacy  # type: ignore
 
     try:
         nlp = spacy.load("en_core_web_sm")
@@ -192,6 +197,9 @@ def remove_extra_spaces(row):
 
 @none_avoidance
 def remove_url_hashtags_mentions(row):
+    # If preprocessor isn't available, just return original text
+    if p is None:
+        return row["text"]
     return p.clean(row["text"])
 
 
