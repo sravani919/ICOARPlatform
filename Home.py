@@ -718,8 +718,7 @@ if st.session_state.get("authentication_status") and st.session_state.get(
             app_actions = [
                 a
                 for a in actions
-                if a.get("type")
-                in {"clean", "visualize", "summarize", "export"}
+                if a.get("type") in {"clean", "visualize", "summarize", "export"}
             ]
 
             if app_actions:
