@@ -40,6 +40,7 @@ google-api-core
 better-profanity
 tweet-preprocessor
 spacy
+gensim
 
 # NLP models for validation tab
 torch
