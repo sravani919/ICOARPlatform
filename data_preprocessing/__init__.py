@@ -1,17 +1,36 @@
 import os
-
-import fasttext
 import pandas as pd
 import preprocessor as p
 import requests
-import spacy
 from better_profanity import profanity
+
+# --- Try to import fasttext, but don't crash if missing ---
+try:
+    import fasttext  # type: ignore
+except ImportError:
+    fasttext = None
+
+# --- Try to load spaCy model, but don't crash if missing ---
+try:
+    import spacy
+
+    try:
+        nlp = spacy.load("en_core_web_sm")
+    except Exception:
+        # If model not available, disable spaCy-based features
+        nlp = None
+except ImportError:
+    spacy = None  # type: ignore
+    nlp = None
 
 # from profanity_filter import ProfanityFilter
 
 
 def download_fasttext_model():
-    response = requests.get("https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin")
+    """Download the FastText language identification model if not present."""
+    response = requests.get(
+        "https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin"
+    )
     # Need to create the models directory if it doesn't exist
     if not os.path.exists("./models"):
         os.makedirs("./models")
@@ -20,16 +39,38 @@ def download_fasttext_model():
         f.write(response.content)
 
 
-try:
-    fmodel = fasttext.load_model("./models/lid.176.bin")
-except ValueError:
-    print("Downloading fasttext language detection model...")
-    download_fasttext_model()
-    fmodel = fasttext.load_model("./models/lid.176.bin")
+# --- Try to load fasttext model if fasttext is available ---
+fmodel = None
+if fasttext is not None:
+    try:
+        fmodel = fasttext.load_model("./models/lid.176.bin")
+    except Exception:
+        print("Downloading fasttext language detection model...")
+        download_fasttext_model()
+        fmodel = fasttext.load_model("./models/lid.176.bin")
 
-nlp = spacy.load("en_core_web_sm")
-
-PUNCTUATION = [".", ",", "!", "?", ";", ":", "-", "(", ")", "[", "]", "{", "}", "'", '"', "\n", "\t", "\r", "\\", "/"]
+PUNCTUATION = [
+    ".",
+    ",",
+    "!",
+    "?",
+    ";",
+    ":",
+    "-",
+    "(",
+    ")",
+    "[",
+    "]",
+    "{",
+    "}",
+    "'",
+    '"',
+    "\n",
+    "\t",
+    "\r",
+    "\\",
+    "/",
+]
 
 options = [
     "Remove non-English tweets",
@@ -49,6 +90,7 @@ def preprocess(filename, given_options):
     df = pd.read_csv(filename)
 
     if given_options[0]:
+        # If fasttext/fmodel not available, this will just keep all rows
         m = df.apply(filter_non_english, axis=1)
         df = df[m]
     if given_options[1]:
@@ -72,15 +114,17 @@ def preprocess(filename, given_options):
     if given_options[9]:
         df["text"] = df.apply(remove_profanity, axis=1)
 
-    # Shift rows the fill gaps in the index from the removed rows
+    # Shift rows to fill gaps in the index from the removed rows
     df.reset_index(drop=True, inplace=True)
 
     return True, df
 
 
-def none_avoidance(func):  # Avoids errors from dealing with None values when expecting strings
+def none_avoidance(func):
+    """Avoid errors from dealing with None values when expecting strings."""
+
     def wrapper(row):
-        if type(row["text"]) is float:
+        if isinstance(row["text"], float):
             return ""
         else:
             return func(row)
@@ -89,15 +133,21 @@ def none_avoidance(func):  # Avoids errors from dealing with None values when ex
 
 
 def filter_non_english(row):
-    if type(row["text"]) is float:  # A float means the text is empty
+    # If fasttext model isn't available, don't filter anything out.
+    if fmodel is None:
+        return True
+
+    if isinstance(row["text"], float):  # A float means the text is empty
         return False
 
-    lang = fmodel.predict(row["text"].replace("\n", ""))[0][0].replace("__label__", "")
+    lang = (
+        fmodel.predict(row["text"].replace("\n", ""))[0][0].replace("__label__", "")
+    )
     return lang == "en"
 
 
 def filter_no_text(row):
-    return row["text"] != "" and type(row["text"]) == str
+    return row["text"] != "" and isinstance(row["text"], str)
 
 
 @none_avoidance
@@ -117,12 +167,20 @@ def strip_special_characters(row):
 
 @none_avoidance
 def strip_stop_words(row):
+    # If spaCy / model not available, just return original text
+    if nlp is None:
+        return row["text"]
+
     doc = nlp(row["text"])
     return " ".join([token.text for token in doc if not token.is_stop])
 
 
 @none_avoidance
 def lemmatize_words(row):
+    # If spaCy / model not available, just return original text
+    if nlp is None:
+        return row["text"]
+
     doc = nlp(row["text"])
     return " ".join([token.lemma_ for token in doc])
 
