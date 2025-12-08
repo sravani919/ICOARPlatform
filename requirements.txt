@@ -48,4 +48,8 @@ nltk
 # NLP models for validation tab
 torch
 transformers
+tensorflow
+easyocr
+torchvision
+
 
