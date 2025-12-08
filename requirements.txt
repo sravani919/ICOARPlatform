@@ -51,5 +51,7 @@ transformers
 tensorflow
 easyocr
 torchvision
+langchain==0.1.20
+openai==1.57.0
 
 
