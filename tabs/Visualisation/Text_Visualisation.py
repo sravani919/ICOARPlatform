@@ -44,19 +44,42 @@ def Text_Visualisation_tab():
         df = pd.read_csv(st.session_state.filename_pred)
         options = ["📊Bar Plot", "🥧Pie Chart", "🎯Topic Modeling", "📈Temporal Analysis", "Emotion Analysis"]
         selected_option = st.selectbox("Select an type of visualisation", options)
+
         data = df
+
+        # Make sure we have text
+        if "text" not in data.columns:
+            st.error("The selected dataset must contain a 'text' column.")
+            return
+
         data = data[data["text"].notna()]  # remove all data with nan text
+
+        # ---------- NEW: helper to pick a sensible default label column ----------
+        def pick_label_column(df):
+            preferred = ["sentiment", "Sentiment", "label", "Label", "prediction", "pred", "sentiment_label"]
+            cols = list(df.columns)
+            for c in preferred:
+                if c in cols:
+                    return cols.index(c)
+            return 0  # fallback: first column
+        # ------------------------------------------------------------------------
+
         # fig, ax = plt.subplots()
 
+        # ====================== 📊 BAR PLOT ======================
         if selected_option == "📊Bar Plot":
-            value_counts = data["sentiment"].value_counts()
+            cols_all = list(data.columns)
+            label_index = pick_label_column(data)
+            label_col = st.selectbox("Select label column for bar plot", cols_all, index=label_index)
+
+            value_counts = data[label_col].value_counts()
 
             with st.expander("Show more graph options"):
                 cols = st.columns(3)
                 with cols[0]:
-                    title = st.text_input("Title", "Classification of Posts")
+                    title = st.text_input("Title", f"Classification of Posts by {label_col}")
 
-                    x_label = st.text_input("X label", "Sentiment")
+                    x_label = st.text_input("X label", label_col)
                     y_label = st.text_input("Y label", "Count")
                     label_font_size = st.slider("Label font size", 10, 50, 15)
                 with cols[1]:
@@ -98,12 +121,18 @@ def Text_Visualisation_tab():
             with st.expander("Show Additional Information"):
                 add_graph_info(value_counts, data)
 
+        # ====================== 🥧 PIE CHART ======================
         elif selected_option == "🥧Pie Chart":
-            value_counts = data["sentiment"].value_counts()
+            cols_all = list(data.columns)
+            label_index = pick_label_column(data)
+            label_col = st.selectbox("Select label column for pie chart", cols_all, index=label_index)
+
+            value_counts = data[label_col].value_counts()
+
             with st.expander("Show more graph options"):
                 cols = st.columns(2)
                 with cols[0]:
-                    title = st.text_input("Title", "Pie Chart")
+                    title = st.text_input("Title", f"Pie Chart of {label_col}")
                     title_font_size = st.slider("Title font size", 10, 50, 20)
                     text_color = st.color_picker("Text Color", "#000000")
                 with cols[1]:
@@ -131,10 +160,11 @@ def Text_Visualisation_tab():
             with st.expander("Show Additional Information"):
                 add_graph_info(value_counts, data)
 
+        # ====================== 🎯 TOPIC MODELING ======================
         elif selected_option == "🎯Topic Modeling":
-            data = data["text"].tolist()
+            data_text = data["text"].tolist()
 
-            tokenized_data = [word_tokenize(text) for text in data]
+            tokenized_data = [word_tokenize(text) for text in data_text]
 
             dictionary = gensim.corpora.Dictionary(tokenized_data)
             corpus = [dictionary.doc2bow(text) for text in tokenized_data]
@@ -155,6 +185,7 @@ def Text_Visualisation_tab():
 
             st.components.v1.html(html_string, width=1480, height=960, scrolling=True)
 
+        # ====================== 📈 TEMPORAL ANALYSIS ======================
         elif selected_option == "📈Temporal Analysis":
             interval_options = ["1 day", "1 hour", "30 minutes", "1 minute"]
             time_interval = st.selectbox("Select the time interval of the analysis:", interval_options)
@@ -264,66 +295,7 @@ def Text_Visualisation_tab():
 
                 st.plotly_chart(fig2)
 
+        # ====================== 😊 EMOTION ANALYSIS ======================
         elif selected_option == "Emotion Analysis":
             st.session_state.output = df
             emotional_analysis(st.session_state.output)
-
-        # elif selected_option == "🕸User Network":
-        #     fig, ax = plt.subplots(figsize=(10, 6))
-        #     keywords = st.text_input("Enter the keywords (comma-separated): ")
-        #     keywords = [keyword.strip() for keyword in keywords.split(",")]
-
-        #     G = nx.Graph()
-
-        #     # Define color palette
-        #     colors = sns.color_palette("Set2", len(keywords))
-
-        #     filtered_data = data[data["text"].str.contains("|".join(keywords), case=False)]
-
-        #     if "user_name" in data.columns:
-        #         user_key = "user_name"
-        #     elif "username" in data.columns:
-        #         user_key = "username"
-        #     elif "author_username" in data.columns:
-        #         user_key = "author_username"
-        #     else:
-        #         st.error("The user_name, username or author_username column is not present in the dataset.")
-        #         return
-        #     # Iterate over each filtered row
-        #     for index, row in filtered_data.iterrows():
-        #         text = row["text"]
-        #         user = row[user_key]
-
-        #         # Check which keyword(s) are present in the text
-        #         present_keywords = [keyword.capitalize() for keyword in keywords if keyword.lower() in text.lower()]
-
-        #         # Add edges for the present keywords
-        #         for keyword in present_keywords:
-        #             G.add_edge(user, keyword, color=colors[keywords.index(keyword.lower())])
-
-        #     # Position nodes using Fruchterman-Reingold layout
-        #     pos = nx.fruchterman_reingold_layout(G)
-
-        #     # Draw edges with colors
-        #     edges = [(u, v) for (u, v, d) in G.edges(data=True)]
-
-        #     # Draw the edges
-        #     for edge in edges:
-        #         color = G[edge[0]][edge[1]]["color"]
-        #         nx.draw_networkx_edges(G, pos, edgelist=[edge], edge_color=color, alpha=0.5)
-
-        #     # Draw the nodes (hidden in this case)
-        #     nx.draw_networkx_nodes(G, pos, node_color="white", node_size=0)
-        #     plt.axis("off")
-
-        #     # Create legends
-        #     legends = [
-        #         plt.Line2D([], [], color=colors[i], alpha=0.5, label=keywords[i].capitalize())
-        #         for i in range(len(keywords))
-        #     ]
-
-        #     # Add legends to the plot
-        #     plt.legend(handles=legends, loc="upper right")
-
-        #     # Show the graph
-        #     st.pyplot(fig)
