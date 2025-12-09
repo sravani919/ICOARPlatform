@@ -1,18 +1,33 @@
+# --- Python cache ---
 __pycache__/
 *.pyc
+
+# --- Data & Outputs (good to ignore) ---
 data/
 datasets/
 outputs/
 *.csv
 *.parquet
+
+# --- Streamlit secrets ---
 .streamlit/secrets.toml
 .streamlit/authenticator.yaml
+
+# --- Environment files ---
 .env
 .venv/
+venv/
+env/
+
+# --- Node ---
 node_modules/
-header_tab/build/
-header_tab2/build/
-header_tab3/build/
+
+# ✅ IMPORTANT: DO NOT IGNORE YOUR BUILD FOLDERS
+# header_tab/build/
+# header_tab2/build/
+# header_tab3/build/
+
+# --- OS & IDE ---
 .DS_Store
 .idea/
 .vscode/
