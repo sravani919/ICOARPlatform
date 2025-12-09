@@ -110,18 +110,8 @@ def prompt_history():
 
 
 def image_labeling(api_key):
-    """
-    Image labeling UI.
-    api_key can be passed from BasePage, but the user can also provide their own key.
-    """
     if "predict2" not in st.session_state:
         st.session_state.predict2 = False
-
-    # Default values to avoid UnboundLocalError
-    sample_set = None
-    temp_dir = None
-    image_paths = []
-    image_names = []
 
     st.markdown(
         f"""
@@ -168,7 +158,7 @@ def image_labeling(api_key):
         columns = st.columns(2)
         for i in range(number_of_labels):
             with columns[i % 2]:
-                labels[i] = st.text_input("", value=labels[i], placeholder=f"Label {i + 1}")
+                labels[i] = st.text_input("", value=labels[i], placeholder="Label {}".format(i + 1))
 
     if st.checkbox("Provide context for the labels"):
         context = st.text_area(
@@ -179,28 +169,33 @@ def image_labeling(api_key):
         - Specific hand gestures like the middle finger, "loser" sign, and thumbs down.
         - Presence of threatening objects such as guns and knives used to intimidate the viewer.""",
         )
+
     else:
         context = ""
+    # image_directories = ["gpt/examples/demo", "/home/psilimk/ICOAR/data/images/llm"]
 
-    # --- Optional sample set to improve accuracy ---
+    # my_data_directory = os.path.join("data/" + st.session_state["username"])
+    # for root, dirs, files in os.walk(my_data_directory):
+    #     for name in dirs:
+    #         image_directories.append(os.path.join(root, name))
+
     st.markdown(
-        """***3. Use a labeled sample set*** (optional) Use a sample set of images to give to ChatGPT for use
+        """***3. Use a labeled sample set*** (optional) Use a sample set of images to give to chatgpt for use
     in labeling. This is looking for a folder of images with a labels.csv file in it, formatted with the first column
     being "Image Path" and the second column being "Label" for that image. If there is no labels.csv file provided,
     you will be prompted to label each image in the folder."""
     )
-    use_sample_set = st.checkbox("Use a sample set to improve accuracy")
-    if use_sample_set:
+    if st.checkbox("Use a sample set to improve accuracy"):
         sample_set = SampleSet()
-        uploaded_zip_sample = st.file_uploader("Upload a ZIP file with images", type="zip", key="sample_set_zip")
+        uploaded_zip = st.file_uploader("Upload a ZIP file with images", type="zip", key="sample_set_zip")
 
-        if uploaded_zip_sample is not None:
-            temp_dir_sample = handle_zip_upload(uploaded_zip_sample)
+        if uploaded_zip is not None:
+            temp_dir = handle_zip_upload(uploaded_zip)
 
-            if not os.path.isfile(os.path.join(temp_dir_sample, "labels.csv")):
-                sample_set.build(temp_dir_sample, labels)
+            if not os.path.isfile(os.path.join(temp_dir, "labels.csv")):
+                sample_set.build(temp_dir, labels)
             else:
-                sample_set.load(temp_dir_sample)
+                sample_set.load(temp_dir)
         else:
             sample_set = None
 
@@ -219,6 +214,7 @@ def image_labeling(api_key):
                     prompts = pickle.load(f)
 
             prompts[prompt_name] = edited_prompt
+            print(len(prompts))
             with open(prompt_file_path, "wb") as f:
                 pickle.dump(prompts, f)
     with sub_cols[1]:
@@ -235,28 +231,13 @@ def image_labeling(api_key):
         image_paths = get_image_paths(temp_dir)
         image_names = [os.path.basename(path) for path in image_paths]
 
-    # --- API KEY HANDLING ---
-    # Allow user to enter GPT-4 key (even if api_key argument is None)
-    user_key = st.text_input(
-        "Enter your [GPT-4 API Key](https://platform.openai.com/api-keys)",
-        type="password",
-    )
-    if user_key:
-        api_key = user_key
-
-    if not api_key:
-        st.info("Please enter your GPT-4 API key above to enable image labeling.")
-        return
-    # --- END API KEY HANDLING ---
+    st.text_input("Enter [GPT-4 API Key](https://platform.openai.com/api-keys)")
 
     if st.button("Predict Labels"):
-        if not image_paths:
-            st.error("Please upload a ZIP file with images before predicting labels.")
-            return
-
         st.session_state.predict2 = True
         st.session_state.filename_pred = temp_dir
         results = choice_label(api_key, image_paths, labels, sample_set, context)
+        st.session_state.output = results
         st.success("Prediction completed", icon="✅")
 
         # Display the results, showing the image and the label
@@ -264,12 +245,11 @@ def image_labeling(api_key):
         for i, result in enumerate(results):
             st.image(image_paths[i], width=200)
             st.write(f"Label: {result}")
-
         results_df = {"Image Name": image_names, "Label": results}
         results_df = pd.DataFrame(results_df)
         st.session_state.output = results_df
 
-    # Save the results to a file
+        # Save the results to a file
     if st.session_state.predict2:
         filename = st.text_input("Enter file name to save predicted data")
         save = st.button("Save File")
@@ -277,8 +257,7 @@ def image_labeling(api_key):
         if save:
             if not os.path.exists("predicted"):
                 os.makedirs("predicted")
-            if not os.path.exists(f"predicted/{username}"):
-                os.makedirs(f"predicted/{username}")
+                os.makedirs(f"""predicted/{username}""")
             file_path = f"predicted/{username}/{filename}.csv"
             st.session_state.output.to_csv(file_path, index=False)
 
