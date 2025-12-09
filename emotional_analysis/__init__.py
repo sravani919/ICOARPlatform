@@ -1,31 +1,37 @@
 from collections import Counter
+import re
 
-import nltk
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
-from nltk.corpus import stopwords
 from wordcloud import WordCloud
 
 
-def emotional_analysis(df: pd.DataFrame):
-    import streamlit as st
+# simple tokenizer without NLTK complications
+STOPWORDS = {
+    "the", "a", "an", "and", "or", "of", "to", "in", "on", "for",
+    "is", "are", "was", "were", "be", "been", "this", "that", "it",
+    "with", "as", "at", "by", "from", "about", "into", "up", "down",
+    "out", "over", "under", "so", "if", "then", "than", "too", "very",
+    "can", "could", "should", "would", "will", "just", "not", "no",
+    "yes", "but"
+}
 
-    # 🔍 Show what columns we actually have
+
+def _tokenize(text: str):
+    text = str(text).lower()
+    tokens = re.findall(r"[a-zA-Z']+", text)
+    return [t for t in tokens if t and t not in STOPWORDS]
+
+
+def emotional_analysis(df: pd.DataFrame):
+    # df is expected to already have 'text' and 'emotion' columns
     st.write("Incoming df columns:", list(df.columns))
 
-    # 1) Check required columns
-    if "emotion" not in df.columns:
+    if not {"text", "emotion"}.issubset(df.columns):
         st.error(
-            "Emotion Analysis requires an 'emotion' column in the dataset.\n\n"
-            f"Current columns: {list(df.columns)}"
-        )
-        return
-
-    if "text" not in df.columns:
-        st.error(
-            "Emotion Analysis also needs a 'text' column to show examples and wordclouds.\n\n"
+            "emotional_analysis expects a dataframe with 'text' and 'emotion' columns.\n\n"
             f"Current columns: {list(df.columns)}"
         )
         return
@@ -46,6 +52,9 @@ def emotional_analysis(df: pd.DataFrame):
     df_emotions = df["emotion"].astype(str)
     present = set(df_emotions.unique().tolist())
     categories = [c for c in categories_all if c in present]
+    if not categories:
+        # fall back to whatever is there
+        categories = sorted(present)
 
     if not categories:
         st.warning("No recognizable emotion values found in the dataset.")
@@ -115,18 +124,6 @@ def emotional_analysis(df: pd.DataFrame):
     freq_selected_word = st.selectbox("Select a word:", freq_words_array)
 
     if freq_selected_word:
-        # 🔍 Extra safety so we don't crash with KeyError
-        st.write("Columns in df_sel:", list(df_sel.columns))
-
-        required_cols = {"text", "emotion"}
-        missing = required_cols - set(df_sel.columns)
-        if missing:
-            st.error(
-                f"Expected columns {required_cols}, but missing: {missing}. "
-                f"Available columns: {list(df_sel.columns)}"
-            )
-            return
-
         filtered_df = df_sel[
             df_sel["text"].str.contains(freq_selected_word, case=False, na=False)
         ][["text", "emotion"]]

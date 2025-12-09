@@ -304,6 +304,7 @@ def Text_Visualisation_tab():
 
     # ====================== 😊 EMOTION ANALYSIS ======================
         # ====================== 😊 EMOTION ANALYSIS ======================
+        # ====================== 😊 EMOTION ANALYSIS ======================
     elif selected_option == "Emotion Analysis":
         st.subheader("Emotion Analysis")
 
@@ -331,5 +332,3 @@ def Text_Visualisation_tab():
         st.write("Using columns for emotion analysis:", df_emotion.columns.tolist())
 
         emotional_analysis(df_emotion)
-
-
