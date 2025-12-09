@@ -41,7 +41,7 @@ def emotional_analysis(df: pd.DataFrame):
         )
         return
 
-    # optional: keep for other parts of the app if they rely on it
+    # optional: keep df in session if something else needs it
     st.session_state.output = df
 
     # 2) Determine which emotions are present in the data
@@ -75,57 +75,58 @@ def emotional_analysis(df: pd.DataFrame):
     st.subheader("Explore a specific emotion")
     selected_option = st.selectbox("Select an emotion:", categories)
 
-    if selected_option:
-        df_sel = df[df_emotions == selected_option]
+    if not selected_option:
+        return
 
-        if df_sel.empty:
-            st.info("No rows found for this emotion.")
-            return
+    df_sel = df[df_emotions == selected_option]
+    if df_sel.empty:
+        st.info("No rows found for this emotion.")
+        return
 
-        # --- Wordcloud + Top words ---
-        all_text = " ".join(df_sel["text"].astype(str).tolist())
-        tokens = _tokenize(all_text)
+    # --- Wordcloud + Top words ---
+    all_text = " ".join(df_sel["text"].astype(str).tolist())
+    tokens = _tokenize(all_text)
 
-        if not tokens:
-            st.info("Not enough text to build a wordcloud / word frequency view.")
-            return
+    if not tokens:
+        st.info("Not enough text to build a wordcloud / word frequency view.")
+        return
 
-        word_freq = Counter(tokens)
-        top_20_words = word_freq.most_common(20)
+    word_freq = Counter(tokens)
+    top_20_words = word_freq.most_common(20)
 
-        # Wordcloud
-        st.subheader("Wordcloud")
-        wc = WordCloud(
-            width=800,
-            height=400,
-            background_color="white"
-        ).generate_from_frequencies(dict(top_20_words))
-        st.image(wc.to_array(), use_column_width=True)
+    # Wordcloud
+    st.subheader("Wordcloud")
+    wc = WordCloud(
+        width=800,
+        height=400,
+        background_color="white"
+    ).generate_from_frequencies(dict(top_20_words))
+    st.image(wc.to_array(), use_column_width=True)
 
-        # Bar chart of word frequency
-        temp_df = pd.DataFrame(top_20_words, columns=["word", "frequency"])
+    # Bar chart of word frequency
+    temp_df = pd.DataFrame(top_20_words, columns=["word", "frequency"])
 
-        fig = px.bar(
-            temp_df,
-            x="word",
-            y="frequency",
-            text="frequency",
-            labels={"word": "Word", "frequency": "Frequency"},
-        )
-        fig.update_traces(
-            hovertemplate="Word: %{x}<br>Frequency: %{y}",
-            hoverinfo="text",
-            textposition="outside",
-        )
-        st.plotly_chart(fig, use_container_width=True)
+    fig = px.bar(
+        temp_df,
+        x="word",
+        y="frequency",
+        text="frequency",
+        labels={"word": "Word", "frequency": "Frequency"},
+    )
+    fig.update_traces(
+        hovertemplate="Word: %{x}<br>Frequency: %{y}",
+        hoverinfo="text",
+        textposition="outside",
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
-        # 5) Example texts for selected frequent word
-        st.subheader("Example posts for frequent words")
-        freq_words_array = [w for w, _ in top_20_words]
-        freq_selected_word = st.selectbox("Select a word:", freq_words_array)
+    # 5) Example texts for selected frequent word
+    st.subheader("Example posts for frequent words")
+    freq_words_array = [w for w, _ in top_20_words]
+    freq_selected_word = st.selectbox("Select a word:", freq_words_array)
 
-        if freq_selected_word:
-            filtered_df = df_sel[
-                df_sel["text"].str.contains(freq_selected_word, case=False, na=False)
-            ][["text", "emotion"]]
-            st.dataframe(filtered_df, use_container_width=True)
+    if freq_selected_word:
+        filtered_df = df_sel[
+            df_sel["text"].str.contains(freq_selected_word, case=False, na=False)
+        ][["text", "emotion"]]
+        st.dataframe(filtered_df, use_container_width=True)
