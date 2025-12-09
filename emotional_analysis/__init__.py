@@ -97,7 +97,7 @@ def emotional_analysis(df: pd.DataFrame):
         height=400,
         background_color="white"
     ).generate_from_frequencies(dict(top_20_words))
-    st.image(wc.to_array(), use_column_width=True)
+    st.image(wc.to_array(), use_container_width=True)
 
     # ---------- 4) Bar chart of word frequency ----------
     temp_df = pd.DataFrame(top_20_words, columns=["word", "frequency"])
