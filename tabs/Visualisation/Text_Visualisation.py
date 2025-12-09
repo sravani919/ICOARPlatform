@@ -11,7 +11,8 @@ import streamlit as st
 
 from emotional_analysis import emotional_analysis
 from tabs.Data_Collection.data_upload import data_upload_element
-from Visualisation import add_graph_info
+from tabs.Visualisation import add_graph_info
+
 
 
 def Text_Visualisation_tab():
