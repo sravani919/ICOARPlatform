@@ -303,6 +303,33 @@ def Text_Visualisation_tab():
             st.plotly_chart(fig2)
 
     # ====================== 😊 EMOTION ANALYSIS ======================
+        # ====================== 😊 EMOTION ANALYSIS ======================
     elif selected_option == "Emotion Analysis":
-        emotional_analysis(df)
+        st.subheader("Emotion Analysis")
+
+        cols_all = list(data.columns)
+
+        # Let the user pick which columns are text + emotion
+        text_col = st.selectbox(
+            "Select the text column",
+            cols_all,
+            index=cols_all.index("text") if "text" in cols_all else 0,
+        )
+
+        emotion_col = st.selectbox(
+            "Select the emotion/label column",
+            cols_all,
+            index=cols_all.index("emotion") if "emotion" in cols_all else 0,
+        )
+
+        # Keep only those two columns and rename them to what emotional_analysis expects
+        df_emotion = data[[text_col, emotion_col]].rename(
+            columns={text_col: "text", emotion_col: "emotion"}
+        )
+
+        # Optional: show the columns to be sure
+        st.write("Using columns for emotion analysis:", df_emotion.columns.tolist())
+
+        emotional_analysis(df_emotion)
+
 
