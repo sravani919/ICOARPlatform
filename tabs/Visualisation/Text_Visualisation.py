@@ -7,12 +7,10 @@ import plotly.graph_objects as go
 import pyLDAvis
 import pyLDAvis.gensim_models as gensimvis
 import streamlit as st
-# from nltk.tokenize import word_tokenize  # no longer needed
 
 from emotional_analysis import emotional_analysis
 from tabs.Data_Collection.data_upload import data_upload_element
 from visualization import add_graph_info
-
 
 
 def Text_Visualisation_tab():
@@ -21,19 +19,16 @@ def Text_Visualisation_tab():
 
     username = st.session_state["username"]
 
-    # Use data_upload_element to allow file upload
+    # ----------------- Data source selection -----------------
     choice = st.radio("Choose data source:", ("Upload new data", "Select from folder"))
 
     if choice == "Upload new data":
-        # Use data_upload to allow file upload
         st.session_state.filename_pred = ""
         uploaded_file = data_upload_element(username, get_filepath_instead=True)
-
         if uploaded_file:
             st.session_state.filename_pred = uploaded_file
 
     elif choice == "Select from folder":
-        # Allow user to select a file from a folder
         folder_files = [file for file in glob.glob(f"./predicted/{username}/*.csv")]
         selected_file = st.selectbox("Select a file from folder", [""] + folder_files)
 
@@ -46,21 +41,26 @@ def Text_Visualisation_tab():
 
     # ----------------- Load data -----------------
     df = pd.read_csv(st.session_state.filename_pred)
-    options = ["📊Bar Plot", "🥧Pie Chart", "🎯Topic Modeling", "📈Temporal Analysis", "Emotion Analysis"]
-    selected_option = st.selectbox("Select an type of visualisation", options)
+
+    options = [
+        "📊Bar Plot",
+        "🥧Pie Chart",
+        "🎯Topic Modeling",
+        "📈Temporal Analysis",
+        "Emotion Analysis",
+    ]
+    selected_option = st.selectbox("Select a type of visualisation", options)
 
     data = df
 
-    # Make sure we have text
-    if "text" not in data.columns:
-        st.error("The selected dataset must contain a 'text' column.")
-        return
-
-    data = data[data["text"].notna()]  # remove all data with nan text
-
     # ---------- helper to pick a sensible default label column ----------
     def pick_label_column(df_):
-        preferred = ["sentiment", "Sentiment", "label", "Label", "prediction", "pred", "sentiment_label"]
+        preferred = [
+            "sentiment", "Sentiment",
+            "label", "Label",
+            "prediction", "pred",
+            "sentiment_label",
+        ]
         cols = list(df_.columns)
         for c in preferred:
             if c in cols:
@@ -68,11 +68,28 @@ def Text_Visualisation_tab():
         return 0  # fallback: first column
     # -------------------------------------------------------------------
 
+    # For some visualizations, we DO need a text-like column
+    text_required_options = ["🎯Topic Modeling", "📈Temporal Analysis", "Emotion Analysis"]
+
+    if selected_option in text_required_options and "text" not in data.columns:
+        st.error(
+            "The selected dataset must contain a 'text' column for this visualisation "
+            "(Topic Modeling, Temporal Analysis, or Emotion Analysis)."
+        )
+        return
+
+    if "text" in data.columns:
+        data = data[data["text"].notna()]  # remove rows with NaN text
+
     # ====================== 📊 BAR PLOT ======================
     if selected_option == "📊Bar Plot":
         cols_all = list(data.columns)
         label_index = pick_label_column(data)
-        label_col = st.selectbox("Select label column for bar plot", cols_all, index=label_index)
+        label_col = st.selectbox(
+            "Select label column for bar plot",
+            cols_all,
+            index=min(label_index, len(cols_all) - 1),
+        )
 
         value_counts = data[label_col].value_counts()
 
@@ -80,13 +97,11 @@ def Text_Visualisation_tab():
             cols = st.columns(3)
             with cols[0]:
                 title = st.text_input("Title", f"Classification of Posts by {label_col}")
-
                 x_label = st.text_input("X label", label_col)
                 y_label = st.text_input("Y label", "Count")
                 label_font_size = st.slider("Label font size", 10, 50, 15)
             with cols[1]:
                 title_font_size = st.slider("Title font size", 10, 50, 20)
-
                 x_tick_font_size = st.slider("X tick font size", 5, 50, 10)
                 y_tick_font_size = st.slider("Y tick font size", 5, 50, 10)
             with cols[2]:
@@ -103,7 +118,6 @@ def Text_Visualisation_tab():
             title_font=dict(size=title_font_size, color=text_color),
             xaxis_title=x_label,
             yaxis_title=y_label,
-            title_font_size=title_font_size,
             xaxis=dict(
                 tickfont=dict(size=x_tick_font_size, color=text_color),
                 title_font=dict(size=label_font_size, color=text_color),
@@ -126,7 +140,11 @@ def Text_Visualisation_tab():
     elif selected_option == "🥧Pie Chart":
         cols_all = list(data.columns)
         label_index = pick_label_column(data)
-        label_col = st.selectbox("Select label column for pie chart", cols_all, index=label_index)
+        label_col = st.selectbox(
+            "Select label column for pie chart",
+            cols_all,
+            index=min(label_index, len(cols_all) - 1),
+        )
 
         value_counts = data[label_col].value_counts()
 
@@ -157,12 +175,12 @@ def Text_Visualisation_tab():
             textposition="outside",
         )
         st.plotly_chart(fig1)
+
         with st.expander("Show Additional Information"):
             add_graph_info(value_counts, data)
 
     # ====================== 🎯 TOPIC MODELING ======================
     elif selected_option == "🎯Topic Modeling":
-        # Avoid NLTK 'punkt_tab' issue: use simple whitespace split
         data_text = data["text"].astype(str).tolist()
         tokenized_data = [txt.split() for txt in data_text]
 
@@ -177,7 +195,12 @@ def Text_Visualisation_tab():
             st.warning("Not enough vocabulary in the text to build topics.")
             return
 
-        lda_model = gensim.models.LdaModel(corpus=corpus, id2word=dictionary, num_topics=10, passes=10)
+        lda_model = gensim.models.LdaModel(
+            corpus=corpus,
+            id2word=dictionary,
+            num_topics=10,
+            passes=10,
+        )
 
         topic_labels = []
         topics = lda_model.show_topics(num_topics=10, num_words=10, formatted=False)
@@ -197,6 +220,7 @@ def Text_Visualisation_tab():
     elif selected_option == "📈Temporal Analysis":
         interval_options = ["1 day", "1 hour", "30 minutes", "1 minute"]
         time_interval = st.selectbox("Select the time interval of the analysis:", interval_options)
+
         if time_interval == "1 day":
             sample_key = "D"
         elif time_interval == "1 hour":
@@ -207,8 +231,10 @@ def Text_Visualisation_tab():
             sample_key = "1min"
         else:
             sample_key = "D"
+
         fig, ax = plt.subplots(figsize=(10, 6))
-        # look for columns date or create_time, if not present, show error
+
+        # date column
         if "date" in data.columns:
             date_key = "date"
         elif "create_time" in data.columns:
@@ -216,6 +242,8 @@ def Text_Visualisation_tab():
         else:
             st.error("The date or create_time column is not present in the dataset.")
             return
+
+        # user column
         if "user_name" in data.columns:
             user_key = "user_name"
         elif "username" in data.columns:
@@ -228,8 +256,11 @@ def Text_Visualisation_tab():
 
         data.loc[:, date_key] = pd.to_datetime(data[date_key], errors="coerce")
         data = data[data[date_key].notna()]
+
         keywords = (
-            st.text_input("Enter the keywords of interest seperated by comma (i.e., covid, lockdown, ... ):")
+            st.text_input(
+                "Enter the keywords of interest separated by comma (i.e., covid, lockdown, ... ):"
+            )
             .lower()
             .split(",")
         )
@@ -237,7 +268,8 @@ def Text_Visualisation_tab():
         masks = [data["text"].str.contains(keyword.strip(), case=False, na=False) for keyword in keywords]
 
         daily_counts = [
-            data.loc[mask, date_key].value_counts().sort_index().resample(sample_key).sum() for mask in masks
+            data.loc[mask, date_key].value_counts().sort_index().resample(sample_key).sum()
+            for mask in masks
         ]
 
         cols1 = st.columns(2)
@@ -278,39 +310,51 @@ def Text_Visualisation_tab():
 
         cols2 = st.columns(2)
         with cols2[0]:
-            # overall daily tweet count for all keywords
             mask = data["text"].str.contains("|".join(keywords), case=False)
-            daily_counts_sum = data.loc[mask, date_key].value_counts().sort_index().resample(sample_key).sum()
+            daily_counts_sum = (
+                data.loc[mask, date_key].value_counts().sort_index().resample(sample_key).sum()
+            )
             trace1 = go.Scatter(
-                x=daily_counts_sum.index, y=daily_counts_sum.values, mode="lines", name="Daily Tweet Count"
+                x=daily_counts_sum.index,
+                y=daily_counts_sum.values,
+                mode="lines",
+                name="Daily Tweet Count",
             )
 
-            layout1 = go.Layout(title="Daily Tweet Counts", xaxis=dict(title="Date"), yaxis=dict(title="Count"))
+            layout1 = go.Layout(
+                title="Daily Tweet Counts",
+                xaxis=dict(title="Date"),
+                yaxis=dict(title="Count"),
+            )
 
             fig1 = go.Figure(data=[trace1], layout=layout1)
-
             st.plotly_chart(fig1)
 
         with cols2[1]:
             top_posters = data[user_key].value_counts().nlargest(10)
 
-            trace2 = go.Bar(x=top_posters.index, y=top_posters.values, name="Top 10 Posters")
+            trace2 = go.Bar(
+                x=top_posters.index,
+                y=top_posters.values,
+                name="Top 10 Posters",
+            )
 
-            layout2 = go.Layout(title="Top 10 Posters", xaxis=dict(title="User"), yaxis=dict(title="Tweet Count"))
+            layout2 = go.Layout(
+                title="Top 10 Posters",
+                xaxis=dict(title="User"),
+                yaxis=dict(title="Tweet Count"),
+            )
 
             fig2 = go.Figure(data=[trace2], layout=layout2)
-
             st.plotly_chart(fig2)
 
     # ====================== 😊 EMOTION ANALYSIS ======================
-        # ====================== 😊 EMOTION ANALYSIS ======================
-        # ====================== 😊 EMOTION ANALYSIS ======================
     elif selected_option == "Emotion Analysis":
         st.subheader("Emotion Analysis")
 
         cols_all = list(data.columns)
 
-        # Let the user pick which columns are text + emotion
+        # Let the user pick which columns are text + emotion/label
         text_col = st.selectbox(
             "Select the text column",
             cols_all,
@@ -328,7 +372,6 @@ def Text_Visualisation_tab():
             columns={text_col: "text", emotion_col: "emotion"}
         )
 
-        # Optional: show the columns to be sure
         st.write("Using columns for emotion analysis:", df_emotion.columns.tolist())
 
         emotional_analysis(df_emotion)
