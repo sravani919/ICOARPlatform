@@ -145,24 +145,28 @@ class BasePage(ABC):
             [this link](https://community.openai.com/t/cheat-sheet-mastering-temperature-and-top-p-in-chatgpt-api-a-few-tips-and-tricks-on-controlling-the-creativity-deterministic-output-of-prompt-responses/172683)."""
         )
 
-        # ✅ Make sure api_key attribute exists (extra safety)
+        # ------------------ API KEY HANDLING ------------------
+
+        # Extra safety: ensure attribute exists
         if not hasattr(self, "api_key"):
             self.api_key = None
 
-        # ✅ Let user enter their own API key if none configured
+        # Let user enter their own key if none configured
         if self.api_key is None:
             user_key = st.text_input(
-                "Enter your OpenAI API key to enable labeling",
+                "Enter your OpenAI API key to enable text labeling",
                 type="password",
             )
             if user_key:
                 self.api_key = user_key
                 st.session_state["user_openai_key"] = user_key
 
-        # ✅ If still no key, stop here (no crash)
+        # If still no key, stop here (no crash)
         if self.api_key is None:
             st.error("Enter your API key (or configure it in secrets.toml under [openai]).")
             return
+
+        # ---------------- END API KEY HANDLING ----------------
 
         with st.expander("Add hyper-parameters"):
             st.session_state.llm = openai_model_form()
@@ -174,7 +178,7 @@ class BasePage(ABC):
             chain.save("config.yaml")
             display_download_button()
 
-        # Section for ChatGPT labeling a dataset created by ICOAR
+        # section for ChatGPT labeling a dataset created by ICOAR
         st.markdown(
             """**5. Upload the File:** Once you are satisfied with the test results, you can proceed to label your
             entire dataset. Click the "Select a File" button to upload the file you want to label. Please ensure that
