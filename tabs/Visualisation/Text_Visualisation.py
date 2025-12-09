@@ -15,8 +15,6 @@ from visualization import add_graph_info
 
 
 
-
-
 def Text_Visualisation_tab():
     if "filename_pred" not in st.session_state:
         st.session_state.filename_pred = ""
@@ -306,5 +304,5 @@ def Text_Visualisation_tab():
 
     # ====================== 😊 EMOTION ANALYSIS ======================
     elif selected_option == "Emotion Analysis":
-        st.session_state.output = df
-        emotional_analysis(st.session_state.output)
+        emotional_analysis(df)
+
