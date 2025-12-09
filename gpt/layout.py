@@ -14,7 +14,11 @@ from langchain.chains import LLMChain
 from langchain.prompts.few_shot import FewShotPromptTemplate
 from streamlit import secrets
 
-from gpt.components import display_download_button, openai_model_form, task_instruction_editor
+from gpt.components import (
+    display_download_button,
+    openai_model_form,
+    task_instruction_editor,
+)
 from gpt.image_labeling import image_labeling
 from gpt.utils import escape_markdown, key_directions
 from tabs.Data_Collection.data_upload import data_upload_element
@@ -25,10 +29,25 @@ class BasePage(ABC):
 
     def __init__(self, title: str) -> None:
         self.title = title
-        if "openai" in secrets:
-            self.api_key = next(iter(secrets["openai"].values()), None)
-        else:
-            st.error("[openai] key not in secrets.toml")
+
+        # ✅ Always define api_key so it never crashes
+        self.api_key = None
+
+        # Try to get key from Streamlit secrets (optional)
+        try:
+            if "openai" in secrets:
+                # Prefer explicit 'api_key' entry if present
+                self.api_key = secrets["openai"].get("api_key", None)
+                if self.api_key is None:
+                    # Fallback: first value under [openai]
+                    self.api_key = next(iter(secrets["openai"].values()), None)
+        except Exception:
+            # If secrets access fails, just leave api_key as None
+            pass
+
+        # Also restore any user-provided key from session (if set earlier)
+        if "user_openai_key" in st.session_state and not self.api_key:
+            self.api_key = st.session_state["user_openai_key"]
 
     @property
     def columns(self) -> List[str]:
@@ -61,26 +80,29 @@ class BasePage(ABC):
 
         if "predict" not in st.session_state:
             st.session_state.predict = False
+
+        # Small UI tweaks
         st.markdown(
             f"""
-                    <style>
-                        div[data-testid="stButton"] {{
-                            margin-top: {8}px;
-                            margin-bottom: {6}px;
-                        }}
-                        div[data-testid="stMarkdownContainer"] {{
-                            margin-top: {2}px;
-                            margin-bottom: {2}px;
-                        }}
-                    </style>
-                    """,
+            <style>
+                div[data-testid="stButton"] {{
+                    margin-top: {8}px;
+                    margin-bottom: {6}px;
+                }}
+                div[data-testid="stMarkdownContainer"] {{
+                    margin-top: {2}px;
+                    margin-bottom: {2}px;
+                }}
+            </style>
+            """,
             unsafe_allow_html=True,
         )
+
         st.markdown(
             """In this section, you have the opportunity to utilize ChatGPT to annotate text according to your
-                    custom labels. You have the option to label a CSV file using the provided ChatGPT interface. Below
-                    is a demo of how it works:
-                    """
+            custom labels. You have the option to label a CSV file using the provided ChatGPT interface. Below
+            is a demo of how it works:
+            """
         )
         st.markdown("In this example, we are labeling whether text is cyberbullying or not:")
 
@@ -88,8 +110,8 @@ class BasePage(ABC):
 
         st.markdown(
             """**2. Input Text:** Enter or paste the text you want to annotate into the provided text box along with
-                    desired labels. This text may include sentences, paragraphs, or any content based on your custom
-                    labels.Along with the text, specify the labels you want to apply."""
+            desired labels. This text may include sentences, paragraphs, or any content based on your custom
+            labels. Along with the text, specify the labels you want to apply."""
         )
 
         columns = self.columns
@@ -99,8 +121,8 @@ class BasePage(ABC):
 
         st.markdown(
             """**3. Edit the prompt (Optional):** You can modify the prompt that instruct ChatGPT. The choice of
-                    prompt greatly influences the generated responses and the quality of the annotation. Ensure that
-                    your edits are clear and relevant to the task."""
+            prompt greatly influences the generated responses and the quality of the annotation. Ensure that
+            your edits are clear and relevant to the task."""
         )
 
         prompt = self.make_prompt(examples)
@@ -123,8 +145,19 @@ class BasePage(ABC):
             [this link](https://community.openai.com/t/cheat-sheet-mastering-temperature-and-top-p-in-chatgpt-api-a-few-tips-and-tricks-on-controlling-the-creativity-deterministic-output-of-prompt-responses/172683)."""
         )
 
+        # ✅ Let users enter their own API key (so you don't pay)
         if self.api_key is None:
-            st.error("Enter your API key in secrets.toml under [openai].")
+            user_key = st.text_input(
+                "Enter your OpenAI API key to enable labeling",
+                type="password",
+            )
+            if user_key:
+                self.api_key = user_key
+                st.session_state["user_openai_key"] = user_key
+
+        # If still no key, stop here
+        if self.api_key is None:
+            st.error("Enter your API key (or configure it in secrets.toml under [openai]).")
             return
 
         with st.expander("Add hyper-parameters"):
@@ -137,22 +170,21 @@ class BasePage(ABC):
             chain.save("config.yaml")
             display_download_button()
 
-        #  usage()
-
-        # section for chatgpt labeling a dataset created by icoar
+        # section for ChatGPT labeling a dataset created by icoar
         st.markdown(
             """**5. Upload the File:** Once you are satisfied with the test results, you can proceed to label your
             entire dataset. Click the "Select a File" button to upload the file you want to label. Please ensure that
-            your CSV file is properly formatted the labels you provided in Step 1 should match the labels in your CSV
+            your CSV file is properly formatted; the labels you provided in Step 1 should match the labels in your CSV
             file for accurate annotation."""
         )
 
         st.markdown("**Note:** This will use the parameters you put in the test section.")
 
         if st.session_state.llm is None:
-            st.error("Enter your API key.")
+            st.error("Enter your API key and configure the model above before labeling a dataset.")
+            return
 
-        # option = st.selectbox("Select a file", [file for file in glob.glob("./data/*.csv")], key="unique_key_1")
+        # User-specific upload path
         option = data_upload_element(st.session_state["username"], get_filepath_instead=True)
 
         if st.button("Predict Labels", disabled=st.session_state.llm is None):
@@ -173,7 +205,10 @@ class BasePage(ABC):
                         response = response.replace("label:", "").strip().capitalize()
                         df.loc[index, "label"] = response
                         progress = (index + 1) / total_rows
-                        progress_bar.progress(progress, text=f"Predicting text: {progress * 100:.2f}% complete")
+                        progress_bar.progress(
+                            progress,
+                            text=f"Predicting text: {progress * 100:.2f}% complete",
+                        )
                         break
                     except Exception as ex:
                         print(ex)
@@ -193,7 +228,8 @@ class BasePage(ABC):
             if save:
                 if not os.path.exists("predicted"):
                     os.makedirs("predicted")
-                    os.makedirs(f"""predicted/{username}""")
+                if not os.path.exists(f"predicted/{username}"):
+                    os.makedirs(f"predicted/{username}")
                 file_path = f"predicted/{username}/{filename}.csv"
                 st.session_state.output.to_csv(file_path, index=False)
 
