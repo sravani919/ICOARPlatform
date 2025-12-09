@@ -45,7 +45,7 @@ class BasePage(ABC):
             # If secrets access fails, just leave api_key as None
             pass
 
-        # Also restore any user-provided key from session (if set earlier)
+        # Restore any user-provided key from session (if previously set)
         if "user_openai_key" in st.session_state and not self.api_key:
             self.api_key = st.session_state["user_openai_key"]
 
@@ -145,7 +145,11 @@ class BasePage(ABC):
             [this link](https://community.openai.com/t/cheat-sheet-mastering-temperature-and-top-p-in-chatgpt-api-a-few-tips-and-tricks-on-controlling-the-creativity-deterministic-output-of-prompt-responses/172683)."""
         )
 
-        # ✅ Let users enter their own API key (so you don't pay)
+        # ✅ Make sure api_key attribute exists (extra safety)
+        if not hasattr(self, "api_key"):
+            self.api_key = None
+
+        # ✅ Let user enter their own API key if none configured
         if self.api_key is None:
             user_key = st.text_input(
                 "Enter your OpenAI API key to enable labeling",
@@ -155,7 +159,7 @@ class BasePage(ABC):
                 self.api_key = user_key
                 st.session_state["user_openai_key"] = user_key
 
-        # If still no key, stop here
+        # ✅ If still no key, stop here (no crash)
         if self.api_key is None:
             st.error("Enter your API key (or configure it in secrets.toml under [openai]).")
             return
@@ -170,7 +174,7 @@ class BasePage(ABC):
             chain.save("config.yaml")
             display_download_button()
 
-        # section for ChatGPT labeling a dataset created by icoar
+        # Section for ChatGPT labeling a dataset created by ICOAR
         st.markdown(
             """**5. Upload the File:** Once you are satisfied with the test results, you can proceed to label your
             entire dataset. Click the "Select a File" button to upload the file you want to label. Please ensure that
