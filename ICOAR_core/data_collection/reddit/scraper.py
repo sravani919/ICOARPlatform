@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 
 import praw
@@ -5,112 +6,136 @@ import praw
 from ..utils import BaseDataCollector, ProgressUpdate, download_images
 
 
+# -------------------------------------------------
+# Initialize Reddit connection (LOCAL SAFE)
+# -------------------------------------------------
 def init_connection():
     reddit = praw.Reddit(
         client_id="99OTDRHSAKWRJxGTgdr9tw",
         client_secret="FbJfe84kzDsTC2UKBD6RO_DSPM6vhQ",
-        user_agent="Character_Growth1181",
+        user_agent="ICOAR_Local_Scraper",
     )
     return reddit
 
 
-def fetch_data(reddit, keywords, max_results, collect_images, only_images, get_comments, comment_limit):
+# -------------------------------------------------
+# Fetch posts + comments
+# -------------------------------------------------
+def fetch_data(
+    reddit,
+    keywords,
+    max_results,
+    collect_images,
+    only_images,
+    get_comments,
+    comment_limit,
+):
     subreddit = reddit.subreddit("all")
-    yield ProgressUpdate(0, "Fetching posts")
-    results = subreddit.search(keywords, sort="relevance", limit=max_results)
-    yield ProgressUpdate(0.5, "Processing posts")
+
+    # ✅ CRITICAL FIX: keywords must be a string
+    if isinstance(keywords, (list, tuple)):
+        keywords = " OR ".join(keywords)
+
+    yield ProgressUpdate(0.0, "Fetching posts from Reddit...")
+
+    results = subreddit.search(
+        query=keywords,
+        sort="relevance",
+        limit=max_results,
+    )
 
     data = []
-    for j, post in enumerate(results):
-        yield ProgressUpdate(j / max_results, f"Processing posts ({j + 1}/{max_results} posts processed)")
 
-        if only_images and (post.is_self or not post.url.endswith((".jpg", ".jpeg", ".png", ".gif"))):
+    for idx, post in enumerate(results):
+        yield ProgressUpdate(
+            min(idx / max_results, 1.0),
+            f"Processing post {idx + 1}/{max_results}",
+        )
+
+        # Skip non-image posts if ONLY images requested
+        if only_images and (
+            post.is_self
+            or not post.url.lower().endswith((".jpg", ".jpeg", ".png", ".gif"))
+        ):
             continue
 
-        if collect_images and not post.is_self and post.url.endswith((".jpg", ".jpeg", ".png", ".gif")):
-            image_urls = [post.url]
-        else:
-            image_urls = []
+        # Collect image URLs if enabled
+        image_urls = []
+        if collect_images and not post.is_self:
+            if post.url.lower().endswith((".jpg", ".jpeg", ".png", ".gif")):
+                image_urls.append(post.url)
 
+        # -----------------------------
+        # Collect comments (IMPORTANT)
+        # -----------------------------
+        comments = []
         if get_comments:
-            submission = reddit.submission(id=post.id)
-            comments = []
-            submission.comments.replace_more(limit=comment_limit)
+            try:
+                submission = reddit.submission(id=post.id)
+                submission.comments.replace_more(limit=0)
 
-            # When the comment_limit is None, it should be treated as infinity
-            cl = comment_limit if comment_limit is not None else float("inf")
-            max_comments = min(cl, len(submission.comments.list()))
-
-            for i, comment in enumerate(submission.comments.list()):
-                yield ProgressUpdate(
-                    i / max_comments, f"Processing comments ({i + 1}/{max_comments} comments processed)"
-                )
-                if i >= max_comments:
-                    break
-                # comments.append(
-                #     {
-                #         "id": comment.id,
-                #         "author": comment.author.name if comment.author else None,
-                #         "score": comment.score,
-                #         "created_utc": datetime.utcfromtimestamp(comment.created_utc).strftime("%Y-%m-%d %H:%M:%S"),
-                #         "text": comment.body,
-                #     }
-                # )
-                # Remove double quotes
-                comment.body = comment.body.replace('"', "")
-                comments.append(comment.body)
-        else:
-            comments = []
+                limit = comment_limit or 50
+                for comment in submission.comments.list()[:limit]:
+                    if comment.body:
+                        comments.append(comment.body.replace('"', ""))
+            except Exception:
+                comments = []
 
         post_data = {
-            "id": post.id,
+            "post_id": post.id,
+            "subreddit": post.subreddit.display_name,
             "title": post.title,
-            "author": post.author.name,
+            "text": post.selftext.replace('"', ""),
             "score": post.score,
-            "post_url": f"https://www.reddit.com{post.permalink}",
-            "created_utc": datetime.utcfromtimestamp(post.created_utc).strftime("%Y-%m-%d %H:%M:%S"),
             "num_comments": post.num_comments,
-            # changed from selftext to text to better align with the preprocessing
-            "text": post.selftext,
-            "total_awards_received": post.total_awards_received,
-            "over_18": post.over_18,
-            "image_urls": image_urls,
+            "created_utc": datetime.utcfromtimestamp(
+                post.created_utc
+            ).strftime("%Y-%m-%d %H:%M:%S"),
+            "post_url": f"https://www.reddit.com{post.permalink}",
             "comments": comments,
+            "image_urls": image_urls,
+            "over_18": post.over_18,
         }
 
         data.append(post_data)
+
     yield data
 
 
-def grab_posts(keywords, tweet_count, must_have_images, get_comments, comment_limit):
+# -------------------------------------------------
+# Generator wrapper
+# -------------------------------------------------
+def grab_posts(keywords, count, must_have_images, get_comments, comment_limit):
     reddit = init_connection()
-
     collect_images = False
 
-    # Forwarding the progress updates until the data is ready
-    for posts in fetch_data(
-        reddit, keywords, tweet_count, collect_images, must_have_images, get_comments, comment_limit
+    posts_data = None
+
+    for item in fetch_data(
+        reddit,
+        keywords,
+        count,
+        collect_images,
+        must_have_images,
+        get_comments,
+        comment_limit,
     ):
-        if isinstance(posts, ProgressUpdate):
-            yield posts
-            continue
+        if isinstance(item, ProgressUpdate):
+            yield item
         else:
-            break
+            posts_data = item
 
-    if collect_images:
-        for i, post in enumerate(posts):
-            yield ProgressUpdate(i / len(posts), f"Downloading images ({i + 1}/{len(posts)} images downloaded)")
-            download_images(posts, "images", i)
+    if posts_data is None:
+        yield []
+        return
 
-    # df = pd.DataFrame(posts)
-    # # st.dataframe(df)
-    yield posts
+    yield posts_data
 
 
+# -------------------------------------------------
+# ICOAR Collector Interface
+# -------------------------------------------------
 class Collector(BaseDataCollector):
-    def __init__(self):
-        pass
-
     def query_options(self):
         return ["count", "keywords", "images", "get_comments", "comment_limit"]
 
@@ -118,4 +143,10 @@ class Collector(BaseDataCollector):
         return []
 
     def collect_generator(self, count, keywords, images, get_comments, comment_limit):
-        yield from grab_posts(keywords, count, images, get_comments, comment_limit)
+        yield from grab_posts(
+            keywords,
+            count,
+            images,
+            get_comments,
+            comment_limit,
+        )

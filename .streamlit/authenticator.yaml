@@ -8,6 +8,18 @@ credentials:
       email: allen.ty.chang@gmail.com
       name: Allen Chang
       password: $2b$12$I.E9myP3MfihzOSxrpkf8.O5S4xJuQNtxg7gd6Mdlzq6hXUVLEGQ.
+    kotu:
+      email: kotu@gmail.com
+      name: kotu
+      password: $2b$12$Nm4H3i0msr2O5sSwSM3vEuS1PTawJW2qg42wstnGMHZNgY0NqyOkO
+    kotu123:
+      email: kotu123@gmail.com
+      name: kotu123
+      password: $2b$12$kJzq/raYQj0z1Y4Ak.Wn.eBmlv5THBLl05enfRB9F8eeQBXTOg5uu
+    laxmi:
+      email: laxmi@gmail.com
+      name: laxmi
+      password: $2b$12$TlifUtVGOngDCujOfoPEWe8tL5iZwZyVgfqSsUJl2Jy0Y0J4F7W12
     mo123:
       email: SLDKFOP@GMAIL.COM
       name: MO123

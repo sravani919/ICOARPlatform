@@ -1,57 +1,55 @@
 import streamlit as st
-from replicate.client import Client
+import openai
 
-from common.css import top_margin_20
+def _get_openai_key() -> str | None:
+    # 1) session key (user typed)
+    k = st.session_state.get("OPENAI_API_KEY")
+    if k:
+        return k.strip()
 
+    # 2) secrets (for your own dev)
+    try:
+        return st.secrets["openai"]["api_key"].strip()
+    except Exception:
+        return None
 
-def input():
-    label = "Enter your prompt below"
-    prompt = st.text_area(
-        label,
-        value="",
-        height=None,
-        max_chars=None,
-        key=None,
-        help=None,
-        on_change=None,
-        args=None,
-        kwargs=None,
-        placeholder=None,
-        disabled=False,
-        label_visibility="visible",
-    )
-
-    return prompt
-
+def _key_box():
+    st.caption("Enter your OpenAI API key to run this module (used only for this session).")
+    st.text_input("OpenAI API Key", type="password", key="OPENAI_API_KEY")
 
 def generate_prompt():
-    cols = st.columns(1)
-    with cols[0]:
-        prompt = input()
-        top_margin_20()
-        generate_prompt = st.button("Generate Prompt")
-        system_prompt = """Can you optimize the prompt so that it gets better
-        results? Please output the optimized prompt only"""
+    st.subheader("Prompt Optimization")
+    _key_box()
 
-        if len(prompt) and generate_prompt:
-            top_margin_20()
-            with st.spinner("Generating Optimized Prompt..."):
-                replicate = Client(api_token="r8_Zpdr150QkjHxb3yL6rLFDVLuwgfxfZD3XJuW4")
-                output = replicate.run(
-                    "meta/llama-2-70b-chat:02e509c789964a7ea8736978a43525956ef40397be9033abf9fd2badfe68c9e3",
-                    input={
-                        "debug": False,
-                        "top_k": 50,
-                        "top_p": 1,
-                        "prompt": "Optimize the prompt - " + prompt,
-                        "temperature": 0.5,
-                        "system_prompt": system_prompt,
-                        "max_new_tokens": 500,
-                        "min_new_tokens": -1,
-                    },
-                )
-                strOutput = ""
-                for o in output:
-                    strOutput += o
-            st.write(strOutput)
-        # print('Output - ', o)
+    prompt = st.text_area("Enter your prompt below", value="", height=220)
+
+    if st.button("Generate Optimized Prompt", use_container_width=True):
+        api_key = _get_openai_key()
+        if not api_key:
+            st.error("Please enter your OpenAI API key.")
+            return
+        if not prompt.strip():
+            st.error("Please enter a prompt.")
+            return
+
+        openai.api_key = api_key
+
+        system_prompt = (
+            "You are a prompt optimization assistant. "
+            "Rewrite the user's prompt to be clearer, more specific, and more likely to get high-quality results. "
+            "Return ONLY the optimized prompt. No extra text."
+        )
+
+        with st.spinner("Generating Optimized Prompt..."):
+            resp = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": prompt},
+                ],
+                max_tokens=400,
+                temperature=0.4,
+            )
+
+        optimized = resp.choices[0].message["content"].strip()
+        st.text_area("Optimized Prompt", value=optimized, height=220)

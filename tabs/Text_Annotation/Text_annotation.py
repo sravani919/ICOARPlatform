@@ -1,5 +1,6 @@
-from typing import Dict, List
+# tabs/Text_Annotation/Text_annotation.py
 
+from typing import Dict, List
 import pandas as pd
 import streamlit as st
 
@@ -22,7 +23,19 @@ class TextClassificationPage(BasePage):
         return {"input": st.text_area(label="Please enter your text.", value="", height=300)}
 
 
-# Create a subtab for "Text Annotation"
-def text_annotation_tab(labeling_mode):
-    page = TextClassificationPage(st.subheader("Annotate Your own data"))
+def text_annotation_tab(labeling_mode="Text Labeling"):
+    # ✅ Heading changes based on the mode
+    title = "Image Labeling" if labeling_mode == "Image Labeling" else "Text Annotation"
+    subtitle = (
+        "Label images using your custom labels (optionally with GPT)."
+        if labeling_mode == "Image Labeling"
+        else "Annotate text using your custom labels (optionally with GPT)."
+    )
+
+    st.subheader(title)
+    st.caption(subtitle)
+
+    # Pass a stable parent container (better than st.subheader return object)
+    parent = st.container()
+    page = TextClassificationPage(parent)
     page.render(labeling_mode)

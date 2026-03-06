@@ -2,11 +2,6 @@ import streamlit as st
 
 
 def none_default_text_input(label):
-    """
-    Creates a text input that returns None if the user inputs nothing
-    :param label: The label of the text input
-    :return: The value of the text input or None if the user inputs nothing
-    """
     v = st.text_input(label)
     if v == "":
         return None
@@ -15,10 +10,9 @@ def none_default_text_input(label):
 
 def query_builder(option, container=None):
     """
-    Creates a query option based on the option and container and inserts it into the container.
-    :param option: The query option to create
-    :param container:  The container to insert the query option into
-    :return:The value of the query option
+    Creates a query option widget based on 'option' and inserts it into 'container'.
+    If container is None (or accidentally passed as the streamlit module), it will
+    fall back to st.container() to avoid __enter__ errors.
     """
 
     def keywords_and():
@@ -97,6 +91,10 @@ def query_builder(option, container=None):
         "comment_limit": set_comment_limit,
         "search_query": search_query,
     }
+
+    # ✅ Robust container fallback
+    if container is None or container is st:
+        container = st.container()
 
     with container:
         try:

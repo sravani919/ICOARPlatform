@@ -94,30 +94,19 @@ options = [
 def preprocess(filename, given_options):
     df = pd.read_csv(filename)
 
-    if given_options[0]:
-        # If fasttext/fmodel not available, this will just keep all rows
-        m = df.apply(filter_non_english, axis=1)
-        df = df[m]
-    if given_options[1]:
-        # It's important that this one goes first, so the other options don't mess with the text in
-        # a way that makes it harder to detect the URLs, Hashtags, and Mentions
-        df["text"] = df.apply(remove_url_hashtags_mentions, axis=1)
-    if given_options[2]:
-        df["text"] = df.apply(strip_special_characters, axis=1)
-    if given_options[3]:
-        df["text"] = df.apply(lemmatize_words, axis=1)
-    if given_options[4]:
-        df["text"] = df.apply(lowercase_words, axis=1)
-    if given_options[5]:
-        df["text"] = df.apply(strip_stop_words, axis=1)
-    if given_options[6]:
-        df = df[df.apply(filter_no_text, axis=1)]
-    if given_options[7]:
-        df["text"] = df.apply(strip_punctuation, axis=1)
-    if given_options[8]:  # Removes extra spaces
-        df["text"] = df.apply(remove_extra_spaces, axis=1)
-    if given_options[9]:
-        df["text"] = df.apply(remove_profanity, axis=1)
+    # -------------------------------------------------
+    # Ensure a 'text' column exists (CRITICAL FIX)
+    # -------------------------------------------------
+    if "text" not in df.columns:
+        if "post_text" in df.columns:
+            df["text"] = df["post_text"]
+        elif "title" in df.columns:
+            df["text"] = df["title"]
+        else:
+            raise ValueError(
+                f"No usable text column found. Columns available: {df.columns.tolist()}"
+            )
+
 
     # Shift rows to fill gaps in the index from the removed rows
     df.reset_index(drop=True, inplace=True)
@@ -126,15 +115,12 @@ def preprocess(filename, given_options):
 
 
 def none_avoidance(func):
-    """Avoid errors from dealing with None values when expecting strings."""
-
     def wrapper(row):
-        if isinstance(row["text"], float):
+        if "text" not in row or isinstance(row["text"], float):
             return ""
-        else:
-            return func(row)
-
+        return func(row)
     return wrapper
+
 
 
 def filter_non_english(row):

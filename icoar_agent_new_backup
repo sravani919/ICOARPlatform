@@ -1,4 +1,16 @@
-# icoar_agent.py  robust visualize intent + remembers last raw/clean files
+# icoar_agent.py — robust visualize + text-analysis intent + remembers last raw/clean/analyzed files
+# FULL UPDATED FILE (drop-in)
+#
+# Fixes included (your current bug):
+# 1) Explicit action parsing happens BEFORE fuzzy intent checks
+# 2) action parsing uses RAW user_input (preserves /Users/... case)
+# 3) action regex is IGNORECASE and does NOT lowercase file paths
+#
+# Keeps your features:
+# - collect/clean/visualize/analyze pipeline
+# - returns analyze actions for ALL tasks (toxicity/sentiment/hate/cyberbullying/emotion)
+# - "text analysis" intent auto-detects task + uses last clean/raw
+# - keyword extraction avoids turning "past 10 days" into keywords
 
 import os
 import json
@@ -19,6 +31,7 @@ import matplotlib.pyplot as plt
 from openai import OpenAI
 
 from ICOAR_core.data_collection.runner import collect_data
+from tabs.validation.validation import run_text_analysis_file
 
 
 # =========================================================
@@ -49,9 +62,9 @@ _PLATFORM_ALIASES = {
 
 _ABUSE_SYNONYMS = {
     "harassment": ["harassment", "harrasment", "harssment", "harresment", "cyberharassment"],
-    "hate speech": ["hate speech", "online hate", "hateful content", "hate"],
-    "cyberbullying": ["cyberbullying", "cyber bullying", "bullying", "cyber-abuse"],
-    "toxic content": ["toxic", "toxicity", "toxic content", "abusive language"],
+    "hate": ["hate", "hateful", "online hate", "hate speech", "hateful content"],
+    "cyberbullying": ["cyberbullying", "cyber bullying", "bullying", "cyber-abuse", "cyber abuse"],
+    "toxicity": ["toxic", "toxicity", "toxic content", "abusive language"],
     "misogyny": ["misogyny", "misoginy", "misoginist", "anti-women"],
     "xenophobia": ["xenophobia", "xenophbia", "anti-immigrant", "anti immigrant"],
     "religious hate": ["religious hate", "religion-based hate", "anti-muslim", "anti-christian", "anti-hindu"],
@@ -68,12 +81,24 @@ _TIME_HINTS = {
     "recent": ("day", SAFE_DATE_FALLBACK_DAYS),
 }
 
-# filler words to ignore for keywords
 _EXTRA_STOP = {
-    "can","you","help","please","pls","plz","me","we","they","he","she","it","yes","no","ok","okay",
-    "do","did","does","will","would","could","should","shall","kindly","also","just","now","then",
-    "the","a","an","and","of","to","in","on","for","about","around","regarding","from","with","by",
-    "posts","data","results","items","entries","recent","today","yesterday","last","week","month","year","days"
+    "can", "you", "help", "please", "pls", "plz", "me", "we", "they", "he", "she", "it", "yes", "no", "ok", "okay",
+    "do", "did", "does", "will", "would", "could", "should", "shall", "kindly", "also", "just", "now", "then",
+    "the", "a", "an", "and", "of", "to", "in", "on", "for", "about", "around", "regarding", "from", "with", "by",
+    "posts", "post", "data", "results", "items", "entries",
+    "recent", "today", "yesterday", "last", "week", "month", "year", "days", "day", "past",
+    "this", "that", "these", "those",
+    "ago", "within", "during", "from", "until", "till",
+}
+
+_ANALYSIS_TASKS = ["toxicity", "sentiment", "hate", "cyberbullying", "emotion"]
+
+_TASK_LABELS = {
+    "toxicity": "Text Analysis: Toxicity",
+    "sentiment": "Text Analysis: Sentiment",
+    "hate": "Text Analysis: Hate",
+    "cyberbullying": "Text Analysis: Cyberbullying",
+    "emotion": "Text Analysis: Emotion",
 }
 
 
@@ -137,28 +162,59 @@ def _extract_time_hint(user_text: str) -> Dict[str, Any]:
     for phrase, (unit, value) in _TIME_HINTS.items():
         if phrase in t:
             return {"time_hint": {"unit": unit, "value": value}}
+
+    m = re.search(r"\b(?:past|last)\s+(\d{1,3})\s+(day|days|week|weeks|month|months|year|years)\b", t)
+    if m:
+        val = _clip_count(m.group(1))
+        unit_raw = m.group(2).lower()
+        unit = "day"
+        if unit_raw.startswith("week"):
+            unit = "week"
+        elif unit_raw.startswith("month"):
+            unit = "month"
+        elif unit_raw.startswith("year"):
+            unit = "year"
+        return {"time_hint": {"unit": unit, "value": val}}
+
     return {}
 
 
 def _extract_keywords(user_text: str) -> List[str]:
     text = _normalize_text(user_text)
 
-    # quoted phrases
     quoted = re.findall(r'"([^"]+)"|\'([^\']+)\'', text)
     quoted = [q[0] or q[1] for q in quoted if (q[0] or q[1])]
     if quoted:
-        return [q.strip() for q in quoted if q.strip()][:5]
+        out = []
+        for q in quoted:
+            q = q.strip()
+            if q and not q.isdigit() and q.lower() not in _EXTRA_STOP:
+                out.append(q)
+        return out[:5]
 
-    # "on cyberbullying in schools"
     m = re.search(r"\b(?:of|about|on|for|around|regarding|in)\s+([A-Za-z0-9\-_, ]+)", text, re.I)
     if m:
         raw = m.group(1)
         parts = [p.strip() for p in re.split(r"[ ,]+", raw) if p.strip()]
-        return [p for p in parts if p.lower() not in _EXTRA_STOP][:5]
+        clean = []
+        for p in parts:
+            pl = p.lower()
+            if pl in _EXTRA_STOP:
+                continue
+            if re.fullmatch(r"\d+", p):
+                continue
+            clean.append(p)
+        return clean[:5]
 
-    # fallback tokens
     tokens = re.findall(r"[A-Za-z][A-Za-z0-9\-]{2,}", text)
-    kws = [w for w in tokens if w.lower() not in _EXTRA_STOP and not w.isdigit()]
+    kws = []
+    for w in tokens:
+        wl = w.lower()
+        if wl in _EXTRA_STOP:
+            continue
+        if re.fullmatch(r"\d+", w):
+            continue
+        kws.append(w)
     return kws[:5]
 
 
@@ -185,15 +241,18 @@ def _canonize_keywords(kw) -> List[str]:
         parts = [str(p).strip() for p in kw if str(p).strip()]
     else:
         return []
+
     result = []
     seen = set()
     for w in parts:
         wl = w.lower()
+        if wl in _EXTRA_STOP or wl.isdigit():
+            continue
         matched = None
         for canonical, variants in _ABUSE_SYNONYMS.items():
             allv = [canonical] + variants
             m = _fuzzy_pick(wl, allv, cutoff=0.88)
-            if m and m != wl:
+            if m:
                 matched = canonical
                 break
         final = matched or w
@@ -206,7 +265,9 @@ def _canonize_keywords(kw) -> List[str]:
 def _build_query_from_text(user_text: str, platform: Optional[str]) -> Dict[str, Any]:
     count = _extract_count(user_text) or SAFE_DEFAULT_COUNT
     time_hint = _extract_time_hint(user_text)
-    keywords = _extract_keywords(user_text)
+
+    abuse_keys = _extract_abuse_topic_keywords(user_text)
+    keywords = abuse_keys or _extract_keywords(user_text)
 
     base: Dict[str, Any] = {
         "count": count,
@@ -221,37 +282,20 @@ def _build_query_from_text(user_text: str, platform: Optional[str]) -> Dict[str,
     base.update(time_hint)
     return base
 
+
 def _safe_args_from_user_text(user_input: str) -> Dict[str, Any]:
     plat = _detect_platform_natural(user_input) or "reddit"
     qry = _build_query_from_text(user_input, plat)
-
-    if not qry.get("keywords"):
-        abuse_keys = _extract_abuse_topic_keywords(user_input)
-        if abuse_keys:
-            qry["keywords"] = ", ".join(abuse_keys)
-
     qry.setdefault("allow_nsfw", SAFE_NSFW)
 
-    # special defaults for reddit
     if plat == "reddit":
         qry.setdefault("get_comments", False)
         qry.setdefault("comment_limit", 0)
         qry.setdefault("images", False)
         qry.setdefault("sort", "relevance")
 
-    # =G IMPORTANT: reddit and facebook both use Scraper, others use API
-    if plat in ("reddit", "facebook"):
-        method = "Scraper"
-    else:
-        method = "API"
-
-    return {
-        "platform": plat,
-        "method": method,
-        "query": qry,
-    }
-
-
+    method = "Scraper" if plat in ("reddit", "facebook") else "API"
+    return {"platform": plat, "method": method, "query": qry}
 
 
 # =========================================================
@@ -313,22 +357,40 @@ def _get_openai_key() -> Optional[str]:
 OPENAI_API_KEY = _get_openai_key()
 client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
-TOOLS = [{
-    "type": "function",
-    "function": {
-        "name": "run_collect_tool",
-        "description": "Collect data via ICOAR runner and return a saved CSV path.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "platform": {"type": "string", "description": "reddit | huggingface | kaggle | facebook | twitter | youtube | tiktok"},
-                "method": {"type": "string", "description": "Scraper for reddit; API for others"},
-                "query": {"type": "object", "description": "Collector-specific query options dict"},
+TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "run_collect_tool",
+            "description": "Collect data via ICOAR runner and return a saved CSV path.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "platform": {"type": "string", "description": "reddit | huggingface | kaggle | facebook | twitter | youtube | tiktok"},
+                    "method": {"type": "string", "description": "Scraper for reddit; API for others"},
+                    "query": {"type": "object", "description": "Collector-specific query options dict"},
+                },
+                "required": ["platform", "method", "query"],
             },
-            "required": ["platform", "method", "query"],
         },
     },
-}]
+    {
+        "type": "function",
+        "function": {
+            "name": "run_text_analysis_tool",
+            "description": "Run a text analysis task (toxicity/sentiment/hate/cyberbullying/emotion) on a CSV file and save a new CSV.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "file_path": {"type": "string", "description": "Path to input CSV file"},
+                    "task": {"type": "string", "description": "One of: toxicity, sentiment, hate, cyberbullying, emotion"},
+                },
+                "required": ["file_path", "task"],
+            },
+        },
+    },
+]
+
 ASSISTANT_ID = os.getenv("ICOAR_ASSISTANT_ID", "").strip()
 
 
@@ -339,12 +401,15 @@ def _ensure_assistant() -> str:
     if client is None:
         ASSISTANT_ID = "NO_OPENAI"
         return ASSISTANT_ID
+
     a = client.beta.assistants.create(
         name="ICOAR Assistant",
         model="gpt-4o-mini",
         instructions=(
             "You are the assistant for ICOAR (Integrative Cyberinfrastructure for Online Abuse Research).\n"
-            "Be brief. When collecting data, call run_collect_tool with structured arguments.\n"
+            "Be brief.\n"
+            "When collecting data, call run_collect_tool with structured arguments.\n"
+            "When the user asks to analyze a CSV (toxicity/sentiment/hate/cyberbullying/emotion), call run_text_analysis_tool.\n"
             "Do NOT inject harmful keywords unless the user provided them. Default: allow_nsfw=false.\n"
         ),
         tools=TOOLS,
@@ -361,12 +426,19 @@ def _handle_tool_calls(thread_id: str, run_id: str, tool_calls) -> None:
             args = json.loads(call.function.arguments or "{}")
         except Exception:
             args = {}
+
         if name == "run_collect_tool":
             result = run_collect_tool(args)
-            outputs.append({"tool_call_id": call.id, "output": json.dumps(result)})
+        elif name == "run_text_analysis_tool":
+            result = run_text_analysis_tool(args)
         else:
-            outputs.append({"tool_call_id": call.id, "output": json.dumps({"status": "error", "message": f"Unknown tool {name}"})})
-    client.beta.threads.runs.submit_tool_outputs(thread_id=thread_id, run_id=run_id, tool_outputs=outputs)
+            result = {"status": "error", "message": f"Unknown tool {name}"}
+
+        outputs.append({"tool_call_id": call.id, "output": json.dumps(result)})
+
+    client.beta.threads.runs.submit_tool_outputs(
+        thread_id=thread_id, run_id=run_id, tool_outputs=outputs
+    )
 
 
 def _collect_assistant_text(messages) -> str:
@@ -387,28 +459,19 @@ def _collect_assistant_text(messages) -> str:
 # =========================================================
 # 5) COLLECTION TOOL
 # =========================================================
-
 def run_collect_tool(inputs: Dict[str, Any]) -> Dict[str, Any]:
     try:
         platform = (inputs.get("platform") or "").lower().strip()
         method = (inputs.get("method") or "").lower().strip()
         query = dict(inputs.get("query") or {})
 
-        print("DEBUG - run_collect_tool called with:")
-        print("  platform:", platform)
-        print("  method:", method)
-        print("  query:", json.dumps(query, indent=2))
-
-        # default count
         query.setdefault("count", 10)
 
-        # normalize / canonize abuse keywords a bit
         if "keywords" in query and query["keywords"]:
             canon = _canonize_keywords(query["keywords"])
             if canon:
                 query["keywords"] = ", ".join(canon)
 
-        # normalize method
         if method in ("scraper", "scrape"):
             method = "Scraper"
         elif method in ("api", "rest"):
@@ -416,15 +479,9 @@ def run_collect_tool(inputs: Dict[str, Any]) -> Dict[str, Any]:
         else:
             method = "Scraper" if platform in ("reddit", "facebook") else "API"
 
-        # clean some platform aliases
-        if platform in ("kaggle_", "kaggle-api"):
-            platform = "kaggle"
-
         allowed_platforms = ("reddit", "huggingface", "kaggle", "facebook", "twitter", "youtube", "tiktok")
         if platform not in allowed_platforms:
             return {"status": "error", "message": f"Unknown platform: {platform}"}
-
-        # --- PLATFORM-SPECIFIC DEFAULTS ---
 
         if platform == "reddit":
             query.setdefault("get_comments", False)
@@ -433,7 +490,6 @@ def run_collect_tool(inputs: Dict[str, Any]) -> Dict[str, Any]:
             query.setdefault("allow_nsfw", SAFE_NSFW)
             query.setdefault("sort", "relevance")
 
-        # user folder
         username = _safe_get_username() or "anonymous"
         _safe_set_username(username)
         user_dir = (DATA_ROOT / username).resolve()
@@ -458,36 +514,23 @@ def run_collect_tool(inputs: Dict[str, Any]) -> Dict[str, Any]:
             fbsec = dict(st.secrets.get("facebook", {}))
         except Exception:
             fbsec = {}
-
         if platform == "facebook":
             query.setdefault("facebook.email", fbsec.get("email"))
             query.setdefault("facebook.password", fbsec.get("password"))
             if not query.get("facebook.email") or not query.get("facebook.password"):
-                return {
-                    "status": "error",
-                    "message": "Facebook credentials are missing.",
-                }
+                return {"status": "error", "message": "Facebook credentials are missing."}
 
-        # remove unused generic keys
+        # remove unsupported keys for runner
         for k in ("allow_nsfw", "sort", "time_hint"):
             query.pop(k, None)
 
-        # keep only what each collector expects
         if platform == "reddit":
             allowed = {"keywords", "count", "get_comments", "comment_limit", "images"}
             query = {k: v for k, v in query.items() if k in allowed and v is not None}
         elif platform == "facebook":
-            # your Facebook Collector.query_options() => ["count", "keywords"]
-            # plus auth() => ["facebook.email", "facebook.password"]
             allowed = {"keywords", "count", "facebook.email", "facebook.password"}
             query = {k: v for k, v in query.items() if k in allowed and v is not None}
 
-        print("Final collector call:")
-        print("  platform:", platform)
-        print("  method:", method)
-        print("  query:", json.dumps(query, indent=2))
-
-        # actual collection
         try:
             save_name = f"{platform}_" + datetime.now().strftime("%Y%m%d-%H%M%S")
             out_file, rows = collect_data(platform, method, query, save_name=save_name)
@@ -501,7 +544,6 @@ def run_collect_tool(inputs: Dict[str, Any]) -> Dict[str, Any]:
         if not out_file:
             return {"status": "no_results", "message": "Collector returned no file."}
 
-        # row_count
         try:
             row_count = len(rows)
         except Exception:
@@ -518,51 +560,101 @@ def run_collect_tool(inputs: Dict[str, Any]) -> Dict[str, Any]:
             try:
                 if raw_out.exists():
                     shutil.copyfile(raw_out, stable_path)
-            except Exception as copy_err:
-                print("WARN: copy into stable_path failed:", copy_err)
+            except Exception:
+                pass
 
         final_path = str(stable_path)
-        msg = (
-            f"Saved {row_count} rows to {final_path}"
-            if row_count is not None
-            else f"Saved to {final_path}"
-        )
-
         _set_last_file("raw", final_path)
 
-        return {
-            "status": "ok",
-            "file": final_path,
-            "rows": int(row_count) if row_count is not None else None,
-            "message": msg,
-        }
+        msg = f"Saved {row_count} rows to {final_path}" if row_count is not None else f"Saved to {final_path}"
+        return {"status": "ok", "file": final_path, "rows": int(row_count) if row_count is not None else None, "message": msg}
 
     except Exception as e:
-        return {
-            "status": "error",
-            "message": f"Collector error: {e}",
-            "traceback": traceback.format_exc(),
-        }
+        return {"status": "error", "message": f"Collector error: {e}", "traceback": traceback.format_exc()}
 
-# =========================================================
-# 6) CLEAN / VISUALIZE / SUMMARIZE
-# =========================================================
+
 def _fix_path_case(p: str) -> str:
+    # Keep this for your project folder naming if you need it; do NOT lowercase /Users paths.
     return os.path.abspath(p).replace("/icoar/", "/ICOAR/")
 
 
+def run_text_analysis_tool(inputs: Dict[str, Any]) -> Dict[str, Any]:
+    try:
+        file_path = (inputs.get("file_path") or "").strip()
+        task = (inputs.get("task") or "toxicity").strip().lower()
+
+        if not file_path:
+            return {"status": "error", "message": "Missing file_path."}
+
+        file_path = _fix_path_case(file_path)
+
+        if file_path.lower() in ("last", "latest", "recent"):
+            file_path = _get_last_file("clean", "raw") or ""
+
+        if not file_path or not os.path.exists(file_path):
+            return {"status": "error", "message": f"File not found: {file_path}"}
+
+        if task not in _ANALYSIS_TASKS:
+            task = "toxicity"
+
+        out_path, rows, added_cols = run_text_analysis_file(file_path, task=task)
+
+        _set_last_file("analyzed", out_path)
+
+        return {
+            "status": "ok",
+            "input": file_path,
+            "output": out_path,
+            "rows": rows,
+            "added_cols": added_cols,
+            "message": f"Saved {rows} rows to {out_path} (added columns: {added_cols})",
+        }
+
+    except Exception as e:
+        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+
+
+# =========================================================
+# 6) ACTIONS HELPERS (for UI)
+# =========================================================
+def build_actions_for_file(fpath: Optional[str], include_clean: bool = True) -> List[Dict[str, Any]]:
+    if not fpath:
+        return []
+
+    actions: List[Dict[str, Any]] = []
+    if include_clean:
+        actions.append({"type": "clean", "label": "Clean Text", "file": fpath})
+
+    actions.append({"type": "visualize", "label": "Visualize", "file": fpath})
+
+    for t in _ANALYSIS_TASKS:
+        actions.append({"type": "analyze", "label": _TASK_LABELS[t], "file": fpath, "task": t})
+
+    actions.append({"type": "export", "label": "Export to Excel", "file": fpath})
+    return actions
+
+
+def split_actions(actions: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
+    basic, analysis = [], []
+    for a in actions or []:
+        if a.get("type") == "analyze":
+            analysis.append(a)
+        else:
+            basic.append(a)
+    return {"basic": basic, "analysis": analysis}
+
+
+# =========================================================
+# 7) CLEAN / VISUALIZE / SUMMARIZE
+# =========================================================
 def run_clean_step(file_path: str) -> Dict[str, Any]:
     abs_input = _fix_path_case(file_path)
 
     if abs_input.endswith("__clean.csv"):
         return {
-            "text": f"### Clean / Preprocess\n\n`{abs_input}` is already a cleaned file. You can visualize or summarize it.",
+            "text": f"### Clean / Preprocess\n\n`{abs_input}` is already a cleaned file. You can visualize or run text analysis.",
             "file": abs_input,
-            "actions": [
-                {"type": "visualize", "label": "Visualize", "file": abs_input},
-                {"type": "summarize", "label": "Summarize", "file": abs_input},
-                {"type": "export", "label": "Export to Excel", "file": abs_input},
-            ],
+            "actions": build_actions_for_file(abs_input, include_clean=False),
             "plot_png": None,
         }
 
@@ -571,7 +663,7 @@ def run_clean_step(file_path: str) -> Dict[str, Any]:
         cleaned_path, cleaned_rows = run_preprocess_file(abs_input)
         cleaned_path = _fix_path_case(cleaned_path)
 
-        _set_last_file("clean", cleaned_path)  # remember last cleaned
+        _set_last_file("clean", cleaned_path)
 
         msg = (
             "### Clean / Preprocess\n\n"
@@ -581,15 +673,16 @@ def run_clean_step(file_path: str) -> Dict[str, Any]:
         return {
             "text": msg,
             "file": cleaned_path,
-            "actions": [
-                {"type": "visualize", "label": "Visualize", "file": cleaned_path},
-                {"type": "summarize", "label": "Summarize", "file": cleaned_path},
-                {"type": "export", "label": "Export to Excel", "file": cleaned_path},
-            ],
+            "actions": build_actions_for_file(cleaned_path, include_clean=False),
             "plot_png": None,
         }
     except Exception as e:
-        return {"text": f"Preprocessing failed: {e}", "file": abs_input, "actions": [], "plot_png": None}
+        return {
+            "text": f"Preprocessing failed: {e}",
+            "file": abs_input,
+            "actions": build_actions_for_file(abs_input),
+            "plot_png": None,
+        }
 
 
 def run_visualize_step(file_path: str) -> Dict[str, Any]:
@@ -599,10 +692,7 @@ def run_visualize_step(file_path: str) -> Dict[str, Any]:
         return {
             "text": f"### Visualization\n\nI couldn't find `{abs_input}` anymore. Please recollect or clean again so I can visualize it.",
             "file": abs_input,
-            "actions": [
-                {"type": "summarize", "label": "Summarize", "file": abs_input},
-                {"type": "export", "label": "Export to Excel", "file": abs_input},
-            ],
+            "actions": build_actions_for_file(abs_input),
             "plot_png": None,
         }
 
@@ -612,10 +702,7 @@ def run_visualize_step(file_path: str) -> Dict[str, Any]:
         return {
             "text": f"### Visualization\n\nCouldn't open `{abs_input}` as CSV ({e}).",
             "file": abs_input,
-            "actions": [
-                {"type": "summarize", "label": "Summarize", "file": abs_input},
-                {"type": "export", "label": "Export to Excel", "file": abs_input},
-            ],
+            "actions": build_actions_for_file(abs_input),
             "plot_png": None,
         }
 
@@ -629,18 +716,15 @@ def run_visualize_step(file_path: str) -> Dict[str, Any]:
         return {
             "text": "### Visualization\n\nI loaded the file but couldn't find a text column (looked for clean_text/text/body/content/comment/message).",
             "file": abs_input,
-            "actions": [
-                {"type": "summarize", "label": "Summarize", "file": abs_input},
-                {"type": "export", "label": "Export to Excel", "file": abs_input},
-            ],
+            "actions": build_actions_for_file(abs_input),
             "plot_png": None,
         }
 
     STOP = {
-        "the","a","an","and","to","of","in","on","for","is","are","am",
-        "i","you","he","she","it","we","they","this","that","with","as",
-        "at","be","was","were","by","or","from","about","just","not",
-        "im","it's","its","rt"
+        "the", "a", "an", "and", "to", "of", "in", "on", "for", "is", "are", "am",
+        "i", "you", "he", "she", "it", "we", "they", "this", "that", "with", "as",
+        "at", "be", "was", "were", "by", "or", "from", "about", "just", "not",
+        "im", "it's", "its", "rt",
     }
 
     words: List[str] = []
@@ -662,10 +746,7 @@ def run_visualize_step(file_path: str) -> Dict[str, Any]:
             f"I loaded `{abs_input}` with **{row_count} rows**, but there weren't enough frequent words to plot.\n\n"
             "For timelines, sentiment charts, and trends over time, open the main **Visualization** tab."
         )
-        return {"text": msg, "file": abs_input, "actions": [
-            {"type": "summarize", "label": "Summarize", "file": abs_input},
-            {"type": "export", "label": "Export to Excel", "file": abs_input},
-        ], "plot_png": None}
+        return {"text": msg, "file": abs_input, "actions": build_actions_for_file(abs_input), "plot_png": None}
 
     labels = [w for (w, c) in common]
     counts = [c for (w, c) in common]
@@ -689,15 +770,7 @@ def run_visualize_step(file_path: str) -> Dict[str, Any]:
         "### Visualization Preview\n\n"
         f"I loaded `{abs_input}` with **{row_count} rows** and generated a quick word-frequency view."
     )
-    return {
-        "text": msg,
-        "file": abs_input,
-        "actions": [
-            {"type": "summarize", "label": "Summarize", "file": abs_input},
-            {"type": "export", "label": "Export to Excel", "file": abs_input},
-        ],
-        "plot_png": plot_png,
-    }
+    return {"text": msg, "file": abs_input, "actions": build_actions_for_file(abs_input), "plot_png": plot_png}
 
 
 def run_summarize_step(file_path: str) -> Dict[str, Any]:
@@ -706,14 +779,11 @@ def run_summarize_step(file_path: str) -> Dict[str, Any]:
         "### Summary Preview\n\n"
         f"I can generate a neutral summary of recurring themes in `{abs_input}` without adding new harmful language."
     )
-    return {"text": msg, "file": abs_input, "actions": [
-        {"type": "visualize", "label": "Visualize", "file": abs_input},
-        {"type": "export", "label": "Export to Excel", "file": abs_input},
-    ], "plot_png": None}
+    return {"text": msg, "file": abs_input, "actions": build_actions_for_file(abs_input), "plot_png": None}
 
 
 # =========================================================
-# 7) COMPOSE + MAIN ENTRY
+# 8) COMPOSE + MAIN ENTRY
 # =========================================================
 def compose_after_collection(platform: str, query: Dict[str, Any], file_path: str, rows: Optional[int]) -> str:
     kws = (query or {}).get("keywords") or "your topic"
@@ -725,43 +795,112 @@ def compose_after_collection(platform: str, query: Dict[str, Any], file_path: st
         f"A total of **{cnt} posts** were gathered and saved to `{file_path}`"
         f"{f'. The file contains **{rows} rows**.' if rows is not None else '.'}"
     )
-    parts.append("Next steps: clean and preprocess the text, visualize patterns, get an automatic summary, or export the data.")
-    parts.append("Your exploration continues below. Choose what you want to do next.")
+    parts.append("Next steps: clean, visualize, run text analysis, or export.")
+    parts.append("Choose what you want to do next below.")
     return "\n\n".join(parts)
 
 
 def _has_visualize_intent(text: str) -> bool:
-    """
-    Super-tolerant visualize intent.
-    Catches: visualize/visualise/viz/vizualize/vsualzie/vis + plot/chart/graph + 'show it'/'see it'
-    Also triggers if any token contains the substring 'visu', 'vsl', or 'vsz'.
-    """
     t = (text or "").lower()
     if re.search(r"\b(show|see)\s+(it|them)\b", t):
         return True
-
     tokens = re.findall(r"[a-zA-Z]+", t)
     visualize_targets = ["visualize", "visualise", "viz", "vizualize", "vsualzie", "vis", "visual", "vizualise"]
     plot_targets = ["plot", "chart", "graph"]
-
-    # direct token similarity
     if any(_looks_like_any(tok, visualize_targets + plot_targets, threshold=0.60) for tok in tokens):
         return True
-
-    # substring heuristic for typos
     if any(("visu" in tok.lower()) or ("vsl" in tok.lower()) or ("vsz" in tok.lower()) for tok in tokens):
         return True
+    return False
 
+
+def _detect_analysis_task(text: str) -> Optional[str]:
+    t = (text or "").lower()
+
+    for task in _ANALYSIS_TASKS:
+        if re.search(rf"\b{re.escape(task)}\b", t):
+            return task
+
+    if re.search(r"\bhate\s*speech\b", t) or re.search(r"\bhateful\b", t):
+        return "hate"
+    if re.search(r"\bcyber\s*bully\w*\b", t):
+        return "cyberbullying"
+
+    toks = re.findall(r"[a-zA-Z]+", t)
+    for tok in toks:
+        m = _fuzzy_pick(tok, _ANALYSIS_TASKS, cutoff=0.83)
+        if m:
+            return m
+    return None
+
+
+def _has_analysis_intent(text: str) -> bool:
+    t = (text or "").lower()
+    if re.search(r"\b(text\s*analysis|analy(?:ze|se)|analysis|score|classify)\b", t):
+        return True
+    if _detect_analysis_task(t):
+        return True
     return False
 
 
 def run_agent_response(user_input: str) -> Dict[str, Any]:
     no_key_msg = ("OPENAI_API_KEY not configured. Using local collection/cleaning only.") if client is None else ""
-    lowered = (user_input or "").lower().strip()
 
-    # ---------- EARLY: VISUALIZE FUZZY INTENT (uses last cleaned if available, else raw) ----------
+    raw_input = (user_input or "").strip()
+    lowered = raw_input.lower()
+
+    # =====================================================
+    # 0) EXPLICIT ACTION SHORTCUT (MUST BE FIRST)
+    #    Parse from raw_input to preserve /Users/... case
+    # =====================================================
+    m_action = re.search(
+        r"action:(clean|visualize|summarize|export|analyze)\s+file:([^\s]+)(?:\s+task:(toxicity|sentiment|hate|cyberbullying|emotion))?",
+        raw_input,
+        flags=re.IGNORECASE,
+    )
+
+    if m_action:
+        act = m_action.group(1).lower()
+        fpath = m_action.group(2).strip()
+        task = (m_action.group(3) or "toxicity").strip().lower()
+
+        if fpath.lower() in ("last", "latest", "recent"):
+            fpath = _get_last_file("analyzed", "clean", "raw") or fpath
+
+        if act == "clean":
+            return run_clean_step(fpath)
+
+        if act == "visualize":
+            return run_visualize_step(fpath)
+
+        if act == "summarize":
+            return run_summarize_step(fpath)
+
+        if act == "export":
+            msg = "### Export\n\nI will generate an Excel-friendly file so you can share or archive it."
+            return {"text": msg, "file": _fix_path_case(fpath), "actions": build_actions_for_file(fpath), "plot_png": None}
+
+        if act == "analyze":
+            result = run_text_analysis_tool({"file_path": fpath, "task": task})
+            if result.get("status") == "ok":
+                outp = result["output"]
+                msg = (
+                    "### Text Analysis\n\n"
+                    f"Task: **{task}**\n\n"
+                    f"Saved output to `{outp}`"
+                )
+                return {"text": msg, "file": outp, "actions": build_actions_for_file(outp, include_clean=True), "plot_png": None}
+
+            return {
+                "text": f"### Text Analysis\n\nAnalysis failed: {result.get('message')}",
+                "file": fpath,
+                "actions": build_actions_for_file(fpath),
+                "plot_png": None,
+            }
+
+    # ---------- EARLY: VISUALIZE FUZZY INTENT ----------
     if _has_visualize_intent(lowered):
-        target = _get_last_file("clean", "raw")
+        target = _get_last_file("analyzed", "clean", "raw")
         if not target:
             try:
                 target = (st.session_state.get("assistant_result") or {}).get("file")
@@ -770,37 +909,43 @@ def run_agent_response(user_input: str) -> Dict[str, Any]:
         if target:
             return run_visualize_step(target)
 
-    # ---------- EXPLICIT ACTION SHORTCUT ----------
-    m_action = re.search(r"action:(clean|visualize|summarize|export)\s+file:(.+)", lowered)
-    if m_action:
-        act = m_action.group(1)
-        fpath = m_action.group(2).strip()
-        if act == "clean":
-            return run_clean_step(fpath)
-        elif act == "visualize":
-            return run_visualize_step(fpath)
-        elif act == "summarize":
-            return run_summarize_step(fpath)
-        elif act == "export":
-            msg = "### Export\n\nI will generate an Excel-friendly file so you can share or archive it."
-            return {"text": msg, "file": _fix_path_case(fpath), "actions": [], "plot_png": None}
+    # ---------- EARLY: ANALYZE NATURAL INTENT ----------
+    if _has_analysis_intent(lowered):
+        task = _detect_analysis_task(lowered) or "toxicity"
+        target = _get_last_file("clean", "raw")
+        if not target:
+            try:
+                target = (st.session_state.get("assistant_result") or {}).get("file")
+            except Exception:
+                target = None
+
+        if target:
+            res = run_text_analysis_tool({"file_path": target, "task": task})
+            if res.get("status") == "ok":
+                outp = res["output"]
+                msg = (
+                    "### Text Analysis\n\n"
+                    f"Task: **{task}**\n\n"
+                    f"Saved output to `{outp}`"
+                )
+                return {"text": msg, "file": outp, "actions": build_actions_for_file(outp, include_clean=True), "plot_png": None}
+
+            return {"text": f"Analysis failed: {res.get('message')}", "file": target, "actions": build_actions_for_file(target), "plot_png": None}
 
     # ---------- HEURISTICS (visualize -> clean -> summarize) ----------
     def _guess_target_file(keyword: str) -> Optional[str]:
         if keyword not in lowered:
             return None
-        guessed = re.findall(r"(/?[\w\/\.-]+\.csv)", lowered)
-        target = None
+        guessed = re.findall(r"(/?[\w\/\.-]+\.csv)", raw_input)
         if guessed:
             target = guessed[0]
             if target.startswith("home/"):
                 target = "/" + target
-        else:
-            try:
-                target = (st.session_state.get("assistant_result") or {}).get("file")
-            except Exception:
-                target = None
-        return target
+            return target
+        try:
+            return (st.session_state.get("assistant_result") or {}).get("file")
+        except Exception:
+            return None
 
     tgt = _guess_target_file("visualize")
     if tgt:
@@ -816,12 +961,7 @@ def run_agent_response(user_input: str) -> Dict[str, Any]:
 
     # ---------- NEW NATURAL REQUEST: COLLECT ----------
     try:
-        fallback_args = _safe_args_from_user_text(user_input)
-        print("INTERPRETED REQUEST:", json.dumps({
-            "platform": fallback_args["platform"],
-            "method": fallback_args["method"],
-            "query_preview": {k: fallback_args["query"].get(k) for k in ["keywords", "count", "sort", "time_hint", "allow_nsfw"]},
-        }, indent=2))
+        fallback_args = _safe_args_from_user_text(raw_input)
 
         stable_file_path: Optional[str] = None
         final_text = ""
@@ -831,7 +971,7 @@ def run_agent_response(user_input: str) -> Dict[str, Any]:
         if client is not None:
             asst_id = _ensure_assistant()
             thread = client.beta.threads.create()
-            client.beta.threads.messages.create(thread_id=thread.id, role="user", content=user_input)
+            client.beta.threads.messages.create(thread_id=thread.id, role="user", content=raw_input)
             run = client.beta.threads.runs.create(thread_id=thread.id, assistant_id=asst_id)
 
             started = time.time()
@@ -852,9 +992,12 @@ def run_agent_response(user_input: str) -> Dict[str, Any]:
                 else:
                     time.sleep(backoff)
                     backoff = min(backoff * 1.5, 2.5)
+
                 if time.time() - started > MAX_WAIT_SECS:
-                    final_text = (f"Timed out waiting for assistant (status: {status}). "
-                                  "Try again with fewer posts or check your collector speed.")
+                    final_text = (
+                        f"Timed out waiting for assistant (status: {status}). "
+                        "Try again with fewer posts or check your collector speed."
+                    )
                     break
 
             messages = client.beta.threads.messages.list(thread_id=thread.id)
@@ -862,6 +1005,7 @@ def run_agent_response(user_input: str) -> Dict[str, Any]:
             if assistant_text:
                 final_text = assistant_text
 
+            # attempt to discover output file from tool steps
             try:
                 steps = client.beta.threads.runs.steps.list(thread_id=thread.id, run_id=run.id)
                 for step in getattr(steps, "data", []) or []:
@@ -900,13 +1044,8 @@ def run_agent_response(user_input: str) -> Dict[str, Any]:
 
         if stable_file_path:
             _set_last_file("raw", stable_file_path)
-            actions = [
-                {"type": "download",  "label": "Download CSV",    "file": stable_file_path},
-                {"type": "clean",     "label": "Clean Text",      "file": stable_file_path},
-                {"type": "visualize", "label": "Visualize",       "file": stable_file_path},
-                {"type": "summarize", "label": "Summarize",       "file": stable_file_path},
-                {"type": "export",    "label": "Export to Excel", "file": stable_file_path},
-            ]
+            actions = build_actions_for_file(stable_file_path, include_clean=True)
+
             if "Data is ready" not in final_text:
                 final_text = compose_after_collection(
                     fallback_args["platform"], fallback_args["query"], stable_file_path, None
@@ -919,4 +1058,3 @@ def run_agent_response(user_input: str) -> Dict[str, Any]:
 
     except Exception as e:
         return {"text": f"Unhandled error: {e}", "file": None, "actions": [], "plot_png": None}
-
