@@ -446,8 +446,15 @@ def _render_result_payload(payload: dict, request_overview: str = ""):
     if txt:
         st.markdown(txt)
 
-    if payload.get("plot_png"):
-        st.image(payload["plot_png"])
+    plot = payload.get("plot_png")
+
+    if plot is not None:
+        if "plotly" in str(type(plot)).lower():
+            st.plotly_chart(plot, use_container_width=True)
+        elif hasattr(plot, "savefig"):
+            st.pyplot(plot)
+        else:
+            st.image(plot)
 
     fpath = payload.get("file")
     if fpath:
