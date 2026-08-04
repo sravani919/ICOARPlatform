@@ -447,7 +447,7 @@ def _render_result_payload(payload: dict, request_overview: str = ""):
         st.markdown(txt)
 
     if payload.get("plot_png"):
-        st.image(payload["plot_png"], use_container_width=True)
+        st.image(payload["plot_png"])
 
     fpath = payload.get("file")
     if fpath:
